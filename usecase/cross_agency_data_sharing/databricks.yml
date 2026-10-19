@@ -1,0 +1,60 @@
+# Secure Cross-Agency Data Sharing - Open Data Sharing
+# Modelled on: https://www.databricks.com/blog/2023/02/21/best-practices-cross-government-data-sharing.html
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-cross-agency-data-sharing
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog acting as the data PROVIDER in this use case. Supply via --var or
+      .databricks/bundle/<target>/variable-overrides.json so that no environment-specific value
+      is committed to this public repository.
+
+  consumer_catalog:
+    description: >-
+      Catalog acting as the data CONSUMER, where the share is mounted. Supply per target. In a
+      single-workspace demo this simulates a second agency - say so in any walkthrough rather
+      than implying a genuine cross-organisation deployment.
+    default: ""
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: cross_agency_data_sharing
+
+  volume:
+    description: Unity Catalog volume used to land raw extracts.
+    default: landing
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: cross_agency_data_sharing_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

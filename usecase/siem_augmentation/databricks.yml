@@ -1,0 +1,61 @@
+# SIEM Augmentation - Cybersecurity
+# Pattern-based selection: lakehouse-for-security, long retention in Delta. See README.md.
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-siem-augmentation
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models. Supply via
+      --var or .databricks/bundle/<target>/variable-overrides.json so that no environment-specific
+      value is committed to this public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: siem_augmentation
+
+  volume:
+    description: Unity Catalog volume used to land raw telemetry files.
+    default: landing
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  retention_days:
+    description: >-
+      Telemetry retention window in days. The point of this use case is that the window is set by
+      risk rather than by licence cost, so it is a variable rather than a literal.
+    default: "365"
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: siem_augmentation_${workspace.current_user.short_name}
+      # Short window in dev to keep the synthetic dataset small.
+      retention_days: "30"
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

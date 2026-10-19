@@ -1,0 +1,54 @@
+# Critical Infrastructure Monitoring - Smart Infrastructure
+# Modelled on the National Heavy Vehicle Regulator:
+# https://www.databricks.com/customers/national-heavy-vehicle-regulator
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-critical-infrastructure-monitoring
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models. Supply via
+      --var or .databricks/bundle/<target>/variable-overrides.json so that no environment-specific
+      value is committed to this public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: critical_infrastructure_monitoring
+
+  volume:
+    description: Unity Catalog volume used to land raw telemetry files.
+    default: landing
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: critical_infrastructure_monitoring_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

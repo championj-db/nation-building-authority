@@ -1,0 +1,54 @@
+# Budget Planning & Financial Projections - Resource Allocation
+# Modelled on the Infrastructure Australia Major Public Infrastructure Pipeline:
+# https://www.infrastructureaustralia.gov.au/reports/2025-infrastructure-market-capacity-report
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-budget-planning-and-projections
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models. Supply via
+      --var or .databricks/bundle/<target>/variable-overrides.json so that no environment-specific
+      value is committed to this public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: budget_planning_and_projections
+
+  volume:
+    description: Unity Catalog volume used to land raw portfolio and capacity extracts.
+    default: landing
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: budget_planning_and_projections_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

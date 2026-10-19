@@ -1,0 +1,28 @@
+# Databricks Asset Bundle / DAB local state
+.databricks/
+build/
+dist/
+*.egg-info/
+
+# Local bundle variable overrides - keeps environment-specific values out of a public repo
+variable-overrides.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Notebook / editor cruft
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+
+# Generated synthetic data should never be committed - it is reproducible from the generators
+data/generated/
+*.parquet
+*.delta

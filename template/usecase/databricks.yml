@@ -1,0 +1,61 @@
+# Declarative Automation Bundle for the {{usecase_name}} use case.
+#
+# Copy this folder to usecase/<usecase_name>/ and replace every "{{usecase_name}}" placeholder.
+#
+# Placeholders are quoted so that this file stays valid, parseable YAML before substitution.
+# Drop the quotes when you substitute - a real schema or bundle name does not need them.
+#
+# Rule: no environment-specific value is ever written as a literal in this file or in any
+# resource definition. Everything environment-specific is a variable, resolved per target or
+# supplied at deploy time. See CONTRIBUTING.md.
+
+bundle:
+  name: "nba-{{usecase_name}}"
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models.
+      No default on purpose - supply it per target, via --var, or in
+      .databricks/bundle/<target>/variable-overrides.json so that nothing environment-specific
+      is committed to a public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: "{{usecase_name}}"
+
+  volume:
+    description: Unity Catalog volume used to land raw or unstructured source files.
+    default: landing
+
+  warehouse_id:
+    description: >-
+      SQL warehouse backing dashboards and SQL tasks. Supply per target or via --var.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+include:
+  - resources/*.yml
+
+targets:
+  # Personal development target. Resources are prefixed and schemas suffixed per user so that
+  # several people can deploy the same use case into one catalog without colliding.
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: "{{usecase_name}}_${workspace.current_user.short_name}"
+
+  # Shared target. Supply catalog and warehouse_id explicitly at deploy time.
+  prod:
+    mode: production
+    variables:
+      environment: prod

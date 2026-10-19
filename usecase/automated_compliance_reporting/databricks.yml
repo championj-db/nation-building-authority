@@ -1,0 +1,54 @@
+# Automated Compliance Reporting - Regulatory Compliance
+# Modelled on the Australian Government Gateway Reviews Process:
+# https://www.finance.gov.au/government/assurance-reviews-and-risk-assessment/gateway-reviews-process
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-automated-compliance-reporting
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models. Supply via
+      --var or .databricks/bundle/<target>/variable-overrides.json so that no environment-specific
+      value is committed to this public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: automated_compliance_reporting
+
+  volume:
+    description: Unity Catalog volume used to land evidence artefacts.
+    default: evidence
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails or an evidence gap is detected.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: automated_compliance_reporting_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

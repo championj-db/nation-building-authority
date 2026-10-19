@@ -1,0 +1,54 @@
+# AI-Enabled Eligibility Determination - Benefit Administration
+# Modelled on "Citizen 360 and AI-enabled eligibility":
+# https://www.databricks.com/solutions/industries/public-sector
+#
+# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
+# and uncomment the include block below.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+bundle:
+  name: nba-ai-enabled-eligibility-determination
+
+variables:
+  catalog:
+    description: >-
+      Unity Catalog catalog that owns this use case's schemas, volumes and models. Supply via
+      --var or .databricks/bundle/<target>/variable-overrides.json so that no environment-specific
+      value is committed to this public repository.
+
+  schema:
+    description: Schema holding this use case's tables.
+    default: ai_enabled_eligibility_determination
+
+  volume:
+    description: Unity Catalog volume used to land applications, evidence and policy documents.
+    default: landing
+
+  warehouse_id:
+    description: SQL warehouse backing dashboards and SQL tasks.
+    default: ""
+
+  notifications_email:
+    description: Address notified when a job run fails.
+    default: ${workspace.current_user.userName}
+
+  environment:
+    description: Logical environment label, applied as a tag to every resource.
+    default: dev
+
+# include:
+#   - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      environment: dev
+      schema: ai_enabled_eligibility_determination_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      environment: prod

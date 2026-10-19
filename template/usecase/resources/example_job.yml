@@ -1,0 +1,42 @@
+# Example resource definition for the {{usecase_name}} use case.
+#
+# This exists to demonstrate the pattern. Note that every environment-specific value is a
+# ${var.*} reference and nothing is a literal. Rename this file and replace the tasks with the
+# real work for your use case.
+#
+# Placeholders are quoted so this file stays valid, parseable YAML before substitution.
+
+resources:
+  jobs:
+    "{{usecase_name}}":
+      name: "nba-{{usecase_name}}-${var.environment}"
+
+      tags:
+        usecase: "{{usecase_name}}"
+        environment: ${var.environment}
+
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+
+      # Serverless: no job_clusters block, no node types, no runtime versions to go stale.
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+        - task_key: generate_synthetic_data
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              # Seed the generator so the dataset is reproducible for everyone.
+              seed: "42"
