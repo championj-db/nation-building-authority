@@ -6,7 +6,7 @@
 | **Selected function** | AI-Enabled Eligibility Determination |
 | **Evidence anchor** | [Public Sector Solutions](https://www.databricks.com/solutions/industries/public-sector) - "Citizen 360 and AI-enabled eligibility" |
 | **Target KPI** | Record processing time (measure to instrument) |
-| **Status** | **Stub** - README and DAB skeleton only |
+| **Status** | **Implemented** - Synthetic data, pipelines, rules engine, AI triage, app |
 
 ## Problem
 
@@ -89,8 +89,15 @@ Synthetic and seeded, including a synthetic policy document set for the agent to
 databricks bundle validate --target dev --var catalog=<YOUR_CATALOG>
 ```
 
-Replace `<YOUR_CATALOG>` (angle brackets included) with a catalog you can write to. There is
-nothing to deploy or run yet.
+Replace `<YOUR_CATALOG>` (angle brackets included) with a catalog you can write to.
+
+```bash
+databricks bundle deploy --target dev --var catalog=<YOUR_CATALOG>
+databricks bundle run ai_enabled_eligibility_determination --target dev --var catalog=<YOUR_CATALOG>
+```
+
+The job runs end to end: setup → synthetic data → applicant 360 → rules engine → agentic triage → queue.
+The Databricks App is deployed alongside and connects to the same tables.
 
 ## Assurance notes
 
@@ -102,7 +109,15 @@ clearly between what the system suggested and what the human decided. An
 [AI transparency statement](https://www.dta.gov.au/ai-transparency-statement) would be required in
 a real deployment.
 
-## Not built yet
+## What is built
 
-Everything. This is a stub: README plus a validating DAB skeleton. No synthetic generator, no
-applicant 360, no rules engine, no triage agent, no queue, no audit trail.
+* `src/00_setup.py` — Schema, volume, and infrastructure setup
+* `src/01_generate_synthetic_data.py` — Seeded synthetic data generator (24 applicants, 4 programs, policies, evidence, source system records)
+* `src/02_applicant_360.py` — Silver-layer applicant 360 from four source domains
+* `src/03_rules_engine.py` — Deterministic, versioned rules engine with audit-reproducible evaluations
+* `src/04_agentic_triage.py` — AI-powered triage of borderline cases via `ai_query`, with policy citations
+* `src/05_queue_prioritisation.py` — Priority-scored caseworker queue and seeded audit trail
+* `resources/eligibility_determination_job.yml` — Lakeflow Job chaining all six steps
+* `resources/eligibility_workbench_app.yml` — Databricks App resource for the caseworker UI
+* `app/app.py` + `app/app.yaml` — Gradio-based Eligibility Review Workbench (queue, 360, rules, evidence, audit, decision recording)
+* `design/` — HTML design prototype and handoff manifest

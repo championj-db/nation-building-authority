@@ -2,9 +2,6 @@
 # Modelled on "Citizen 360 and AI-enabled eligibility":
 # https://www.databricks.com/solutions/industries/public-sector
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
-#
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
 bundle:
@@ -29,6 +26,12 @@ variables:
     description: SQL warehouse backing dashboards and SQL tasks.
     default: ""
 
+  model_endpoint:
+    description: >-
+      Foundation model serving endpoint used by the agentic triage step.
+      Defaults to Meta Llama 3.3 70B via Databricks pay-per-token.
+    default: databricks-meta-llama-3-3-70b-instruct
+
   notifications_email:
     description: Address notified when a job run fails.
     default: ${workspace.current_user.userName}
@@ -37,8 +40,8 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
 
 targets:
   dev:

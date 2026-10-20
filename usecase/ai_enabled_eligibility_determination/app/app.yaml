@@ -1,0 +1,15 @@
+# Eligibility Review Workbench — Databricks App configuration
+#
+# Environment variables are injected at deploy time; no hard-coded values.
+# See: https://docs.databricks.com/en/dev-tools/databricks-apps/configuration.html
+
+command:
+  - python
+  - app.py
+
+env:
+  - name: DATABRICKS_CATALOG
+    description: Unity Catalog catalog for this use case.
+  - name: DATABRICKS_SCHEMA
+    description: Schema holding the eligibility tables.
+    default: ai_enabled_eligibility_determination

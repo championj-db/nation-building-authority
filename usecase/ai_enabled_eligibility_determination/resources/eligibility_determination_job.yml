@@ -1,0 +1,76 @@
+# AI-Enabled Eligibility Determination — Job Resource
+#
+# Pipeline: setup -> synthetic data -> applicant 360 -> rules engine -> agentic triage -> queue
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    ai_enabled_eligibility_determination:
+      name: nba-ai-enabled-eligibility-determination-${var.environment}
+
+      tags:
+        usecase: ai_enabled_eligibility_determination
+        environment: ${var.environment}
+
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+
+      # Serverless: no job_clusters block.
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+        - task_key: generate_synthetic_data
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              seed: "42"
+
+        - task_key: applicant_360
+          depends_on:
+            - task_key: generate_synthetic_data
+          notebook_task:
+            notebook_path: ../src/02_applicant_360.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+        - task_key: rules_engine
+          depends_on:
+            - task_key: applicant_360
+          notebook_task:
+            notebook_path: ../src/03_rules_engine.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+        - task_key: agentic_triage
+          depends_on:
+            - task_key: rules_engine
+          notebook_task:
+            notebook_path: ../src/04_agentic_triage.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_endpoint: ${var.model_endpoint}
+
+        - task_key: queue_prioritisation
+          depends_on:
+            - task_key: agentic_triage
+          notebook_task:
+            notebook_path: ../src/05_queue_prioritisation.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}

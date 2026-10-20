@@ -1,0 +1,27 @@
+# Eligibility Review Workbench — Databricks App Resource
+#
+# Caseworker-facing UI backed by the caseworker_queue and related tables.
+# No environment-specific values are hard-coded.
+
+resources:
+  apps:
+    eligibility_workbench:
+      name: nba-eligibility-workbench-${var.environment}
+      description: >-
+        Eligibility Review Workbench for the AI-Enabled Eligibility Determination
+        use case. Presents a prioritised caseworker queue with applicant 360,
+        rules results, agent recommendations, evidence and audit trail.
+
+      source_code_path: ../app
+
+      config:
+        - name: DATABRICKS_CATALOG
+          value: ${var.catalog}
+        - name: DATABRICKS_SCHEMA
+          value: ${var.schema}
+        - name: DATABRICKS_WAREHOUSE_ID
+          value: ${var.warehouse_id}
+
+      permissions:
+        - user_name: ${workspace.current_user.userName}
+          level: CAN_MANAGE
