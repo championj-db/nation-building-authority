@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eligibility Review Workbench · Nation Building Authority</title>
+  <style>
+    :root {
+      /* OD TOKEN_SCHEMA contract. Evidence lives in source/token-contract.report.json. */
+      --bg: #f8fafc;
+      --surface: #171717;
+      --surface-warm: #f5f5f5;
+      --fg: #171717;
+      --fg-2: var(--fg);
+      --muted: #6b7280;
+      --meta: var(--muted);
+      --border: #171717;
+      --border-soft: #f5f5f5;
+      --accent: #171717;
+      --accent-on: #ffffff;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #3ba65e;
+      --warn: #eab308;
+      --danger: #dc2626;
+      --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: 0;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: var(--text-sm)/var(--leading-body) var(--font-body); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); line-height: var(--leading-tight); text-wrap: balance; }
+    p { text-wrap: pretty; }
+    a { color: inherit; }
+    :focus-visible { outline: var(--focus-ring) solid var(--fg); outline-offset: 3px; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in oklab, var(--bg), transparent 6%); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+    .topnav-inner { max-width: 1480px; margin: auto; padding: var(--space-3) var(--space-8); display: flex; align-items: center; gap: var(--space-6); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); text-decoration: none; white-space: nowrap; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--accent-on); font: 700 10px/1 var(--font-mono); letter-spacing: .08em; }
+    .brand-copy { display: flex; flex-direction: column; gap: 1px; }
+    .brand-name { font-size: var(--text-base); font-weight: 750; letter-spacing: -0.02em; }
+    .brand-service { color: var(--muted); font: 10px/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+    .topnav nav { display: flex; gap: var(--space-2); flex: 1; }
+    .nav-link, .tab, .filter { min-height: 44px; padding: 0 var(--space-3); display: inline-flex; align-items: center; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--muted); text-decoration: none; }
+    .nav-link:hover, .tab:hover, .filter:hover { color: var(--fg); background: var(--surface-warm); }
+    .nav-link.active, .tab.active, .filter.active { color: var(--fg); background: var(--surface-warm); border-color: var(--border); }
+    .environment { min-height: 28px; padding: 0 var(--space-2); display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-pill); font: 10px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+    .user { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--surface); color: var(--accent-on); font: var(--text-xs) var(--font-mono); }
+    .app-shell { max-width: 1480px; margin: auto; padding: var(--space-8); }
+    .page-head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-6); }
+    .eyebrow { font: var(--text-xs) var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: var(--space-2); }
+    h1 { font-size: var(--text-3xl); letter-spacing: -.03em; }
+    h2 { font-size: var(--text-xl); letter-spacing: -.02em; }
+    h3 { font-size: var(--text-base); }
+    .muted { color: var(--muted); }
+    .meta { color: var(--muted); font: var(--text-xs) var(--font-mono); }
+    .btn { min-height: 44px; padding: 0 var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-weight: 600; }
+    .btn:hover { background: var(--surface-warm); }
+    .btn-primary { background: var(--surface); color: var(--accent-on); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:active { background: var(--accent-active); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .workspace { min-height: 700px; display: grid; grid-template-columns: 360px minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg); box-shadow: var(--elev-raised); }
+    .queue { border-right: 1px solid var(--border); background: var(--bg); }
+    .queue-head { padding: var(--space-5); border-bottom: 1px solid var(--border); }
+    .queue-head-row, .section-head, .action-row, .case-topline { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .search { width: 100%; min-height: 44px; margin-top: var(--space-4); padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--fg); }
+    .filters { display: flex; gap: var(--space-2); margin-top: var(--space-3); overflow-x: auto; }
+    .filter { min-height: 36px; white-space: nowrap; padding-inline: var(--space-3); }
+    .case-list { max-height: 596px; overflow: auto; }
+    .case-card { width: 100%; padding: var(--space-4) var(--space-5); border: 0; border-bottom: 1px solid var(--border); background: var(--bg); color: var(--fg); text-align: left; }
+    .case-card:hover { background: var(--surface-warm); }
+    .case-card.active { background: var(--surface-warm); box-shadow: inset 3px 0 0 var(--fg); }
+    .case-name { font-weight: 700; }
+    .case-summary { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-xs); }
+    .pill { display: inline-flex; align-items: center; min-height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-pill); font: var(--text-xs) var(--font-mono); white-space: nowrap; }
+    .pill::before { content: ""; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--warn); }
+    .pill.urgent::before { background: var(--danger); }
+    .pill.ready::before { background: var(--success); }
+    .detail { min-width: 0; display: flex; flex-direction: column; }
+    .detail-head { padding: var(--space-5) var(--space-6) 0; border-bottom: 1px solid var(--border); }
+    .detail-title { display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+    .detail-title p { margin-top: var(--space-2); }
+    .tabs { display: flex; gap: var(--space-1); overflow-x: auto; }
+    .tab { border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab.active { background: transparent; border-color: transparent; border-bottom-color: var(--fg); }
+    .panel { display: none; padding: var(--space-6); }
+    .panel.active { display: block; }
+    .review-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: var(--space-6); }
+    .stack { display: flex; flex-direction: column; gap: var(--space-4); }
+    .card { padding: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+    .datum { padding-top: var(--space-3); border-top: 1px solid var(--border); }
+    .datum strong { display: block; margin-top: var(--space-1); font-size: var(--text-base); }
+    .criterion { display: grid; grid-template-columns: 28px 1fr auto; gap: var(--space-3); align-items: start; padding: var(--space-4) 0; border-top: 1px solid var(--border); }
+    .criterion:first-of-type { margin-top: var(--space-4); }
+    .state { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-warm); font-weight: 700; }
+    .state.pass { background: color-mix(in oklab, var(--success), transparent 78%); }
+    .state.review { background: color-mix(in oklab, var(--warn), transparent 74%); }
+    .citation { display: block; margin-top: var(--space-2); color: var(--muted); font: var(--text-xs) var(--font-mono); }
+    .recommendation { border-width: 2px; }
+    .recommendation .verdict { font-size: var(--text-2xl); font-weight: 750; margin: var(--space-3) 0; letter-spacing: -.03em; }
+    .notice { padding: var(--space-3); border-radius: var(--radius-sm); background: var(--surface-warm); font-size: var(--text-xs); }
+    .action-row { margin-top: var(--space-5); justify-content: flex-end; flex-wrap: wrap; }
+    .timeline { position: relative; padding-left: var(--space-6); }
+    .event { position: relative; padding: 0 0 var(--space-6) var(--space-3); border-left: 1px solid var(--border); }
+    .event::before { content: ""; position: absolute; left: -5px; top: 2px; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); }
+    .event:last-child { border-color: transparent; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: var(--space-3); text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font: var(--text-xs) var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
+    dialog { width: min(560px, calc(100% - 32px)); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0; color: var(--fg); background: var(--bg); box-shadow: var(--elev-raised); }
+    dialog::backdrop { background: color-mix(in oklab, var(--surface), transparent 45%); }
+    .dialog-body { padding: var(--space-6); }
+    .field { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+    .field label { font-weight: 600; }
+    .input { min-height: 44px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--fg); }
+    textarea.input { min-height: 112px; resize: vertical; }
+    .toast { position: fixed; right: var(--space-6); bottom: var(--space-6); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--surface); color: var(--accent-on); transform: translateY(120px); transition: transform var(--motion-base) var(--ease-standard); z-index: 30; }
+    .toast.show { transform: translateY(0); }
+    @media (max-width: 920px) {
+      .topnav-inner, .app-shell { padding-inline: var(--container-gutter-phone); }
+      .topnav nav { display: none; }
+      .environment { display: none; }
+      .workspace, .review-grid { grid-template-columns: 1fr; }
+      .queue { border-right: 0; border-bottom: 1px solid var(--border); }
+      .case-list { max-height: 280px; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .page-head { align-items: start; flex-direction: column; }
+    }
+    @media (max-width: 560px) {
+      .brand-service { display: none; }
+      .brand-name { font-size: var(--text-sm); }
+      .detail-head, .panel { padding-inline: var(--space-4); }
+      .detail-title { flex-direction: column; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .criterion { grid-template-columns: 28px 1fr; }
+      .criterion .pill { grid-column: 2; justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="application-navigation">
+    <div class="topnav-inner">
+      <a class="brand" href="#" data-od-id="product-name" aria-label="Nation Building Authority eligibility workbench">
+        <span class="brand-mark" aria-hidden="true">NBA</span>
+        <span class="brand-copy">
+          <span class="brand-name">Nation Building Authority</span>
+          <span class="brand-service">Eligibility Workbench</span>
+        </span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a class="nav-link active" href="#" data-od-id="nav-case-queue">Case queue</a>
+        <a class="nav-link" href="#" data-od-id="nav-policy-library">Policy library</a>
+        <a class="nav-link" href="#" data-od-id="nav-audit">Audit</a>
+      </nav>
+      <span class="environment">Protected · Casework</span>
+      <div class="user" aria-label="Signed in as Jordan Lee">JL</div>
+    </div>
+  </header>
+
+  <main class="app-shell" data-od-id="eligibility-workbench">
+    <section class="page-head" data-od-id="case-queue-heading">
+      <div>
+        <p class="eyebrow">Nation Building Authority · Human decision required</p>
+        <h1>Eligibility review queue</h1>
+        <p class="muted" style="margin-top: var(--space-2);">Prioritised benefit applications with governed evidence, policy citations and rules assembled for authorised review.</p>
+      </div>
+      <button class="btn" type="button" data-od-id="export-queue">Export queue</button>
+    </section>
+
+    <section class="workspace" data-od-id="case-review-workspace">
+      <aside class="queue" aria-label="Prioritised applications">
+        <div class="queue-head">
+          <div class="queue-head-row">
+            <h2>Applications</h2>
+            <span class="meta" id="case-count">4 cases</span>
+          </div>
+          <input class="search" id="case-search" type="search" placeholder="Search name or application ID" aria-label="Search applications" data-od-id="case-search" />
+          <div class="filters" aria-label="Queue filters">
+            <button class="filter active" type="button" data-filter="all" data-od-id="filter-all">All</button>
+            <button class="filter" type="button" data-filter="urgent" data-od-id="filter-urgent">Urgent</button>
+            <button class="filter" type="button" data-filter="borderline" data-od-id="filter-borderline">Borderline</button>
+          </div>
+        </div>
+        <div class="case-list" id="case-list">
+          <button class="case-card active" type="button" data-status="urgent borderline" data-name="Maya Chen APP-2048" data-od-id="case-card-maya-chen">
+            <span class="case-topline"><span class="case-name">Maya Chen</span><span class="pill urgent">Urgent</span></span>
+            <span class="case-summary">APP-2048 · Housing support · 2 criteria need judgement</span>
+          </button>
+          <button class="case-card" type="button" data-status="borderline" data-name="Elias Turner APP-2044" data-od-id="case-card-elias-turner">
+            <span class="case-topline"><span class="case-name">Elias Turner</span><span class="pill">Borderline</span></span>
+            <span class="case-summary">APP-2044 · Income support · Evidence conflict</span>
+          </button>
+          <button class="case-card" type="button" data-status="ready" data-name="Amina Diallo APP-2039" data-od-id="case-card-amina-diallo">
+            <span class="case-topline"><span class="case-name">Amina Diallo</span><span class="pill ready">Ready</span></span>
+            <span class="case-summary">APP-2039 · Carer allowance · Rules passed</span>
+          </button>
+          <button class="case-card" type="button" data-status="borderline" data-name="Noah Wilson APP-2037" data-od-id="case-card-noah-wilson">
+            <span class="case-topline"><span class="case-name">Noah Wilson</span><span class="pill">Borderline</span></span>
+            <span class="case-summary">APP-2037 · Housing support · Residency evidence</span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="detail">
+        <div class="detail-head">
+          <div class="detail-title">
+            <div>
+              <p class="eyebrow">Application APP-2048</p>
+              <h2 data-od-id="selected-applicant-name">Maya Chen</h2>
+              <p class="muted">Housing Support Program · Lodged 18 Oct 2026</p>
+            </div>
+            <span class="pill urgent">Action due today</span>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Case information">
+            <button class="tab active" role="tab" aria-selected="true" data-panel="review" data-od-id="tab-review">Review</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="applicant" data-od-id="tab-applicant">Applicant 360</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="evidence" data-od-id="tab-evidence">Evidence</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="audit" data-od-id="tab-audit-trail">Audit trail</button>
+          </div>
+        </div>
+
+        <section class="panel active" id="panel-review" data-od-id="review-panel">
+          <div class="review-grid">
+            <div class="stack">
+              <article class="card" data-od-id="application-summary-card">
+                <div class="section-head"><h3>Application summary</h3><span class="meta">Applicant 360 refreshed 09:42</span></div>
+                <div class="summary-grid" style="margin-top: var(--space-4);">
+                  <div class="datum"><span class="meta">Household</span><strong>1 adult, 2 children</strong></div>
+                  <div class="datum"><span class="meta">Declared income</span><strong>$1,920 / month</strong></div>
+                  <div class="datum"><span class="meta">Residence</span><strong>14 months verified</strong></div>
+                </div>
+              </article>
+              <article class="card" data-od-id="criteria-assessment-card">
+                <div class="section-head"><h3>Eligibility criteria</h3><span class="meta">Ruleset HS-2026.4</span></div>
+                <div class="criterion">
+                  <span class="state pass" aria-label="Passed">✓</span>
+                  <div><strong>Income below program threshold</strong><span class="citation">Payroll feed · bank statements · Rule 2.1</span></div>
+                  <span class="pill ready">Passed</span>
+                </div>
+                <div class="criterion">
+                  <span class="state pass" aria-label="Passed">✓</span>
+                  <div><strong>Dependent children in household</strong><span class="citation">Birth registry · application form · Rule 3.4</span></div>
+                  <span class="pill ready">Passed</span>
+                </div>
+                <div class="criterion">
+                  <span class="state review" aria-label="Review needed">!</span>
+                  <div><strong>Housing cost burden</strong><p class="muted" style="margin-top: var(--space-1);">Lease shows a recent rent increase not yet reflected in the property feed.</p><span class="citation">Lease agreement p.2 · Policy §4.3</span></div>
+                  <span class="pill">Review</span>
+                </div>
+                <div class="criterion">
+                  <span class="state review" aria-label="Review needed">!</span>
+                  <div><strong>Continuous residency</strong><p class="muted" style="margin-top: var(--space-1);">One 41-day absence requires a permitted-exception assessment.</p><span class="citation">Movement records · Policy §6.2(b)</span></div>
+                  <span class="pill">Review</span>
+                </div>
+              </article>
+            </div>
+            <aside class="stack">
+              <article class="card recommendation" data-od-id="ai-recommendation-card">
+                <p class="eyebrow">System recommendation</p>
+                <div class="verdict">Likely eligible</div>
+                <p>The verified income and household criteria pass. The lease increase is supported by signed evidence. The recorded absence may meet the family-care exception in Policy §6.2(b).</p>
+                <div class="notice" style="margin-top: var(--space-4);"><strong>Recommendation only.</strong> Review the cited evidence and record your own decision.</div>
+                <div class="action-row">
+                  <button class="btn" type="button" data-panel-target="evidence" data-od-id="open-citations">Open citations</button>
+                  <button class="btn btn-primary" type="button" id="open-decision" data-od-id="record-decision">Record decision</button>
+                </div>
+              </article>
+              <article class="card" data-od-id="review-checklist-card">
+                <h3>Before deciding</h3>
+                <label style="display:flex; gap:var(--space-2); margin-top:var(--space-4);"><input type="checkbox" checked /> Rules result reviewed</label>
+                <label style="display:flex; gap:var(--space-2); margin-top:var(--space-3);"><input type="checkbox" /> Policy citations opened</label>
+                <label style="display:flex; gap:var(--space-2); margin-top:var(--space-3);"><input type="checkbox" /> Conflicting evidence resolved</label>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-applicant" data-od-id="applicant-360-panel">
+          <div class="section-head"><div><h2>Applicant 360</h2><p class="muted" style="margin-top:var(--space-2);">Unified view assembled from governed source systems.</p></div><span class="meta">Synthetic data</span></div>
+          <table style="margin-top:var(--space-6);">
+            <thead><tr><th>Domain</th><th>Current record</th><th>Source</th><th>Freshness</th></tr></thead>
+            <tbody>
+              <tr><td>Identity</td><td>Verified · Maya Chen</td><td>Identity registry</td><td class="meta">18 Oct</td></tr>
+              <tr><td>Household</td><td>Two dependent children</td><td>Birth registry</td><td class="meta">17 Oct</td></tr>
+              <tr><td>Employment</td><td>Part-time · variable hours</td><td>Payroll reporting</td><td class="meta">16 Oct</td></tr>
+              <tr><td>Housing</td><td>Private rental · $720/week</td><td>Lease + property feed</td><td class="meta">18 Oct</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel" id="panel-evidence" data-od-id="evidence-panel">
+          <div class="section-head"><div><h2>Evidence and citations</h2><p class="muted" style="margin-top:var(--space-2);">Every recommendation links back to source evidence and policy.</p></div><button class="btn" type="button">Add evidence</button></div>
+          <div class="stack" style="margin-top:var(--space-6);">
+            <article class="card"><div class="section-head"><h3>Lease agreement.pdf</h3><span class="pill ready">Verified</span></div><p class="muted" style="margin-top:var(--space-2);">Signed 2 Oct 2026 · Rent increase from $640 to $720 per week.</p><span class="citation">Supports Policy §4.3 · Housing cost burden</span></article>
+            <article class="card"><div class="section-head"><h3>Policy §6.2(b) · Temporary absence</h3><span class="meta">Policy version 2026.4</span></div><p style="margin-top:var(--space-2);">A temporary absence may be disregarded where the applicant travelled to provide essential care to an immediate family member and maintained their principal residence.</p><span class="citation">Matched to movement record and applicant statement</span></article>
+            <article class="card"><div class="section-head"><h3>Movement record extract</h3><span class="pill">Needs context</span></div><p class="muted" style="margin-top:var(--space-2);">Departure 4 Jun · Return 15 Jul · 41 days outside jurisdiction.</p></article>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-audit" data-od-id="audit-trail-panel">
+          <div class="section-head"><div><h2>Decision audit trail</h2><p class="muted" style="margin-top:var(--space-2);">Inputs, rule versions, recommendations and human actions remain distinct.</p></div><button class="btn" type="button">Download record</button></div>
+          <div class="timeline" style="margin-top:var(--space-8);">
+            <div class="event"><strong>Agent recommendation generated</strong><p class="muted">Likely eligible · citations captured · model response archived</p><span class="meta">20 Oct 2026 · 09:44</span></div>
+            <div class="event"><strong>Rules engine completed</strong><p class="muted">2 passed · 2 referred for human judgement · ruleset HS-2026.4</p><span class="meta">20 Oct 2026 · 09:43</span></div>
+            <div class="event"><strong>Applicant 360 refreshed</strong><p class="muted">Four source domains reconciled · one housing conflict flagged</p><span class="meta">20 Oct 2026 · 09:42</span></div>
+            <div class="event"><strong>Application received</strong><p class="muted">Form and five supporting documents ingested</p><span class="meta">18 Oct 2026 · 14:16</span></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="decision-dialog" aria-labelledby="decision-title" data-od-id="decision-dialog">
+    <form method="dialog" class="dialog-body" id="decision-form">
+      <p class="eyebrow">Human determination</p>
+      <h2 id="decision-title">Record eligibility decision</h2>
+      <p class="muted" style="margin-top:var(--space-2);">Your decision is recorded separately from the system recommendation.</p>
+      <div class="field"><label for="outcome">Outcome</label><select class="input" id="outcome" required><option value="">Select an outcome</option><option>Eligible</option><option>Not eligible</option><option>Request more information</option></select></div>
+      <div class="field"><label for="reason">Decision rationale</label><textarea class="input" id="reason" required placeholder="Explain how the evidence and policy support your decision"></textarea></div>
+      <div class="action-row"><button class="btn" value="cancel" type="button" id="cancel-decision">Cancel</button><button class="btn btn-primary" value="confirm" type="submit">Save decision</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status">Decision saved to the audit trail.</div>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const panels = Array.from(document.querySelectorAll('.panel'));
+    function showPanel(panelName) {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.panel === panelName;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+      panels.forEach((panel) => panel.classList.toggle('active', panel.id === `panel-${panelName}`));
+    }
+    tabs.forEach((tab) => tab.addEventListener('click', () => showPanel(tab.dataset.panel)));
+    document.querySelectorAll('[data-panel-target]').forEach((button) => button.addEventListener('click', () => showPanel(button.dataset.panelTarget)));
+
+    const search = document.getElementById('case-search');
+    const caseCards = Array.from(document.querySelectorAll('.case-card'));
+    const filters = Array.from(document.querySelectorAll('.filter'));
+    let activeFilter = 'all';
+    function applyFilters() {
+      const query = search.value.trim().toLowerCase();
+      let count = 0;
+      caseCards.forEach((card) => {
+        const matchesFilter = activeFilter === 'all' || card.dataset.status.includes(activeFilter);
+        const matchesSearch = card.dataset.name.toLowerCase().includes(query);
+        const visible = matchesFilter && matchesSearch;
+        card.hidden = !visible;
+        if (visible) count += 1;
+      });
+      document.getElementById('case-count').textContent = `${count} ${count === 1 ? 'case' : 'cases'}`;
+    }
+    search.addEventListener('input', applyFilters);
+    filters.forEach((filter) => filter.addEventListener('click', () => {
+      activeFilter = filter.dataset.filter;
+      filters.forEach((item) => item.classList.toggle('active', item === filter));
+      applyFilters();
+    }));
+    caseCards.forEach((card) => card.addEventListener('click', () => {
+      caseCards.forEach((item) => item.classList.remove('active'));
+      card.classList.add('active');
+    }));
+
+    const dialog = document.getElementById('decision-dialog');
+    document.getElementById('open-decision').addEventListener('click', () => dialog.showModal());
+    document.getElementById('cancel-decision').addEventListener('click', () => dialog.close());
+    document.getElementById('decision-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      dialog.close();
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      window.setTimeout(() => toast.classList.remove('show'), 2600);
+    });
+  </script>
+</body>
+</html>
