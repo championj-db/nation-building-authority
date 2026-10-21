@@ -1,0 +1,225 @@
+# Automated Compliance Reporting - Lakeflow Jobs (serverless)
+#
+#   compliance_bootstrap  one-off build of the synthetic world and first gold/report layer
+#   compliance_daily      scheduled evidence collection, AI mapping, gap/expiry detection, chain check
+#   compliance_report     scheduled monthly summary; run on demand (e.g. from the app) with job
+#                         parameters to generate a gate review or reproduce a past report
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    compliance_bootstrap:
+      name: nba-compliance-bootstrap-${var.environment}
+      description: >-
+        One-off build: schema and append-only tables, seeded synthetic register and evidence timeline,
+        first collection, AI mapping and evaluation, coverage with 26 weeks of point-in-time history,
+        six issued monthly reports plus current gate reviews, and audit chain verification.
+        Set reset=true to drop and rebuild the synthetic world.
+      tags:
+        usecase: automated_compliance_reporting
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      parameters:
+        - name: reset
+          default: "false"
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              history_retention_days: ${var.history_retention_days}
+              reset: "{{job.parameters.reset}}"
+
+        - task_key: generate_synthetic_data
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              seed: ${var.synthetic_seed}
+              history_retention_days: ${var.history_retention_days}
+
+        - task_key: collect_evidence
+          depends_on:
+            - task_key: generate_synthetic_data
+          notebook_task:
+            notebook_path: ../src/02_collect_evidence.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              simulate_connectors: "true"
+              simulate_reviewers: "true"
+
+        - task_key: map_evidence
+          depends_on:
+            - task_key: collect_evidence
+          notebook_task:
+            notebook_path: ../src/03_map_evidence.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              model_endpoint: ${var.model_endpoint}
+              min_confidence: ${var.min_confidence}
+
+        - task_key: coverage_and_gaps
+          depends_on:
+            - task_key: map_evidence
+          notebook_task:
+            notebook_path: ../src/04_coverage_and_gaps.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              expiry_warning_days: ${var.expiry_warning_days}
+              min_confidence: ${var.min_confidence}
+              source_offline_failures: ${var.source_offline_failures}
+              history_backfill_days: "182"
+              history_step_days: "7"
+
+        - task_key: generate_reports
+          depends_on:
+            - task_key: coverage_and_gaps
+          notebook_task:
+            notebook_path: ../src/05_generate_report.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              bootstrap_reports: "true"
+              model_endpoint: ${var.model_endpoint}
+              expiry_warning_days: ${var.expiry_warning_days}
+              min_confidence: ${var.min_confidence}
+
+        - task_key: verify_audit_chain
+          depends_on:
+            - task_key: generate_reports
+          notebook_task:
+            notebook_path: ../src/06_verify_audit_chain.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+    compliance_daily:
+      name: nba-compliance-daily-${var.environment}
+      description: >-
+        Daily: collect new evidence (Auto Loader), map it (rules, human reviews, AI suggestions),
+        recompute coverage, open/resolve gap and expiry alerts, and verify the audit chain.
+      tags:
+        usecase: automated_compliance_reporting
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      schedule:
+        quartz_cron_expression: ${var.daily_schedule}
+        timezone_id: ${var.timezone_id}
+      tasks:
+        - task_key: collect_evidence
+          notebook_task:
+            notebook_path: ../src/02_collect_evidence.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              simulate_connectors: ${var.simulate_connectors}
+              simulate_reviewers: ${var.simulate_connectors}
+
+        - task_key: map_evidence
+          depends_on:
+            - task_key: collect_evidence
+          notebook_task:
+            notebook_path: ../src/03_map_evidence.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              model_endpoint: ${var.model_endpoint}
+              min_confidence: ${var.min_confidence}
+
+        - task_key: coverage_and_gaps
+          depends_on:
+            - task_key: map_evidence
+          notebook_task:
+            notebook_path: ../src/04_coverage_and_gaps.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              expiry_warning_days: ${var.expiry_warning_days}
+              min_confidence: ${var.min_confidence}
+              source_offline_failures: ${var.source_offline_failures}
+
+        - task_key: verify_audit_chain
+          depends_on:
+            - task_key: coverage_and_gaps
+          notebook_task:
+            notebook_path: ../src/06_verify_audit_chain.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+    compliance_report:
+      name: nba-compliance-report-${var.environment}
+      description: >-
+        Generates a reproducible compliance report (monthly summary by default) from point-in-time
+        obligations and evidence, or reproduces a past report when reproduce_report_id is set.
+      tags:
+        usecase: automated_compliance_reporting
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      schedule:
+        quartz_cron_expression: ${var.report_schedule}
+        timezone_id: ${var.timezone_id}
+      parameters:
+        - name: report_type
+          default: monthly_summary
+        - name: gate_id
+          default: ""
+        - name: as_of_date
+          default: ""
+        - name: reproduce_report_id
+          default: ""
+        - name: requested_by
+          default: report.service
+      tasks:
+        - task_key: generate_report
+          notebook_task:
+            notebook_path: ../src/05_generate_report.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              report_type: "{{job.parameters.report_type}}"
+              gate_id: "{{job.parameters.gate_id}}"
+              as_of_date: "{{job.parameters.as_of_date}}"
+              reproduce_report_id: "{{job.parameters.reproduce_report_id}}"
+              requested_by: "{{job.parameters.requested_by}}"
+              model_endpoint: ${var.model_endpoint}
+              expiry_warning_days: ${var.expiry_warning_days}
+              min_confidence: ${var.min_confidence}
+
+        - task_key: verify_audit_chain
+          depends_on:
+            - task_key: generate_report
+          notebook_task:
+            notebook_path: ../src/06_verify_audit_chain.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              requested_by: "{{job.parameters.requested_by}}"

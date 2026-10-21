@@ -1,0 +1,84 @@
+# Automated Compliance Reporting - SQL alerts (Alerts v2)
+#
+# Gap detection lives in the daily job (gap_alerts table, open/resolved lifecycle). These alerts
+# notify people as soon as a gap opens, before any report is due.
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  alerts:
+    compliance_new_high_gaps:
+      display_name: "[${bundle.target}] Compliance: new high-severity evidence gaps"
+      warehouse_id: ${var.warehouse_id}
+      query_text: >-
+        SELECT count(*) AS new_high_alerts
+        FROM `${var.catalog}`.`${var.schema}`.gap_alerts
+        WHERE status = 'Open' AND severity = 'High'
+          AND first_detected_at >= current_timestamp() - INTERVAL 1 DAY
+      evaluation:
+        comparison_operator: GREATER_THAN
+        source:
+          name: new_high_alerts
+          display: new_high_alerts
+        threshold:
+          value:
+            double_value: 0
+        notification:
+          notify_on_ok: false
+          subscriptions:
+            - user_email: ${var.notifications_email}
+      schedule:
+        pause_status: ${var.alert_pause_status}
+        quartz_cron_schedule: ${var.alert_schedule}
+        timezone_id: ${var.timezone_id}
+
+    compliance_evidence_expiring:
+      display_name: "[${bundle.target}] Compliance: evidence expiring within 7 days"
+      warehouse_id: ${var.warehouse_id}
+      query_text: >-
+        SELECT count(*) AS expiring_within_7_days
+        FROM `${var.catalog}`.`${var.schema}`.gap_alerts
+        WHERE status = 'Open' AND alert_type = 'EVIDENCE_EXPIRING'
+          AND due_date <= date_add(current_date(), 7)
+      evaluation:
+        comparison_operator: GREATER_THAN
+        source:
+          name: expiring_within_7_days
+          display: expiring_within_7_days
+        threshold:
+          value:
+            double_value: 0
+        notification:
+          notify_on_ok: false
+          subscriptions:
+            - user_email: ${var.notifications_email}
+      schedule:
+        pause_status: ${var.alert_pause_status}
+        quartz_cron_schedule: ${var.alert_schedule}
+        timezone_id: ${var.timezone_id}
+
+    compliance_audit_chain_broken:
+      display_name: "[${bundle.target}] Compliance: audit chain verification failed"
+      warehouse_id: ${var.warehouse_id}
+      query_text: >-
+        SELECT count_if(status <> 'Verified') AS broken
+        FROM (
+          SELECT max_by(status, verified_at) AS status
+          FROM `${var.catalog}`.`${var.schema}`.audit_chain_verifications
+        )
+      evaluation:
+        comparison_operator: GREATER_THAN
+        source:
+          name: broken
+          display: broken
+        threshold:
+          value:
+            double_value: 0
+        notification:
+          notify_on_ok: false
+          subscriptions:
+            - user_email: ${var.notifications_email}
+      schedule:
+        pause_status: ${var.alert_pause_status}
+        quartz_cron_schedule: ${var.alert_schedule}
+        timezone_id: ${var.timezone_id}

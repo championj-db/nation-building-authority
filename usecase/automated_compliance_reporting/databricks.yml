@@ -2,8 +2,11 @@
 # Modelled on the Australian Government Gateway Reviews Process:
 # https://www.finance.gov.au/government/assurance-reviews-and-risk-assessment/gateway-reviews-process
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# Resources (resources/*.yml):
+#   compliance_bootstrap  - one-off: setup -> synthetic data -> collect -> map -> coverage -> reports -> verify
+#   compliance_daily      - scheduled: collect -> map (AI) -> coverage & gap detection -> verify audit chain
+#   compliance_report     - scheduled monthly / on demand: generate or reproduce a report -> verify
+#   SQL alerts            - new high-severity gaps, evidence expiring within 7 days, broken audit chain
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -26,8 +29,63 @@ variables:
     default: evidence
 
   warehouse_id:
-    description: SQL warehouse backing dashboards and SQL tasks.
-    default: ""
+    description: >-
+      SQL warehouse that evaluates the gap / expiry / audit-chain SQL alerts (and that the
+      application will query). Supply via --var or variable-overrides.json.
+
+  model_endpoint:
+    description: >-
+      Foundation model serving endpoint used for AI evidence-mapping suggestions and report
+      executive summaries. Defaults to Meta Llama 3.3 70B via Databricks pay-per-token.
+    default: databricks-meta-llama-3-3-70b-instruct
+
+  min_confidence:
+    description: AI suggestions below this confidence are shown as Unmapped rather than Needs review.
+    default: "0.5"
+
+  expiry_warning_days:
+    description: Evidence expiring within this many days is flagged Expiring and raises an alert.
+    default: "14"
+
+  source_offline_failures:
+    description: Consecutive failed connector runs after which a source is reported Offline.
+    default: "2"
+
+  history_retention_days:
+    description: >-
+      Delta log and file retention on the register, evidence and append-only tables, so time travel
+      can back point-in-time report reproduction for this period.
+    default: "2555"
+
+  simulate_connectors:
+    description: >-
+      Land synthetic connector deliveries and synthetic reviewer decisions on each daily run.
+      Set to "false" once real connectors write to the evidence volume's landing path.
+    default: "true"
+
+  synthetic_seed:
+    description: Seed for the synthetic data generator.
+    default: "42"
+
+  timezone_id:
+    description: Time zone for job and alert schedules.
+    default: Australia/Sydney
+
+  daily_schedule:
+    description: Quartz cron for the daily collection, mapping and gap-detection job.
+    default: "0 0 6 * * ?"
+
+  report_schedule:
+    description: Quartz cron for scheduled report generation (default 07:00 on the 1st of each month).
+    default: "0 0 7 1 * ?"
+
+  alert_schedule:
+    description: Quartz cron for SQL alert evaluation (after the daily job).
+    default: "0 30 7 * * ?"
+
+  alert_pause_status:
+    description: PAUSED or UNPAUSED for the SQL alert schedules.
+    default: UNPAUSED
 
   notifications_email:
     description: Address notified when a job run fails or an evidence gap is detected.
@@ -37,18 +95,27 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
 
 targets:
   dev:
     mode: development
     default: true
+    # Upload sources into the bundle root (instead of linking to the Git folder) so
+    # src/*.py files with a "# Databricks notebook source" header are deployed as notebooks.
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: automated_compliance_reporting_${workspace.current_user.short_name}
+      # Development mode pauses job schedules; pause alert schedules to match.
+      alert_pause_status: PAUSED
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       environment: prod
+      simulate_connectors: "false"
