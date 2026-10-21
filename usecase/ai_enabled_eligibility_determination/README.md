@@ -1,5 +1,10 @@
 # AI-Enabled Eligibility Determination
 
+![Eligibility Review Workbench showing the prioritised case queue, application summary, eligibility criteria and system recommendation](docs/eligibility-review-workbench.png)
+
+*The caseworker review screen, running on synthetic data in the dev target. The agent's verdict is
+labelled as a recommendation only; the decision is recorded by the caseworker.*
+
 | | |
 | --- | --- |
 | **Category** | Benefit Administration |
