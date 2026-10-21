@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nation Building Authority · Compliance assurance</title>
+  <style>
+    @font-face {
+      font-family: "DM Sans";
+      src: url("./fonts/dmsans-variable.woff2") format("woff2");
+      font-weight: 100 1000;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #EEEDE9;
+      --surface: #F9F7F4;
+      --surface-warm: color-mix(in oklab, var(--accent), transparent 92%);
+      --fg: #0B2026;
+      --fg-2: var(--fg);
+      --muted: color-mix(in oklab, var(--fg), transparent 38%);
+      --meta: var(--muted);
+      --border: color-mix(in oklab, var(--fg), transparent 76%);
+      --border-soft: color-mix(in oklab, var(--fg), transparent 88%);
+      --accent: #FF3621;
+      --accent-on: #F9F7F4;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #00875C;
+      --warn: #FFAB00;
+      --danger: #BD2B26;
+      --viz-1: #FF3621;
+      --viz-2: #143D4A;
+      --viz-3: #0B2026;
+      --viz-4: #FFAB00;
+      --viz-5: #00875C;
+      --viz-6: #00A972;
+      --viz-7: #BD2B26;
+      --viz-8: #1B5162;
+      --viz-9: #AB4057;
+      --viz-10: #618794;
+      --font-display: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: -0.02em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #303F47;
+      --surface: #0B2026;
+      --fg: #E8ECF0;
+      --accent: #BD2B26;
+      --accent-on: #E8ECF0;
+      --success: #00A972;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body); }
+    button, input, select { font: inherit; }
+    button, select { min-height: 44px; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline: var(--focus-ring) solid var(--accent); outline-offset: 2px; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr); }
+    .sidebar { background: var(--fg); color: var(--accent-on); padding: var(--space-6) var(--space-4); display: flex; flex-direction: column; gap: var(--space-8); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 700; font-size: var(--text-base); }
+    .brand-mark { width: 36px; height: 28px; border: 1px solid var(--accent-on); border-radius: var(--radius-sm); display: grid; place-items: center; font: 700 11px var(--font-mono); letter-spacing: .04em; }
+    .nav { display: grid; gap: var(--space-1); }
+    .nav button { width: 100%; border: 0; color: var(--accent-on); background: transparent; padding: 10px 12px; border-radius: var(--radius-sm); text-align: left; display: flex; justify-content: space-between; align-items: center; }
+    .nav button:hover { background: color-mix(in oklab, var(--accent-on), transparent 92%); }
+    .nav button.active { background: var(--surface); color: var(--fg); }
+    .nav-label { color: color-mix(in oklab, var(--accent-on), transparent 38%); font: 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; margin: 0 12px 8px; }
+    .sidebar-note { margin-top: auto; border-top: 1px solid color-mix(in oklab, var(--accent-on), transparent 78%); padding-top: var(--space-4); color: color-mix(in oklab, var(--accent-on), transparent 28%); font-size: var(--text-xs); }
+    .main { min-width: 0; }
+    .topbar { height: 68px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-8); background: color-mix(in oklab, var(--surface), transparent 4%); position: sticky; top: 0; z-index: 3; }
+    .breadcrumbs { color: var(--muted); }
+    .breadcrumbs strong { color: var(--fg); }
+    .top-actions { display: flex; gap: var(--space-2); }
+    .btn { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 16px; background: var(--surface); color: var(--fg); font-weight: 550; letter-spacing: .02em; }
+    .btn:hover { background: var(--surface-warm); }
+    .btn-primary { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .content { padding: var(--space-8); max-width: 1440px; margin: 0 auto; }
+    .page-head { display: flex; justify-content: space-between; align-items: end; gap: var(--space-6); margin-bottom: var(--space-8); }
+    h1, h2, h3 { font-family: var(--font-display); line-height: var(--leading-tight); margin: 0; }
+    h1 { font-size: var(--text-3xl); letter-spacing: var(--tracking-display); font-weight: 600; }
+    h2 { font-size: var(--text-lg); }
+    h3 { font-size: var(--text-base); }
+    .page-head p { color: var(--muted); margin: 8px 0 0; max-width: 64ch; }
+    .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    select, .search { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-md); padding: 0 12px; color: var(--fg); }
+    .search { min-height: 44px; width: 260px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .metric { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--elev-raised); }
+    .metric-label { color: var(--muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { font: 600 var(--text-2xl) var(--font-mono); margin-top: 8px; }
+    .metric-note { color: var(--muted); font-size: var(--text-xs); margin-top: 4px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, .8fr); gap: var(--space-6); align-items: start; }
+    .panel { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--elev-raised); }
+    .panel-head { padding: var(--space-5); border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+    .panel-head p { margin: 4px 0 0; color: var(--muted); font-size: var(--text-xs); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    th { font: 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: color-mix(in oklab, var(--fg), transparent 96%); }
+    tbody tr.selected { background: var(--surface-warm); }
+    .status { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-xs); font-weight: 600; }
+    .dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--muted); }
+    .dot.good { background: var(--success); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--danger); }
+    .mono { font-family: var(--font-mono); font-size: var(--text-xs); }
+    .side-stack { display: grid; gap: var(--space-4); }
+    .coverage { padding: var(--space-5); }
+    .bar-row { margin-top: var(--space-4); }
+    .bar-label { display: flex; justify-content: space-between; color: var(--muted); font-size: var(--text-xs); margin-bottom: 6px; }
+    .bar { height: 8px; background: var(--border-soft); border-radius: var(--radius-pill); overflow: hidden; }
+    .bar span { display: block; height: 100%; }
+    .bar-series-1 span { background: var(--viz-1); }
+    .bar-series-2 span { background: var(--viz-2); }
+    .bar-series-3 span { background: var(--viz-3); }
+    .alert-list { display: grid; }
+    .alert { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-soft); }
+    .alert:last-child { border-bottom: 0; }
+    .alert strong { display: block; margin-bottom: 4px; }
+    .alert p { margin: 0; color: var(--muted); font-size: var(--text-xs); }
+    .empty-view { padding: 80px 24px; text-align: center; color: var(--muted); }
+    .hidden { display: none !important; }
+    dialog { width: min(620px, calc(100% - 32px)); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0; box-shadow: var(--elev-raised); color: var(--fg); background: var(--surface); }
+    dialog::backdrop { background: color-mix(in oklab, var(--surface), transparent 68%); }
+    .dialog-head, .dialog-body, .dialog-actions { padding: var(--space-6); }
+    .dialog-head { border-bottom: 1px solid var(--border-soft); }
+    .dialog-body { display: grid; gap: var(--space-4); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); border-top: 1px solid var(--border-soft); }
+    .field { display: grid; gap: 6px; }
+    .field label { color: var(--muted); font-size: var(--text-xs); }
+    .field input, .field select { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 12px; color: var(--fg); background: var(--surface); }
+    .notice { background: var(--surface-warm); padding: var(--space-4); border-radius: var(--radius-sm); font-size: var(--text-xs); }
+    .workspace-view { min-height: calc(100vh - 68px); }
+    .split-detail { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: var(--space-6); align-items: start; }
+    .detail-body { padding: var(--space-5); display: grid; gap: var(--space-5); }
+    .detail-group { display: grid; gap: var(--space-2); }
+    .detail-label { color: var(--muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; }
+    .detail-value { margin: 0; }
+    .chip { display: inline-flex; width: fit-content; align-items: center; padding: 4px 9px; border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 550; }
+    .chip-selected { background: var(--surface-warm); border-color: var(--accent); }
+    .checklist { display: grid; }
+    .check-row { display: grid; grid-template-columns: 24px 1fr auto; gap: var(--space-3); align-items: start; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-soft); }
+    .check-row:last-child { border-bottom: 0; }
+    .check-mark { width: 20px; height: 20px; border: 1px solid var(--border); border-radius: var(--radius-sm); display: grid; place-items: center; font-size: 11px; }
+    .check-mark.done { background: var(--success); border-color: var(--success); color: var(--surface); }
+    .check-row p { margin: 3px 0 0; color: var(--muted); font-size: var(--text-xs); }
+    .timeline { display: grid; padding: var(--space-2) var(--space-5) var(--space-5); }
+    .timeline-item { position: relative; display: grid; grid-template-columns: 138px 18px 1fr; gap: var(--space-3); padding: var(--space-4) 0; }
+    .timeline-item::after { content: ''; position: absolute; left: 146px; top: 34px; bottom: -18px; width: 1px; background: var(--border); }
+    .timeline-item:last-child::after { display: none; }
+    .timeline-node { width: 10px; height: 10px; margin-top: 4px; border-radius: var(--radius-pill); background: var(--viz-2); box-shadow: 0 0 0 4px var(--surface); }
+    .timeline-copy strong { display: block; }
+    .timeline-copy p { margin: 4px 0 0; color: var(--muted); font-size: var(--text-xs); }
+    .report-card { padding: var(--space-5); display: grid; gap: var(--space-4); }
+    .report-card + .report-card { border-top: 1px solid var(--border-soft); }
+    .report-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .inline-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+    .btn-compact { min-height: 36px; padding: 0 12px; font-size: var(--text-xs); }
+    .source-list { display: grid; gap: var(--space-3); }
+    .source-item { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-soft); }
+    .source-item:last-child { border-bottom: 0; }
+    .source-item p { margin: 2px 0 0; color: var(--muted); font-size: var(--text-xs); }
+    @media (max-width: 980px) { .app { grid-template-columns: 76px minmax(0, 1fr); } .brand span:last-child, .nav button span:first-child, .nav-label, .sidebar-note { display: none; } .nav button { justify-content: center; } .metrics { grid-template-columns: repeat(2, 1fr); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 980px) { .split-detail { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .app { display: block; } .sidebar { position: static; padding: 12px 16px; flex-direction: row; align-items: center; overflow-x: auto; } .nav { display: flex; } .nav button { width: auto; white-space: nowrap; } .brand, .sidebar-note, .nav-label { display: none; } .topbar { padding: 0 16px; } .top-actions .btn:first-child { display: none; } .content { padding: 20px 16px; } .page-head { align-items: stretch; flex-direction: column; } .metrics { grid-template-columns: 1fr 1fr; } .filters, .search { width: 100%; } .filters select { flex: 1; } .timeline-item { grid-template-columns: 1fr 18px; } .timeline-item > .mono { grid-column: 1 / -1; } .timeline-item::after { left: auto; right: 7px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" data-od-id="primary-navigation">
+      <div class="brand"><span class="brand-mark">NBA</span><span>Nation Building Authority</span></div>
+      <div>
+        <p class="nav-label">Workspace</p>
+        <nav class="nav" aria-label="Primary">
+          <button class="active" data-view="overview" data-od-id="nav-overview"><span>Overview</span><span>01</span></button>
+          <button data-view="obligations" data-od-id="nav-obligations"><span>Obligations</span><span>02</span></button>
+          <button data-view="evidence" data-od-id="nav-evidence"><span>Evidence</span><span>03</span></button>
+          <button data-view="reports" data-od-id="nav-reports"><span>Reports</span><span>04</span></button>
+          <button data-view="audit" data-od-id="nav-audit"><span>Audit trail</span><span>05</span></button>
+        </nav>
+      </div>
+      <p class="sidebar-note">Wireframe data is synthetic. This product supports assurance workflows; it does not interpret regulation.</p>
+    </aside>
+
+    <main class="main" data-od-id="application-workspace">
+      <header class="topbar" data-od-id="workspace-header">
+        <div class="breadcrumbs">Nation Building Authority / <strong id="crumb">Overview</strong></div>
+        <div class="top-actions">
+          <button class="btn" id="exportBtn" data-od-id="export-action">Export register</button>
+          <button class="btn btn-primary" id="generateBtn" data-od-id="generate-report-action">Generate report</button>
+        </div>
+      </header>
+
+      <div class="content" id="overviewView">
+        <section data-od-id="overview-heading">
+          <div class="page-head">
+            <div><h1>Compliance assurance</h1><p>Track Nation Building Authority evidence coverage before gaps become reporting blockers.</p></div>
+            <div class="filters" data-od-id="overview-filters">
+              <select id="gateFilter" aria-label="Review gate"><option>All review gates</option><option>Gate 1</option><option>Gate 2</option><option>Gate 3</option></select>
+              <select id="statusFilter" aria-label="Coverage status"><option>All statuses</option><option>Complete</option><option>Expiring</option><option>Gap</option></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="metrics" data-od-id="summary-metrics">
+          <article class="metric" data-od-id="metric-obligations"><div class="metric-label">Obligations</div><div class="metric-value">—</div><div class="metric-note">Synthetic register not connected</div></article>
+          <article class="metric" data-od-id="metric-covered"><div class="metric-label">Covered</div><div class="metric-value">—</div><div class="metric-note">Awaiting evidence mapping</div></article>
+          <article class="metric" data-od-id="metric-expiring"><div class="metric-label">Expiring soon</div><div class="metric-value">—</div><div class="metric-note">Threshold not configured</div></article>
+          <article class="metric" data-od-id="metric-gaps"><div class="metric-label">Open gaps</div><div class="metric-value">—</div><div class="metric-note">No source data loaded</div></article>
+        </section>
+
+        <section class="layout" data-od-id="coverage-workspace">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Obligation coverage</h2><p>Select a row to inspect its latest evidence mapping.</p></div><input class="search" id="searchInput" placeholder="Search obligations" aria-label="Search obligations" /></div>
+            <div class="table-wrap">
+              <table data-od-id="obligation-table">
+                <thead><tr><th>Obligation</th><th>Gate</th><th>Owner</th><th>Evidence</th><th>Status</th><th>Review date</th></tr></thead>
+                <tbody id="obligationRows">
+                  <tr data-status="Complete" data-gate="Gate 1"><td><strong>Governance model approved</strong><div class="mono">OBL-001 · Version 3</div></td><td>Gate 1</td><td>Program office</td><td class="mono">3 mapped</td><td><span class="status"><span class="dot good"></span>Complete</span></td><td class="mono">18 Nov 2026</td></tr>
+                  <tr data-status="Expiring" data-gate="Gate 2"><td><strong>Risk treatment current</strong><div class="mono">OBL-014 · Version 2</div></td><td>Gate 2</td><td>Risk lead</td><td class="mono">2 mapped</td><td><span class="status"><span class="dot warn"></span>Expiring</span></td><td class="mono">24 Oct 2026</td></tr>
+                  <tr data-status="Gap" data-gate="Gate 2"><td><strong>Benefits baseline endorsed</strong><div class="mono">OBL-019 · Version 1</div></td><td>Gate 2</td><td>Benefits lead</td><td class="mono">0 mapped</td><td><span class="status"><span class="dot bad"></span>Gap</span></td><td class="mono">Not set</td></tr>
+                  <tr data-status="Complete" data-gate="Gate 3"><td><strong>Delivery plan controlled</strong><div class="mono">OBL-027 · Version 4</div></td><td>Gate 3</td><td>Delivery lead</td><td class="mono">4 mapped</td><td><span class="status"><span class="dot good"></span>Complete</span></td><td class="mono">09 Dec 2026</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="side-stack">
+            <aside class="panel coverage" data-od-id="coverage-by-gate">
+              <h2>Coverage by gate</h2><p class="metric-note">Illustrative wireframe states</p>
+              <div class="bar-row"><div class="bar-label"><span>Gate 1</span><span class="mono">3 / 4</span></div><div class="bar bar-series-1"><span style="width:75%"></span></div></div>
+              <div class="bar-row"><div class="bar-label"><span>Gate 2</span><span class="mono">2 / 5</span></div><div class="bar bar-series-2"><span style="width:40%"></span></div></div>
+              <div class="bar-row"><div class="bar-label"><span>Gate 3</span><span class="mono">4 / 6</span></div><div class="bar bar-series-3"><span style="width:66%"></span></div></div>
+            </aside>
+            <aside class="panel" data-od-id="attention-queue">
+              <div class="panel-head"><div><h2>Needs attention</h2><p>Missing or time-sensitive evidence</p></div></div>
+              <div class="alert-list">
+                <div class="alert"><strong>Evidence expires in 2 days</strong><p>Risk treatment register · OBL-014</p></div>
+                <div class="alert"><strong>No evidence mapped</strong><p>Benefits baseline · OBL-019</p></div>
+                <div class="alert"><strong>Collection source offline</strong><p>Document repository connector</p></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      <div class="content workspace-view hidden" id="obligationsView">
+        <section data-od-id="obligations-heading">
+          <div class="page-head">
+            <div><h1>Obligation register</h1><p>Govern versioned obligations, evidence requirements, ownership, and review gates.</p></div>
+            <div class="filters" data-od-id="obligation-filters"><select aria-label="Register version"><option>Current version</option><option>Version 3</option><option>Version 2</option></select><select aria-label="Obligation owner"><option>All owners</option><option>Program office</option><option>Risk lead</option><option>Benefits lead</option></select></div>
+          </div>
+        </section>
+        <section class="split-detail" data-od-id="obligation-register-workspace">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Register entries</h2><p>Four illustrative obligations in the current synthetic register.</p></div><input class="search" placeholder="Search register" aria-label="Search obligation register" /></div>
+            <div class="table-wrap"><table data-od-id="register-table"><thead><tr><th>ID</th><th>Obligation</th><th>Owner</th><th>Version</th><th>State</th></tr></thead><tbody class="selectable-rows">
+              <tr class="selected"><td class="mono">OBL-001</td><td><strong>Governance model approved</strong><div class="mono">Gate 1 · 3 evidence requirements</div></td><td>Program office</td><td class="mono">v3</td><td><span class="status"><span class="dot good"></span>Active</span></td></tr>
+              <tr><td class="mono">OBL-014</td><td><strong>Risk treatment current</strong><div class="mono">Gate 2 · 2 evidence requirements</div></td><td>Risk lead</td><td class="mono">v2</td><td><span class="status"><span class="dot good"></span>Active</span></td></tr>
+              <tr><td class="mono">OBL-019</td><td><strong>Benefits baseline endorsed</strong><div class="mono">Gate 2 · 1 evidence requirement</div></td><td>Benefits lead</td><td class="mono">v1</td><td><span class="status"><span class="dot warn"></span>Review</span></td></tr>
+              <tr><td class="mono">OBL-027</td><td><strong>Delivery plan controlled</strong><div class="mono">Gate 3 · 4 evidence requirements</div></td><td>Delivery lead</td><td class="mono">v4</td><td><span class="status"><span class="dot good"></span>Active</span></td></tr>
+            </tbody></table></div>
+          </div>
+          <aside class="panel" data-od-id="obligation-detail">
+            <div class="panel-head"><div><h2>OBL-001</h2><p>Current version · effective 14 Oct 2026</p></div><span class="chip chip-selected">Gate 1</span></div>
+            <div class="detail-body">
+              <div class="detail-group"><span class="detail-label">Obligation</span><p class="detail-value">The program governance model is approved by the accountable authority and identifies decision rights.</p></div>
+              <div class="detail-group"><span class="detail-label">Required evidence</span><div class="source-list"><div class="source-item"><div><strong>Governance charter</strong><p>Approved document</p></div><span class="chip">Required</span></div><div class="source-item"><div><strong>Delegations schedule</strong><p>Controlled register</p></div><span class="chip">Required</span></div><div class="source-item"><div><strong>Steering minutes</strong><p>Most recent meeting</p></div><span class="chip">Required</span></div></div></div>
+              <div class="inline-actions"><button class="btn btn-compact">View history</button><button class="btn btn-compact">Propose revision</button></div>
+            </div>
+          </aside>
+        </section>
+      </div>
+
+      <div class="content workspace-view hidden" id="evidenceView">
+        <section data-od-id="evidence-heading"><div class="page-head"><div><h1>Evidence mapping</h1><p>Review collected artefacts, confirm obligation links, and resolve freshness gaps.</p></div><div class="filters"><select aria-label="Evidence source"><option>All source systems</option><option>Document repository</option><option>Risk system</option><option>Meeting records</option></select><select aria-label="Mapping state"><option>All mapping states</option><option>Mapped</option><option>Needs review</option><option>Unmapped</option></select></div></div></section>
+        <section class="split-detail" data-od-id="evidence-mapping-workspace">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Evidence inbox</h2><p>Automated collections awaiting validation or mapping.</p></div><input class="search" placeholder="Search evidence" aria-label="Search evidence" /></div>
+            <div class="table-wrap"><table data-od-id="evidence-table"><thead><tr><th>Artefact</th><th>Source</th><th>Collected</th><th>Mapping</th><th>Freshness</th></tr></thead><tbody class="selectable-rows">
+              <tr class="selected"><td><strong>Risk treatment register</strong><div class="mono">EV-2048 · XLSX · checksum recorded</div></td><td>Risk system</td><td class="mono">22 Oct 2026</td><td><span class="status"><span class="dot good"></span>OBL-014</span></td><td><span class="status"><span class="dot warn"></span>2 days</span></td></tr>
+              <tr><td><strong>Governance charter</strong><div class="mono">EV-2039 · PDF · signed</div></td><td>Document repository</td><td class="mono">18 Oct 2026</td><td><span class="status"><span class="dot good"></span>OBL-001</span></td><td><span class="status"><span class="dot good"></span>Current</span></td></tr>
+              <tr><td><strong>Steering committee minutes</strong><div class="mono">EV-2035 · PDF · parsed</div></td><td>Meeting records</td><td class="mono">16 Oct 2026</td><td><span class="status"><span class="dot warn"></span>Review</span></td><td><span class="status"><span class="dot good"></span>Current</span></td></tr>
+              <tr><td><strong>Benefits baseline draft</strong><div class="mono">EV-2027 · DOCX · unsigned</div></td><td>Document repository</td><td class="mono">11 Oct 2026</td><td><span class="status"><span class="dot bad"></span>Unmapped</span></td><td><span class="status"><span class="dot good"></span>Current</span></td></tr>
+            </tbody></table></div>
+          </div>
+          <aside class="panel" data-od-id="evidence-review">
+            <div class="panel-head"><div><h2>Mapping review</h2><p>EV-2048 · Risk treatment register</p></div><span class="chip chip-selected">Needs renewal</span></div>
+            <div class="detail-body">
+              <div class="detail-group"><span class="detail-label">Suggested obligation</span><strong>OBL-014 · Risk treatment current</strong><p class="metric-note">The source and document title match the configured evidence requirement.</p></div>
+              <div class="detail-group"><span class="detail-label">Provenance</span><div class="source-list"><div class="source-item"><span>Collected by</span><strong>Risk connector</strong></div><div class="source-item"><span>Source modified</span><strong class="mono">19 Aug 2026</strong></div><div class="source-item"><span>Integrity</span><strong>Checksum verified</strong></div></div></div>
+              <div class="notice"><strong>Freshness warning:</strong> This artefact reaches its configured age threshold on 24 Oct 2026.</div>
+              <div class="inline-actions"><button class="btn btn-primary btn-compact" id="confirmMapping">Confirm mapping</button><button class="btn btn-compact">Request replacement</button></div>
+            </div>
+          </aside>
+        </section>
+      </div>
+
+      <div class="content workspace-view hidden" id="reportsView">
+        <section data-od-id="reports-heading"><div class="page-head"><div><h1>Assurance reports</h1><p>Generate, review, approve, and reproduce reports from point-in-time evidence.</p></div><div class="filters"><select aria-label="Report gate"><option>All review gates</option><option>Gate 1</option><option>Gate 2</option><option>Gate 3</option></select><select aria-label="Report status"><option>All report states</option><option>Draft</option><option>Ready for approval</option><option>Issued</option></select></div></div></section>
+        <section class="layout" data-od-id="reports-workspace">
+          <div class="panel" data-od-id="report-list">
+            <div class="panel-head"><div><h2>Report queue</h2><p>Synthetic reports preserve obligation and evidence versions.</p></div></div>
+            <article class="report-card"><div class="row-between"><div><h3>Gate 2 assurance review</h3><p class="metric-note">Evidence snapshot · 22 Oct 2026</p></div><span class="status"><span class="dot warn"></span>Draft</span></div><div class="report-meta"><span class="chip">1 evidence gap</span><span class="chip">2 expiring items</span><span class="chip">Version 4</span></div><div class="inline-actions"><button class="btn btn-compact">Open draft</button><button class="btn btn-compact">Compare versions</button></div></article>
+            <article class="report-card"><div class="row-between"><div><h3>Gate 1 readiness report</h3><p class="metric-note">Evidence snapshot · 18 Oct 2026</p></div><span class="status"><span class="dot good"></span>Ready for approval</span></div><div class="report-meta"><span class="chip">No gaps</span><span class="chip">3 mapped obligations</span><span class="chip">Version 2</span></div><div class="inline-actions"><button class="btn btn-compact">Review report</button><button class="btn btn-compact">View sources</button></div></article>
+            <article class="report-card"><div class="row-between"><div><h3>Monthly compliance summary</h3><p class="metric-note">Evidence snapshot · 30 Sep 2026</p></div><span class="status"><span class="dot good"></span>Issued</span></div><div class="report-meta"><span class="chip">Immutable snapshot</span><span class="chip">PDF + JSON</span><span class="chip">Version 1</span></div><div class="inline-actions"><button class="btn btn-compact">Download package</button><button class="btn btn-compact">Reproduce</button></div></article>
+          </div>
+          <div class="side-stack">
+            <aside class="panel" data-od-id="report-preflight"><div class="panel-head"><div><h2>Generation preflight</h2><p>Gate 2 assurance review</p></div></div><div class="checklist"><div class="check-row"><span class="check-mark done">✓</span><div><strong>Register version locked</strong><p>Obligations retrieved as at 22 Oct 2026</p></div><span class="mono">v4</span></div><div class="check-row"><span class="check-mark done">✓</span><div><strong>Evidence snapshot created</strong><p>Source versions and checksums retained</p></div><span class="mono">14 items</span></div><div class="check-row"><span class="check-mark">!</span><div><strong>Coverage gap remains</strong><p>OBL-019 has no approved evidence</p></div><span class="status"><span class="dot bad"></span>Blocker</span></div></div></aside>
+            <aside class="panel coverage" data-od-id="report-output"><h2>Output package</h2><p class="metric-note">Generated together for traceability</p><div class="source-list"><div class="source-item"><span>Human-readable report</span><strong>PDF</strong></div><div class="source-item"><span>Machine-readable findings</span><strong>JSON</strong></div><div class="source-item"><span>Evidence manifest</span><strong>CSV</strong></div></div></aside>
+          </div>
+        </section>
+      </div>
+
+      <div class="content workspace-view hidden" id="auditView">
+        <section data-od-id="audit-heading"><div class="page-head"><div><h1>Immutable audit trail</h1><p>Trace every collection, mapping, register change, and report event to its source.</p></div><div class="filters"><select aria-label="Audit event type"><option>All event types</option><option>Register changes</option><option>Evidence events</option><option>Report events</option></select><input class="search" type="date" value="2026-10-22" aria-label="Audit date" /></div></div></section>
+        <section class="split-detail" data-od-id="audit-workspace">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Event history</h2><p>Append-only sequence · timestamps shown in AEDT.</p></div><input class="search" placeholder="Search event ID or actor" aria-label="Search audit events" /></div>
+            <div class="timeline" data-od-id="audit-timeline">
+              <article class="timeline-item"><span class="mono">22 Oct · 14:32</span><span class="timeline-node"></span><div class="timeline-copy"><strong>Report draft generated</strong><p>System created REP-009 from obligation register v4 and evidence snapshot ES-118.</p><span class="mono">EVT-8402 · report.service</span></div></article>
+              <article class="timeline-item"><span class="mono">22 Oct · 14:28</span><span class="timeline-node"></span><div class="timeline-copy"><strong>Evidence mapping confirmed</strong><p>Risk treatment register EV-2048 linked to OBL-014 by Assurance analyst.</p><span class="mono">EVT-8401 · analyst@nbase.gov</span></div></article>
+              <article class="timeline-item"><span class="mono">22 Oct · 13:51</span><span class="timeline-node"></span><div class="timeline-copy"><strong>Evidence collected</strong><p>Risk connector ingested EV-2048 and recorded its source checksum.</p><span class="mono">EVT-8399 · risk.connector</span></div></article>
+              <article class="timeline-item"><span class="mono">21 Oct · 16:05</span><span class="timeline-node"></span><div class="timeline-copy"><strong>Obligation revision activated</strong><p>OBL-001 v3 became effective after approval by the Program office.</p><span class="mono">EVT-8388 · register.service</span></div></article>
+            </div>
+          </div>
+          <aside class="panel" data-od-id="audit-event-detail"><div class="panel-head"><div><h2>EVT-8402</h2><p>Report generation event</p></div><span class="chip">Immutable</span></div><div class="detail-body"><div class="detail-group"><span class="detail-label">Event digest</span><strong class="mono">9f45…a21c</strong></div><div class="detail-group"><span class="detail-label">Inputs</span><div class="source-list"><div class="source-item"><span>Obligation register</span><strong class="mono">v4</strong></div><div class="source-item"><span>Evidence snapshot</span><strong class="mono">ES-118</strong></div><div class="source-item"><span>Report template</span><strong class="mono">v2.3</strong></div></div></div><div class="detail-group"><span class="detail-label">Result</span><p class="detail-value">Draft REP-009 created with one declared coverage gap and two freshness warnings.</p></div><button class="btn btn-compact">Verify event chain</button></div></aside>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="reportDialog" data-od-id="generate-report-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><h2>Generate assurance report</h2><p class="metric-note">Create a reproducible snapshot from point-in-time obligations and evidence.</p></div>
+      <div class="dialog-body">
+        <div class="field"><label for="reportGate">Review gate</label><select id="reportGate"><option>Gate 2 assurance review</option><option>Gate 1 assurance review</option><option>Gate 3 assurance review</option></select></div>
+        <div class="field"><label for="asOfDate">Evidence as at</label><input id="asOfDate" type="date" value="2026-10-22" /></div>
+        <div class="notice"><strong>Preflight:</strong> One obligation has no mapped evidence. The draft will flag this gap and preserve the source versions used.</div>
+      </div>
+      <div class="dialog-actions"><button class="btn" value="cancel">Cancel</button><button class="btn btn-primary" id="confirmReport" value="default">Create draft</button></div>
+    </form>
+  </dialog>
+
+  <script>
+    const navButtons = document.querySelectorAll('.nav button');
+    const views = {
+      overview: document.getElementById('overviewView'),
+      obligations: document.getElementById('obligationsView'),
+      evidence: document.getElementById('evidenceView'),
+      reports: document.getElementById('reportsView'),
+      audit: document.getElementById('auditView')
+    };
+    const actionConfig = {
+      overview: ['Export register', 'Generate report'],
+      obligations: ['Export register', 'Add obligation'],
+      evidence: ['Export manifest', 'Map evidence'],
+      reports: ['Export schedule', 'Generate report'],
+      audit: ['Export audit trail', 'Verify chain']
+    };
+    const crumb = document.getElementById('crumb');
+    const exportButton = document.getElementById('exportBtn');
+    const primaryButton = document.getElementById('generateBtn');
+    navButtons.forEach((button) => button.addEventListener('click', () => {
+      navButtons.forEach((item) => item.classList.remove('active'));
+      button.classList.add('active');
+      const name = button.querySelector('span').textContent;
+      const viewName = button.dataset.view;
+      crumb.textContent = name;
+      Object.entries(views).forEach(([key, view]) => view.classList.toggle('hidden', key !== viewName));
+      exportButton.textContent = actionConfig[viewName][0];
+      primaryButton.textContent = actionConfig[viewName][1];
+    }));
+
+    const filterRows = () => {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const gate = document.getElementById('gateFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      document.querySelectorAll('#obligationRows tr').forEach((row) => {
+        const matchesQuery = row.textContent.toLowerCase().includes(query);
+        const matchesGate = gate === 'All review gates' || row.dataset.gate === gate;
+        const matchesStatus = status === 'All statuses' || row.dataset.status === status;
+        row.classList.toggle('hidden', !(matchesQuery && matchesGate && matchesStatus));
+      });
+    };
+    document.getElementById('searchInput').addEventListener('input', filterRows);
+    document.getElementById('gateFilter').addEventListener('change', filterRows);
+    document.getElementById('statusFilter').addEventListener('change', filterRows);
+    document.querySelectorAll('#obligationRows tr, .selectable-rows tr').forEach((row) => row.addEventListener('click', () => {
+      row.closest('tbody').querySelectorAll('tr').forEach((item) => item.classList.remove('selected'));
+      row.classList.add('selected');
+    }));
+
+    const reportDialog = document.getElementById('reportDialog');
+    primaryButton.addEventListener('click', () => {
+      const activeView = document.querySelector('.nav button.active').dataset.view;
+      if (activeView === 'overview' || activeView === 'reports') reportDialog.showModal();
+      else {
+        const original = primaryButton.textContent;
+        primaryButton.textContent = activeView === 'audit' ? 'Chain verified' : 'Action ready';
+        setTimeout(() => { primaryButton.textContent = original; }, 1800);
+      }
+    });
+    exportButton.addEventListener('click', (event) => {
+      const original = event.currentTarget.textContent;
+      event.currentTarget.textContent = 'Export prepared';
+      setTimeout(() => { event.currentTarget.textContent = original; }, 1800);
+    });
+    document.getElementById('confirmReport').addEventListener('click', () => {
+      const button = document.getElementById('generateBtn');
+      button.textContent = 'Draft created';
+      setTimeout(() => { button.textContent = 'Generate report'; }, 1800);
+    });
+    document.getElementById('confirmMapping').addEventListener('click', (event) => {
+      event.currentTarget.textContent = 'Mapping confirmed';
+      setTimeout(() => { event.currentTarget.textContent = 'Confirm mapping'; }, 1800);
+    });
+  </script>
+</body>
+</html>
