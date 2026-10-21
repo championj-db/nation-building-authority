@@ -23,8 +23,42 @@ variables:
     default: landing
 
   warehouse_id:
-    description: SQL warehouse backing dashboards and SQL tasks.
-    default: ""
+    description: >-
+      ID of the SQL warehouse the Eligibility Review Workbench queries (on behalf of the signed-in
+      user) for governed Unity Catalog reads. Supply via --var or variable-overrides.json.
+
+  app_name:
+    description: >-
+      Databricks App name (workspace-global, lowercase letters/digits/hyphens, max 30 chars).
+      Namespaced per developer in the dev target.
+    default: nba-eligibility-workbench
+
+  lakebase_project_id:
+    description: >-
+      Lakebase (Autoscaling Postgres) project ID backing the workbench's operational state:
+      caseworker decisions, review checklists and app-generated audit events.
+      Namespaced per developer in the dev target.
+    default: nba-eligibility-workbench
+
+  lakebase_pg_version:
+    description: Postgres major version for the Lakebase project.
+    default: 17
+
+  lakebase_min_cu:
+    description: Minimum compute units on the Lakebase primary endpoint.
+    default: 0.5
+
+  lakebase_max_cu:
+    description: Maximum compute units on the Lakebase primary endpoint.
+    default: 2.0
+
+  lakebase_suspend_timeout:
+    description: Idle time before the Lakebase endpoint scales to zero.
+    default: 300s
+
+  app_schema:
+    description: Postgres schema (owned by the app service principal) holding workbench tables.
+    default: eligibility_workbench
 
   model_endpoint:
     description: >-
@@ -47,11 +81,19 @@ targets:
   dev:
     mode: development
     default: true
+    # Upload sources into the bundle root (instead of linking to the Git folder) so
+    # src/*.py files with a "# Databricks notebook source" header are deployed as notebooks.
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: ai_enabled_eligibility_determination_${workspace.current_user.short_name}
+      app_name: nba-elig-${workspace.current_user.domain_friendly_name}
+      lakebase_project_id: nba-elig-${workspace.current_user.domain_friendly_name}
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       environment: prod

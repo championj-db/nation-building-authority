@@ -85,19 +85,40 @@ Synthetic and seeded, including a synthetic policy document set for the agent to
 
 ## Deploy
 
-```bash
-databricks bundle validate --target dev --var catalog=<YOUR_CATALOG>
+Supply the environment-specific values in `.databricks/bundle/<target>/variable-overrides.json`
+(git-ignored) or with `--var`:
+
+```json
+{ "catalog": "<YOUR_CATALOG>", "warehouse_id": "<YOUR_WAREHOUSE_ID>" }
 ```
 
-Replace `<YOUR_CATALOG>` (angle brackets included) with a catalog you can write to.
+Replace each angle-bracket placeholder (brackets included) with a catalog you can write to and a
+SQL warehouse ID.
 
 ```bash
-databricks bundle deploy --target dev --var catalog=<YOUR_CATALOG>
-databricks bundle run ai_enabled_eligibility_determination --target dev --var catalog=<YOUR_CATALOG>
+databricks bundle validate --strict --target dev
+databricks bundle deploy --target dev
+databricks bundle run ai_enabled_eligibility_determination --target dev   # build the data
+databricks bundle run eligibility_workbench --target dev                  # deploy + start the app
 ```
 
 The job runs end to end: setup → synthetic data → applicant 360 → rules engine → agentic triage → queue.
-The Databricks App is deployed alongside and connects to the same tables.
+
+## Eligibility Review Workbench (Databricks App)
+
+| Concern | Implementation |
+| --- | --- |
+| UI | `app/static/` — direct port of `design/eligibility-review-workbench.html` (tokens, layout, breakpoints, tabs, filters, decision dialog) with real loading, empty, error and decided states |
+| API | `app/main.py` — FastAPI; entry point `uvicorn main:app` |
+| Governed reads | Databricks SQL Statement Execution **on behalf of the signed-in user** (`user_api_scopes: [sql]`), so Unity Catalog grants, row filters and column masks apply per caseworker |
+| Human actions | Lakebase Autoscaling Postgres (`resources/eligibility_workbench_lakebase.yml`): append-only `decisions`, `review_checklist`, `app_audit_events`, in an app-owned schema |
+| Attribution | Every Lakebase row records the OBO-resolved caseworker, never the app service principal |
+| Assurance | Decision snapshots the agent verdict, rules outcome, ruleset version and model endpoint read under the caseworker's own permissions; audit trail keeps system and human events distinct |
+
+Access prerequisites for caseworkers: `USE CATALOG`, `USE SCHEMA` and `SELECT` on the use case
+schema, and `CAN_USE` on the SQL warehouse (user authorisation means their own permissions apply).
+The identity scopes `iam.current-user:read` and `iam.access-control:read` are granted to the app
+automatically and must not be declared in `user_api_scopes`.
 
 ## Assurance notes
 
@@ -119,5 +140,6 @@ a real deployment.
 * `src/05_queue_prioritisation.py` — Priority-scored caseworker queue and seeded audit trail
 * `resources/eligibility_determination_job.yml` — Lakeflow Job chaining all six steps
 * `resources/eligibility_workbench_app.yml` — Databricks App resource for the caseworker UI
-* `app/app.py` + `app/app.yaml` — Gradio-based Eligibility Review Workbench (queue, 360, rules, evidence, audit, decision recording)
+* `resources/eligibility_workbench_lakebase.yml` — Lakebase project backing workbench decisions and audit events
+* `app/main.py`, `app/backend/`, `app/static/` — FastAPI Eligibility Review Workbench (queue, 360, rules, evidence, policy library, audit, decision recording)
 * `design/` — HTML design prototype and handoff manifest

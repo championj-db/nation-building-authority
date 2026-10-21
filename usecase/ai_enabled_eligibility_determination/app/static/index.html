@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eligibility Review Workbench · Nation Building Authority</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a class="brand" href="#/queue" aria-label="Nation Building Authority eligibility workbench">
+        <span class="brand-mark" aria-hidden="true">NBA</span>
+        <span class="brand-copy">
+          <span class="brand-name">Nation Building Authority</span>
+          <span class="brand-service">Eligibility Workbench</span>
+        </span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a class="nav-link active" href="#/queue" data-view="queue">Case queue</a>
+        <a class="nav-link" href="#/policies" data-view="policies">Policy library</a>
+        <a class="nav-link" href="#/audit" data-view="audit">Audit</a>
+      </nav>
+      <select class="input mobile-nav-select" id="mobile-nav" aria-label="Navigate">
+        <option value="queue">Case queue</option>
+        <option value="policies">Policy library</option>
+        <option value="audit">Audit</option>
+      </select>
+      <span class="environment" id="environment">Protected · Casework</span>
+      <div class="user" id="user-badge" aria-label="Signed in" title="">••</div>
+    </div>
+  </header>
+
+  <!-- Case queue -->
+  <main class="app-shell view" id="view-queue">
+    <section class="page-head">
+      <div>
+        <p class="eyebrow">Nation Building Authority · Human decision required</p>
+        <h1>Eligibility review queue</h1>
+        <p class="muted" style="margin-top: var(--space-2);">Prioritised benefit applications with governed evidence, policy citations and rules assembled for authorised review.</p>
+      </div>
+      <button class="btn" type="button" id="export-queue">Export queue</button>
+    </section>
+
+    <div class="banner" id="queue-banner" role="status" hidden></div>
+
+    <section class="workspace">
+      <aside class="queue" aria-label="Prioritised applications">
+        <div class="queue-head">
+          <div class="queue-head-row">
+            <h2>Applications</h2>
+            <span class="meta" id="case-count">Loading…</span>
+          </div>
+          <input class="search" id="case-search" type="search" placeholder="Search name or application ID" aria-label="Search applications" />
+          <div class="filters" aria-label="Queue filters">
+            <button class="filter active" type="button" data-filter="all">All</button>
+            <button class="filter" type="button" data-filter="urgent">Urgent</button>
+            <button class="filter" type="button" data-filter="borderline">Borderline</button>
+          </div>
+        </div>
+        <div class="case-list" id="case-list" aria-busy="true">
+          <div class="case-card"><span class="skeleton w-60"></span><span class="skeleton w-80"></span></div>
+          <div class="case-card"><span class="skeleton w-40"></span><span class="skeleton w-80"></span></div>
+          <div class="case-card"><span class="skeleton w-60"></span><span class="skeleton w-80"></span></div>
+        </div>
+      </aside>
+
+      <div class="detail" id="detail">
+        <div class="state-block" id="detail-empty">
+          <h3>Select an application</h3>
+          <p>Choose a case from the prioritised queue to review rules, evidence and the system recommendation.</p>
+        </div>
+
+        <div id="detail-body" hidden>
+          <div class="detail-head">
+            <div class="detail-title">
+              <div>
+                <p class="eyebrow" id="d-app-id"></p>
+                <h2 id="d-name"></h2>
+                <p class="muted" id="d-program"></p>
+              </div>
+              <span class="pill" id="d-status"></span>
+            </div>
+            <div class="tabs" role="tablist" aria-label="Case information">
+              <button class="tab active" role="tab" aria-selected="true" aria-controls="panel-review" data-panel="review">Review</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="panel-applicant" data-panel="applicant">Applicant 360</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="panel-evidence" data-panel="evidence">Evidence</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="panel-audit" data-panel="audit">Audit trail</button>
+            </div>
+          </div>
+
+          <div class="banner" id="detail-banner" role="status" hidden style="margin: var(--space-4) var(--space-6) 0;"></div>
+
+          <section class="panel active" id="panel-review" role="tabpanel">
+            <div class="review-grid">
+              <div class="stack">
+                <article class="card">
+                  <div class="section-head"><h3>Application summary</h3><span class="meta" id="d-refreshed"></span></div>
+                  <div class="summary-grid" style="margin-top: var(--space-4);">
+                    <div class="datum"><span class="meta">Household</span><strong id="d-household"></strong></div>
+                    <div class="datum"><span class="meta">Declared income</span><strong id="d-income"></strong></div>
+                    <div class="datum"><span class="meta">Residence</span><strong id="d-residence"></strong></div>
+                  </div>
+                </article>
+                <article class="card">
+                  <div class="section-head"><h3>Eligibility criteria</h3><span class="meta" id="d-ruleset"></span></div>
+                  <div id="d-criteria"></div>
+                </article>
+              </div>
+              <aside class="stack">
+                <article class="card recommendation">
+                  <p class="eyebrow">System recommendation</p>
+                  <div class="verdict" id="d-verdict"></div>
+                  <p class="reco-text clamped" id="d-reco"></p>
+                  <button class="link-btn" type="button" id="d-reco-toggle" hidden>Show full reasoning</button>
+                  <span class="citation" id="d-reco-meta"></span>
+                  <div class="notice" style="margin-top: var(--space-4);"><strong>Recommendation only.</strong> Review the cited evidence and record your own decision.</div>
+                  <div class="action-row">
+                    <button class="btn" type="button" id="open-citations">Open citations</button>
+                    <button class="btn btn-primary" type="button" id="open-decision">Record decision</button>
+                  </div>
+                </article>
+                <article class="card decision-card" id="d-decision-card" hidden>
+                  <p class="eyebrow">Human determination</p>
+                  <h3 id="d-decision-outcome"></h3>
+                  <p class="muted" style="margin-top: var(--space-2);" id="d-decision-rationale"></p>
+                  <span class="citation" id="d-decision-meta"></span>
+                </article>
+                <article class="card checklist">
+                  <h3>Before deciding</h3>
+                  <label><input type="checkbox" data-check="rules_reviewed" /> Rules result reviewed</label>
+                  <label><input type="checkbox" data-check="citations_opened" /> Policy citations opened</label>
+                  <label><input type="checkbox" data-check="conflicts_resolved" /> Conflicting evidence resolved</label>
+                </article>
+              </aside>
+            </div>
+          </section>
+
+          <section class="panel" id="panel-applicant" role="tabpanel">
+            <div class="section-head"><div><h2>Applicant 360</h2><p class="muted" style="margin-top:var(--space-2);">Unified view assembled from governed source systems.</p></div><span class="meta">Synthetic data</span></div>
+            <div class="table-wrap">
+              <table style="margin-top:var(--space-6);">
+                <thead><tr><th>Domain</th><th>Current record</th><th>Source</th><th>Freshness</th></tr></thead>
+                <tbody id="d-360"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel" id="panel-evidence" role="tabpanel">
+            <div class="section-head"><div><h2>Evidence and citations</h2><p class="muted" style="margin-top:var(--space-2);">Every recommendation links back to source evidence and policy.</p></div><button class="btn" type="button" disabled title="Evidence is ingested through the governed document intake pipeline">Add evidence</button></div>
+            <div class="stack" style="margin-top:var(--space-6);" id="d-evidence"></div>
+          </section>
+
+          <section class="panel" id="panel-audit" role="tabpanel">
+            <div class="section-head"><div><h2>Decision audit trail</h2><p class="muted" style="margin-top:var(--space-2);">Inputs, rule versions, recommendations and human actions remain distinct.</p></div><button class="btn" type="button" id="download-record">Download record</button></div>
+            <div class="timeline" style="margin-top:var(--space-8);" id="d-timeline"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Policy library -->
+  <main class="app-shell view" id="view-policies" hidden>
+    <section class="page-head">
+      <div>
+        <p class="eyebrow">Nation Building Authority · Governed policy</p>
+        <h1>Policy library</h1>
+        <p class="muted" style="margin-top: var(--space-2);">Versioned policy sections that the rules engine and system recommendations cite.</p>
+      </div>
+    </section>
+    <div class="view-card">
+      <div class="toolbar">
+        <input class="search" id="policy-search" type="search" placeholder="Search policy title, section or text" aria-label="Search policies" />
+        <span class="meta" id="policy-count"></span>
+      </div>
+      <div class="stack" id="policy-list"></div>
+    </div>
+  </main>
+
+  <!-- Audit -->
+  <main class="app-shell view" id="view-audit" hidden>
+    <section class="page-head">
+      <div>
+        <p class="eyebrow">Nation Building Authority · Assurance</p>
+        <h1>Decision audit</h1>
+        <p class="muted" style="margin-top: var(--space-2);">Human determinations alongside what the system recommended at the time of decision.</p>
+      </div>
+    </section>
+    <div class="banner" id="audit-banner" role="status" hidden></div>
+    <div class="view-card table-wrap">
+      <table>
+        <thead><tr><th>Decided</th><th>Application</th><th>Outcome</th><th>System recommendation</th><th>Rules</th><th>Aligned</th><th>Caseworker</th></tr></thead>
+        <tbody id="audit-rows"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <dialog id="decision-dialog" aria-labelledby="decision-title">
+    <form class="dialog-body" id="decision-form" novalidate>
+      <p class="eyebrow">Human determination</p>
+      <h2 id="decision-title">Record eligibility decision</h2>
+      <p class="muted" style="margin-top:var(--space-2);">Your decision is recorded separately from the system recommendation.</p>
+      <div class="notice dialog-warning" id="checklist-warning" hidden></div>
+      <div class="field"><label for="outcome">Outcome</label><select class="input" id="outcome" required><option value="">Select an outcome</option><option>Eligible</option><option>Not eligible</option><option>Request more information</option></select></div>
+      <div class="field"><label for="reason">Decision rationale</label><textarea class="input" id="reason" required minlength="20" maxlength="5000" placeholder="Explain how the evidence and policy support your decision"></textarea><span class="field-error" id="form-error" role="alert"></span></div>
+      <div class="action-row"><button class="btn" type="button" id="cancel-decision">Cancel</button><button class="btn btn-primary" type="submit" id="save-decision">Save decision</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status">Decision saved to the audit trail.</div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

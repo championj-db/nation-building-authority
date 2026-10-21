@@ -2,11 +2,21 @@
 #
 # Caseworker-facing UI backed by the caseworker_queue and related tables.
 # No environment-specific values are hard-coded.
+#
+# Authorisation model
+# * User (on-behalf-of) authorisation for every Unity Catalog read via DBSQL, so row filters,
+#   column masks and grants apply to the individual caseworker. Scopes are least-privilege:
+#     - sql : run statements on the bound SQL warehouse as the user
+#   The identity scopes (iam.current-user:read, iam.access-control:read) are granted
+#   automatically to every user-authorised app and must not be declared here; they let the
+#   app resolve the signed-in caseworker for decision attribution.
+# * App (service principal) authorisation only for Lakebase, the app-owned operational store.
+#   Every write records the OBO-resolved caseworker identity, not the service principal.
 
 resources:
   apps:
     eligibility_workbench:
-      name: nba-eligibility-workbench-${var.environment}
+      name: ${var.app_name}
       description: >-
         Eligibility Review Workbench for the AI-Enabled Eligibility Determination
         use case. Presents a prioritised caseworker queue with applicant 360,
@@ -14,13 +24,54 @@ resources:
 
       source_code_path: ../app
 
+      user_api_scopes:
+        - sql
+
+      resources:
+        - name: sql-warehouse
+          description: SQL warehouse used for on-behalf-of-user reads of Unity Catalog tables.
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+        - name: lakebase
+          description: Lakebase database holding decisions, checklists and app audit events.
+          postgres:
+            branch: ${resources.postgres_branches.eligibility_workbench_production.name}
+            database: ${resources.postgres_branches.eligibility_workbench_production.name}/databases/databricks-postgres
+            permission: CAN_CONNECT_AND_CREATE
+        # Binding the use case's landing volume gives the runtime its fully qualified name
+        # (catalog.schema.volume) via app.yaml `valueFrom`, so catalog and schema are never
+        # written into app source. READ_VOLUME is the least privilege available.
+        - name: landing-volume
+          description: Use case landing volume; its full name tells the app which catalog and schema to read.
+          uc_securable:
+            securable_full_name: ${var.catalog}.${var.schema}.${var.volume}
+            securable_type: VOLUME
+            permission: READ_VOLUME
+
       config:
-        - name: DATABRICKS_CATALOG
-          value: ${var.catalog}
-        - name: DATABRICKS_SCHEMA
-          value: ${var.schema}
-        - name: DATABRICKS_WAREHOUSE_ID
-          value: ${var.warehouse_id}
+        command:
+          - uvicorn
+          - main:app
+          - --host
+          - 0.0.0.0
+          - --port
+          - "8000"
+        env:
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+          - name: DATABRICKS_VOLUME
+            value_from: landing-volume
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: LAKEBASE_ENDPOINT
+            value_from: lakebase
+          - name: LAKEBASE_SCHEMA
+            value: ${var.app_schema}
+          - name: APP_ENVIRONMENT
+            value: ${var.environment}
 
       permissions:
         - user_name: ${workspace.current_user.userName}

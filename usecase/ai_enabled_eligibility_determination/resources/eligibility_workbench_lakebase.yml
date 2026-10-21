@@ -1,0 +1,30 @@
+# Eligibility Review Workbench — Lakebase (Autoscaling Postgres) resources
+#
+# Lakebase is the transactional system of record for the human side of the workflow:
+# caseworker decisions, review checklists and app-generated audit events. Analytical,
+# governed reads (queue, applicant 360, rules, evidence, system audit trail) stay in
+# Unity Catalog and are served through DBSQL on behalf of the signed-in user.
+#
+# The project's implicit `production` branch, `primary` endpoint and `databricks_postgres`
+# database are used. The app's service principal is granted CAN_CONNECT_AND_CREATE through
+# the app resource binding and creates/owns its own schema on first start.
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  postgres_projects:
+    eligibility_workbench_db:
+      project_id: ${var.lakebase_project_id}
+      display_name: NBA Eligibility Workbench (${var.environment})
+      pg_version: ${var.lakebase_pg_version}
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: ${var.lakebase_min_cu}
+        autoscaling_limit_max_cu: ${var.lakebase_max_cu}
+        suspend_timeout_duration: ${var.lakebase_suspend_timeout}
+
+  postgres_branches:
+    eligibility_workbench_production:
+      branch_id: production
+      parent: ${resources.postgres_projects.eligibility_workbench_db.name}
+      no_expiry: true
+      replace_existing: true

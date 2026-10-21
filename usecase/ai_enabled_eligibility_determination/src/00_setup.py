@@ -24,7 +24,11 @@ print(f"volume  : {volume}")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
+# The catalog is a pre-provisioned prerequisite supplied via the bundle `catalog` variable.
+# Don't create it here: workspaces without a metastore storage root reject CREATE CATALOG.
+assert spark.sql(f"SHOW CATALOGS LIKE '{catalog}'").count() == 1, (
+    f"Catalog '{catalog}' not found or not accessible - create it first or set the `catalog` bundle variable"
+)
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
 spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{schema}.{volume}")
 

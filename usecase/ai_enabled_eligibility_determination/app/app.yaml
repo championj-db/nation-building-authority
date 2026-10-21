@@ -1,15 +1,24 @@
-# Eligibility Review Workbench — Databricks App configuration
+# Eligibility Review Workbench - Databricks App runtime configuration
 #
-# Environment variables are injected at deploy time; no hard-coded values.
-# See: https://docs.databricks.com/en/dev-tools/databricks-apps/configuration.html
+# Every environment-specific value comes from an app resource declared in the bundle
+# (resources/eligibility_workbench_app.yml), so nothing here is environment-specific:
+#   sql-warehouse  -> warehouse ID for on-behalf-of-user DBSQL reads
+#   lakebase       -> Lakebase endpoint for the app's operational store
+#   landing-volume -> catalog.schema.volume; the app derives catalog and schema from it
+# The bundle's `config` block mirrors this and takes precedence when applied.
 
 command:
-  - python
-  - app.py
+  - uvicorn
+  - main:app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
 
 env:
-  - name: DATABRICKS_CATALOG
-    description: Unity Catalog catalog for this use case.
-  - name: DATABRICKS_SCHEMA
-    description: Schema holding the eligibility tables.
-    default: ai_enabled_eligibility_determination
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: LAKEBASE_ENDPOINT
+    valueFrom: lakebase
+  - name: DATABRICKS_VOLUME
+    valueFrom: landing-volume
