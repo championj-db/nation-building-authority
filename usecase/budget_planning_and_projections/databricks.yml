@@ -2,8 +2,11 @@
 # Modelled on the Infrastructure Australia Major Public Infrastructure Pipeline:
 # https://www.infrastructureaustralia.gov.au/reports/2025-infrastructure-market-capacity-report
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# Resources: three serverless Lakeflow Jobs (resources/budget_jobs.job.yml). The bootstrap job also
+# creates / updates the Portfolio Genie space via the SDK (src/07_genie_space.py).
+#
+# Deploy:  databricks bundle deploy -t dev --var catalog=<catalog> --var warehouse_id=<warehouse_id>
+#          databricks bundle run budget_bootstrap -t dev
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -37,13 +40,73 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+  genie_space_title:
+    description: Title of the Portfolio Genie space (used to find and update it on re-deploy).
+    default: Portfolio Genie - ${var.schema}
+
+  daily_schedule:
+    description: Quartz cron for the daily refresh job.
+    default: "0 30 6 * * ?"
+
+  timezone_id:
+    description: Time zone for job schedules.
+    default: Australia/Sydney
+
+  # ---- synthetic world -------------------------------------------------------------------------
+  synthetic_seed:
+    description: Random seed for the synthetic portfolio (same seed + anchor = same world).
+    default: "42"
+
+  actuals_lag_days:
+    description: Days after month end before the ledger delivers a closed month.
+    default: "3"
+
+  txn_per_project_month:
+    description: Average GL postings generated per active project-month (dbldatagen scale knob).
+    default: "150"
+
+  endorsed_window_target_aud_bn:
+    description: Endorsed plan total over the five-year horizon that the synthetic plan is calibrated to, AUD bn.
+    default: "171.8"
+
+  # ---- forecast, scenario and variance parameters ---------------------------------------------
+  horizon_years:
+    description: Planning horizon length in financial years.
+    default: "5"
+
+  performance_window_months:
+    description: Trailing months of actual vs explained spend used for the cost-performance driver.
+    default: "12"
+
+  sequencing_step_months:
+    description: Deferral step used by the capacity-aware sequencer.
+    default: "6"
+
+  max_deferral_months:
+    description: Maximum total deferral the sequencer may apply to one project.
+    default: "24"
+
+  capacity_confidence_penalty:
+    description: Multiplier on breached-input exposure when reducing forecast confidence.
+    default: "1.0"
+
+  tolerance_pct:
+    description: Variance reporting tolerance, % of plan.
+    default: "5"
+
+  tolerance_floor_aud_m:
+    description: Minimum variance tolerance per year, AUD m (doubled for the horizon).
+    default: "25"
+
+include:
+  - resources/*.yml
 
 targets:
   dev:
     mode: development
     default: true
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: budget_planning_and_projections_${workspace.current_user.short_name}

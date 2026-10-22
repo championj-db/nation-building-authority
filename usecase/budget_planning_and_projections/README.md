@@ -6,7 +6,7 @@
 | **Selected function** | Budget Planning & Financial Projections |
 | **Evidence anchor** | [2025 Infrastructure Market Capacity Report](https://www.infrastructureaustralia.gov.au/reports/2025-infrastructure-market-capacity-report) |
 | **Target KPI** | Planning cycle productivity (measure to instrument) |
-| **Status** | **Stub** - README and DAB skeleton only |
+| **Status** | **Data layer built** - synthetic generator, bronze/silver/gold pipeline, forecast, scenarios, capacity, variance and Portfolio Genie. No application yet. |
 
 ## Problem
 
@@ -65,27 +65,101 @@ market capacity is not a plan.
 ## Architecture
 
 ```
-portfolio + capacity data -> bronze -> conformed portfolio model (silver)
-                          -> expenditure forecast -> scenarios
-                          -> capacity-constrained gold -> variance reporting
+synthetic source systems (01, dbldatagen)
+  -> UC volume landing/extracts/<extract>/delivery_date=... , gl_transactions/period=YYYY-MM
+  -> bronze_* (02, Auto Loader availableNow, schema evolution, _rescued_data)
+  -> silver_*  (03, conformed portfolio model, 27 data quality rules -> dq_results)
+  -> forecast_stages_monthly, dim_* (04, Working baseline expenditure forecast)
+  -> expenditure_*, capacity_*, scenario_* (05, scenarios + capacity-aware sequencing)
+  -> variance_*, portfolio_*, priority_exceptions, assurance_register, forecast_runs (06)
+  -> Portfolio Genie space (07)
 ```
 
-Lakeflow for transformation, Unity Catalog for governance, AI/BI for scenario and variance
-reporting, Genie for ad hoc portfolio questions, serverless throughout.
+Serverless Lakeflow Jobs, Unity Catalog governance (table/column comments and `nba_*` tags on every
+table), Genie for ad hoc portfolio questions. The command-centre design is in `design/`.
+
+| Source | Notebook | What it does |
+| --- | --- | --- |
+| `src/_common.py` | shared | Naming, AU financial-year calendar, phasing / forecast engine, governed writes, run control |
+| `src/00_setup.py` | setup | Schema, volume, control and app-writable tables (`reset=true` rebuilds) |
+| `src/01_generate_synthetic_data.py` | generate | `bootstrap`: whole world + history; `incremental`: next ledger month and register deliveries |
+| `src/02_ingest_bronze.py` | bronze | Auto Loader for 17 extracts |
+| `src/03_conform_silver.py` | silver | Types, AUD m, latest-delivery dedupe, DQ rules (error = drop, warn = keep), scenario seed MERGE |
+| `src/04_expenditure_forecast.py` | gold | Staged forecast: plan -> schedule -> escalation -> scope -> packaging -> forecast |
+| `src/05_scenarios_and_capacity.py` | gold | Builds every active scenario, tests it against 12 delivery-market inputs, confidence |
+| `src/06_variance_reporting.py` | gold | Variance bridge, attention list, exceptions, KPIs, assurance register, run record |
+| `src/07_genie_space.py` | Genie | Creates / updates the Portfolio Genie space; validates example SQL first |
+
+## Modelling approach
+
+**Financial years** follow the Australian Government convention: 1 July - 30 June, labelled by the
+year they end (FY27 = 1 Jul 2026 - 30 Jun 2027). The five-year horizon starts at the FY containing
+the first forecast month. The design mock-up labels the same window FY26-30 (start-year labels); the
+data uses end-year labels throughout.
+
+**Forecast.** Each project's endorsed plan phasing is moved through recorded, attributable stages:
+approved schedule changes (slip and delay cost), current vs endorsed escalation on unspent work,
+approved scope and packaging changes, then trailing cost performance (actual vs explained spend over
+the last 12 closed months) applied to the remaining work. Closed months are actuals. Every stage is
+kept, so the variance bridge drivers always sum exactly to forecast minus plan; *Unexplained* is what
+no recorded driver accounts for.
+
+**Scenarios** are data (`scenario_definitions`, `scenario_levers`, versioned, Delta CDF on, writable by
+an app). Methods: `plan`, `as_forecast`, `levers` (defer / accelerate / escalation delta / scope /
+exclude / capacity uplift on a project, program, sector or the portfolio) and `auto_sequence` (levers,
+then a greedy sequencer that defers *Deferrable* work - lowest priority and largest contributor first -
+accepting only moves that reduce total over-utilisation, with every decision logged).
+
+**Capacity.** Demand for 12 inputs (skilled civil labour, electrical trades, engineering services,
+electrical equipment, TBMs, concrete, steel, ...) = project spend x subsector demand intensity.
+Utilisation = demand / modelled supply; >= 90% Constrained, > 100% Breach. The deliverable-spend line is
+forecast / peak utilisation. Project confidence = Gateway-based confidence less exposure to breached
+inputs.
 
 ## Data
 
-Synthetic and seeded. The portfolio shape is modelled on the structure described in the public
-Infrastructure Australia reporting; none of the figures are real.
+Synthetic and seeded (`synthetic_seed`, world anchor date stored in `pipeline_control`). The portfolio
+shape is modelled on the structure described in the public Infrastructure Australia reporting; none
+of the figures are real. Default world: 16 programs, 86 projects, endorsed plan calibrated to
+$171.8bn over the horizon, ledger history from FY16 with ~150 GL postings per project-month
+(dbldatagen; suppliers with realistic concentration). Seeded stories: Eastern Transit Corridor
+(labour-driven cost growth), North Grid Resilience (long-lead equipment slip), Regional Water Security
+(packaging saving), Western Freight Link (unexplained variance), Metro Renewal (labour demand).
+
+### Gold data contract (one current run; `run_id` on every row)
+
+| Table | Grain | Use |
+| --- | --- | --- |
+| `portfolio_kpis` | scenario | Headline cards: portfolio total, vs endorsed, peak gap, confidence, constrained inputs, YTD |
+| `portfolio_capacity_fy` | scenario x FY | Plan / forecast / actual / deliverable capacity line and gap, envelope |
+| `expenditure_fy`, `expenditure_monthly` | scenario x project x FY / month | Multi-year expenditure, nominal and real |
+| `forecast_stages_monthly`, `forecast_project_drivers` | project x month / project | Working baseline stages and drivers (EAC, slip, cost performance) |
+| `scenario_summary`, `scenario_comparison` | scenario / scenario x FY | Scenario studio comparison |
+| `scenario_project_changes`, `scenario_sequencing_decisions` | scenario x project / decision | What moved and why |
+| `capacity_demand` | scenario x FY x input | Utilisation heatmap and status |
+| `capacity_exposure`, `project_confidence` | scenario x FY x input x project / scenario x project | Exposure and confidence |
+| `variance_bridge` | period x scope level x driver | Driver attribution (YTD, CURRENT_FY, HORIZON) |
+| `variance_project` | period x project | Tolerance tests and executive-attention flags |
+| `portfolio_attention_list`, `priority_exceptions` | program / exception | Ranked attention and exceptions |
+| `assurance_register` | record | Assumptions and Gateway reviews with owner, confidence and approval |
+| `dim_project`, `dim_program`, `dim_scenario`, `dim_capacity_category`, `dim_financial_year` | dimension | Lookups |
+| `forecast_runs`, `dq_results`, `pipeline_control` | run / rule / key | Run record with every input version; DQ outcomes; run context |
 
 ## Deploy
 
 ```bash
-databricks bundle validate --target dev --var catalog=<YOUR_CATALOG>
+databricks bundle deploy --target dev --var catalog=<YOUR_CATALOG> --var warehouse_id=<YOUR_WAREHOUSE_ID>
+databricks bundle run budget_bootstrap --target dev
 ```
 
-Replace `<YOUR_CATALOG>` (angle brackets included) with a catalog you can write to. There is
-nothing to deploy or run yet.
+Replace `<YOUR_CATALOG>` and `<YOUR_WAREHOUSE_ID>` (angle brackets included) with a catalog you can
+write to and a SQL warehouse id for Genie, or put them in
+`.databricks/bundle/dev/variable-overrides.json`. The catalog must already exist; the schema and
+volume are created. Jobs:
+
+* `budget_bootstrap` - full build and Genie space (`reset=true` to rebuild; `world_anchor_date` to pin the world).
+* `budget_daily` - scheduled: next deliveries -> bronze -> silver -> forecast -> scenarios -> variance.
+* `budget_forecast` - on demand after a scenario is saved; `as_of_date` reproduces an earlier forecast.
 
 ## Assurance notes
 
@@ -95,7 +169,13 @@ than the modelling. Forecasts should carry their assumptions as data rather than
 scenario can be re-run and audited later. Nothing in this use case should produce a number without
 a traceable basis.
 
+Every table carries `nba_usecase`, `nba_classification = protected_working_figures`,
+`nba_synthetic` and `nba_layer` tags; KPIs carry `figure_status = Working`. Each run writes one
+`forecast_runs` row recording the plan version, capacity model version, assumption and scenario
+versions and parameters used.
+
 ## Not built yet
 
-Everything. This is a stub: README plus a validating DAB skeleton. No synthetic generator, no
-portfolio model, no forecast, no scenarios, no capacity analysis, no reporting.
+* The Portfolio Command Centre application (design in `design/`).
+* AI/BI dashboard.
+* Monte Carlo / P50-P90 forecast ranges (confidence is currently assurance- and capacity-based).
