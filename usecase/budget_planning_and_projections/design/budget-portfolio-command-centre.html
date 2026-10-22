@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Command Centre · Nation Building Authority</title>
+  <style>
+    @font-face {
+      font-family: "DM Sans";
+      src: url("./fonts/dmsans-variable.woff2") format("woff2");
+      font-weight: 100 1000;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #EEEDE9;
+      --surface: #F9F7F4;
+      --surface-warm: color-mix(in oklab, var(--accent), transparent 92%);
+      --fg: #0B2026;
+      --fg-2: var(--fg);
+      --muted: color-mix(in oklab, var(--fg), transparent 38%);
+      --meta: var(--muted);
+      --border: color-mix(in oklab, var(--fg), transparent 76%);
+      --border-soft: color-mix(in oklab, var(--fg), transparent 88%);
+      --accent: #FF3621;
+      --accent-on: #F9F7F4;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #00875C;
+      --warn: #FFAB00;
+      --danger: #BD2B26;
+      --viz-1: #FF3621;
+      --viz-2: #143D4A;
+      --viz-3: #0B2026;
+      --viz-4: #FFAB00;
+      --viz-5: #00875C;
+      --viz-6: #00A972;
+      --viz-7: #BD2B26;
+      --viz-8: #1B5162;
+      --viz-9: #AB4057;
+      --viz-10: #618794;
+      --font-display: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: -0.02em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #303F47;
+      --surface: #0B2026;
+      --fg: #E8ECF0;
+      --accent: #BD2B26;
+      --accent-on: #E8ECF0;
+      --success: #00A972;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--text-sm); line-height: var(--leading-body); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button, a, input, select { min-height: 44px; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: var(--focus-ring) solid var(--accent); outline-offset: 2px; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr); }
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: var(--space-5) var(--space-4); position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
+    .brand { display: flex; gap: var(--space-3); align-items: center; padding: 0 var(--space-2) var(--space-6); border-bottom: 1px solid var(--border-soft); }
+    .brand-mark { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--fg); color: var(--surface); display: grid; place-items: center; font-weight: 600; }
+    .brand strong { display: block; font-size: var(--text-base); letter-spacing: var(--tracking-display); }
+    .brand span { color: var(--muted); font-size: var(--text-xs); }
+    .nav-label { margin: var(--space-6) var(--space-3) var(--space-2); font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .nav { display: grid; gap: var(--space-1); }
+    .nav button { display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted); text-align: left; font-weight: 550; }
+    .nav button:hover { background: var(--border-soft); color: var(--fg); }
+    .nav button.active { background: var(--fg); color: var(--surface); }
+    .nav svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    .sidebar-meta { margin-top: auto; padding: var(--space-4) var(--space-3) 0; border-top: 1px solid var(--border-soft); color: var(--muted); font-size: var(--text-xs); }
+    .sidebar-meta strong { color: var(--fg); display: block; margin-bottom: var(--space-1); }
+    .main { min-width: 0; }
+    .topbar { height: 72px; padding: 0 var(--space-8); border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--bg), transparent 8%); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 8; }
+    .crumb { color: var(--muted); }
+    .crumb strong { color: var(--fg); }
+    .actions { display: flex; align-items: center; gap: var(--space-2); }
+    .button { min-height: 44px; border-radius: var(--radius-md); padding: 0 var(--space-4); border: 1px solid var(--border); background: var(--surface); color: var(--fg); font-weight: 600; letter-spacing: .02em; transition: background var(--motion-fast), transform var(--motion-fast); }
+    .button:hover { background: var(--border-soft); }
+    .button:active { transform: translateY(1px); }
+    .button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
+    .button.primary:hover { background: var(--accent-hover); }
+    .icon-button { width: 44px; padding: 0; display: grid; place-items: center; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--fg); color: var(--surface); display: grid; place-items: center; font-size: var(--text-xs); font-weight: 600; }
+    .content { max-width: 1500px; margin: 0 auto; padding: var(--space-8); }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-8); margin-bottom: var(--space-6); }
+    .eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-mono); color: var(--muted); font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+    h1 { font-size: clamp(2rem, 3vw, var(--text-4xl)); font-weight: 600; }
+    h2 { font-size: var(--text-xl); font-weight: 600; }
+    h3 { font-size: var(--text-base); font-weight: 600; }
+    .subtitle { margin: var(--space-2) 0 0; color: var(--muted); max-width: 68ch; font-size: var(--text-base); }
+    .freshness { text-align: right; color: var(--muted); font-size: var(--text-xs); white-space: nowrap; }
+    .freshness strong { display: block; color: var(--fg); font-size: var(--text-sm); }
+    .notice { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--muted); }
+    .notice strong { color: var(--fg); }
+    .filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+    .select { min-width: 152px; padding: 0 36px 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--fg); }
+    .grid { display: grid; gap: var(--space-4); }
+    .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: var(--space-4); }
+    .two-one { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elev-raised); padding: var(--space-5); min-width: 0; }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-5); }
+    .card-head p { margin: var(--space-1) 0 0; color: var(--muted); font-size: var(--text-xs); }
+    .kpi-label { color: var(--muted); margin: 0; font-size: var(--text-xs); }
+    .kpi-value { margin: var(--space-2) 0 var(--space-1); font-family: var(--font-mono); font-size: clamp(1.65rem, 3vw, 2.4rem); line-height: 1.1; letter-spacing: -.03em; }
+    .kpi-detail { color: var(--muted); margin: 0; font-size: var(--text-xs); }
+    .kpi-detail strong { color: var(--fg); }
+    .badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: var(--text-xs); }
+    .badge.risk { color: var(--danger); border-color: var(--danger); }
+    .badge.good { color: var(--success); border-color: var(--success); }
+    .chart { width: 100%; height: auto; overflow: visible; }
+    .chart text { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+    .chart .axis { stroke: var(--border); stroke-width: 1; }
+    .chart .actual { fill: var(--viz-3); }
+    .chart .plan { fill: none; stroke: var(--viz-3); stroke-width: 2; stroke-dasharray: 5 4; }
+    .chart .forecast { fill: url(#hatch); stroke: var(--viz-2); stroke-width: 1; }
+    .chart .capacity { fill: none; stroke: var(--danger); stroke-width: 2; }
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-3); color: var(--muted); font-size: var(--text-xs); }
+    .legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
+    .swatch { width: 18px; height: 8px; background: var(--fg); }
+    .swatch.plan { background: transparent; border: 1px dashed var(--fg); }
+    .swatch.forecast { background: repeating-linear-gradient(135deg, var(--border), var(--border) 2px, transparent 2px, transparent 5px); border: 1px solid var(--fg); }
+    .swatch.capacity { background: var(--danger); height: 2px; }
+    .exception-list { display: grid; gap: var(--space-3); }
+    .exception { padding-top: var(--space-3); border-top: 1px solid var(--border-soft); }
+    .exception:first-child { padding-top: 0; border-top: 0; }
+    .exception-top { display: flex; justify-content: space-between; gap: var(--space-3); }
+    .exception p { margin: var(--space-1) 0 0; color: var(--muted); font-size: var(--text-xs); }
+    .delta { font-family: var(--font-mono); font-weight: 600; }
+    .delta.bad { color: var(--danger); }
+    .delta.good { color: var(--success); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: var(--space-3); border-bottom: 1px solid var(--border-soft); text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+    td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    tbody tr:hover { background: var(--border-soft); }
+    .project { display: flex; align-items: center; gap: var(--space-3); }
+    .project-mark { width: 8px; height: 32px; background: var(--viz-2); border-radius: var(--radius-pill); }
+    .project small { display: block; color: var(--muted); }
+    .scenario-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-bottom: var(--space-5); }
+    .scenario-card { position: relative; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-lg); padding: var(--space-4); text-align: left; color: var(--fg); }
+    .scenario-card:hover { border-color: var(--fg); }
+    .scenario-card.active { border: 2px solid var(--accent); padding: calc(var(--space-4) - 1px); }
+    .scenario-card span { display: block; color: var(--muted); font-size: var(--text-xs); margin-top: var(--space-1); }
+    .scenario-card strong { display: block; font-size: var(--text-base); }
+    .bars { display: grid; gap: var(--space-4); }
+    .bar-row { display: grid; grid-template-columns: 140px 1fr 70px; gap: var(--space-3); align-items: center; }
+    .bar-track { height: 18px; background: var(--border-soft); border-radius: var(--radius-sm); overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--viz-2); border-radius: var(--radius-sm); }
+    .bar-fill.warn { background: var(--warn); }
+    .bar-fill.risk { background: var(--danger); }
+    .bar-value { text-align: right; font-family: var(--font-mono); }
+    .assistant { position: fixed; right: var(--space-6); bottom: var(--space-6); width: min(400px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 12px 32px color-mix(in oklab, var(--fg), transparent 82%); overflow: hidden; transform: translateY(calc(100% + 32px)); opacity: 0; pointer-events: none; transition: transform var(--motion-base) var(--ease-standard), opacity var(--motion-base); z-index: 20; }
+    .assistant.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .assistant-head { padding: var(--space-4); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+    .assistant-body { padding: var(--space-4); }
+    .assistant-body p { margin: 0 0 var(--space-3); }
+    .prompt { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+    .prompt input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 var(--space-3); background: var(--bg); color: var(--fg); }
+    .sql { background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3); font-family: var(--font-mono); font-size: var(--text-xs); overflow: auto; }
+    .assistant-launcher { position: fixed; right: var(--space-6); bottom: var(--space-6); border: 0; border-radius: var(--radius-pill); background: var(--fg); color: var(--surface); padding: 0 var(--space-4); font-weight: 600; z-index: 10; }
+    .modal-backdrop { position: fixed; inset: 0; display: none; place-items: center; padding: var(--space-4); background: color-mix(in oklab, var(--fg), transparent 52%); z-index: 30; }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(560px, 100%); background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: var(--space-6); }
+    .modal-head { display: flex; justify-content: space-between; gap: var(--space-4); }
+    .field { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+    .field label { font-weight: 550; }
+    .field input, .field select { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 var(--space-3); background: var(--bg); color: var(--fg); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-6); }
+    .mobile-menu { display: none; }
+    @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(2, 1fr); } .two-one { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .topbar { padding: 0 var(--space-4); }
+      .mobile-menu { display: grid; }
+      .content { padding: var(--space-5) var(--space-4); }
+      .page-head { display: block; }
+      .freshness { text-align: left; margin-top: var(--space-3); white-space: normal; }
+      .kpis, .two, .scenario-strip { grid-template-columns: 1fr; }
+      .actions .button:not(.icon-button) { display: none; }
+      .bar-row { grid-template-columns: 100px 1fr 56px; }
+      .notice { display: block; }
+      .notice span { display: block; margin-top: var(--space-1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" data-od-id="primary-sidebar">
+      <div class="brand" data-od-id="product-brand">
+        <div class="brand-mark">NBA</div>
+        <div><strong>Portfolio Command</strong><span>Nation Building Authority</span></div>
+      </div>
+      <p class="nav-label">Planning</p>
+      <nav class="nav" aria-label="Primary navigation">
+        <button class="active" data-page="overview" data-od-id="nav-overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Portfolio overview</button>
+        <button data-page="scenarios" data-od-id="nav-scenarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg>Scenario studio</button>
+        <button data-page="capacity" data-od-id="nav-capacity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Market capacity</button>
+        <button data-page="variance" data-od-id="nav-variance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 17l5-5 4 3 7-9"/><path d="M16 6h4v4"/></svg>Variance & actuals</button>
+      </nav>
+      <p class="nav-label">Governance</p>
+      <nav class="nav">
+        <button data-page="assurance" data-od-id="nav-assurance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4z"/><path d="M8 12l2.5 2.5L16 9"/></svg>Assurance register</button>
+      </nav>
+      <div class="sidebar-meta"><strong>Working figures</strong>Protected · Unity Catalog<br/>Service principal governed</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar" data-od-id="application-topbar">
+        <div class="actions"><button class="button icon-button mobile-menu" aria-label="Open navigation">☰</button><span class="crumb">FY26–30 portfolio / <strong>Working baseline</strong></span></div>
+        <div class="actions">
+          <button class="button" data-od-id="export-brief">Export briefing</button>
+          <button class="button primary" id="newScenario" data-od-id="create-scenario">Create scenario</button>
+          <div class="avatar" title="Signed in as planner@nba.gov.au">AP</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="page active" id="overview" data-od-id="overview-screen">
+          <div class="page-head">
+            <div><p class="eyebrow">Portfolio overview · synthetic demonstration</p><h1>National infrastructure portfolio · FY26–30</h1><p class="subtitle">Review funding, delivery capacity and forecast confidence across the active portfolio.</p></div>
+            <div class="freshness"><strong>Refreshed 22 Oct 2026 · 06:00 AEDT</strong>Sources: synthetic portfolio, capacity and actuals</div>
+          </div>
+          <div class="notice"><strong>All values in this prototype are synthetic.</strong><span>Assumptions are versioned and traceable to scenario inputs.</span></div>
+          <div class="filters" data-od-id="portfolio-filters">
+            <select class="select" aria-label="Portfolio"><option>National portfolio</option><option>Transport</option><option>Energy</option><option>Water</option></select>
+            <select class="select" aria-label="Scenario"><option>Working baseline</option><option>Capacity balanced</option><option>Accelerated delivery</option></select>
+            <select class="select" aria-label="Price basis"><option>Nominal $bn</option><option>Real $bn</option></select>
+          </div>
+          <div class="grid kpis">
+            <article class="card" data-od-id="kpi-portfolio-value"><p class="kpi-label">Approved portfolio · FY26–30</p><div class="kpi-value">$184.6bn</div><p class="kpi-detail"><strong>+$12.8bn</strong> vs endorsed plan · synthetic</p></article>
+            <article class="card" data-od-id="kpi-capacity-gap"><p class="kpi-label">Peak capacity gap · FY28</p><div class="kpi-value">$8.4bn</div><p class="kpi-detail"><span class="badge risk">Deliverability risk</span></p></article>
+            <article class="card" data-od-id="kpi-projects"><p class="kpi-label">Active projects</p><div class="kpi-value">86</div><p class="kpi-detail"><strong>14</strong> require executive attention</p></article>
+            <article class="card" data-od-id="kpi-confidence"><p class="kpi-label">Forecast confidence</p><div class="kpi-value">72%</div><p class="kpi-detail">Weighted by Gateway assurance rating</p></article>
+          </div>
+          <div class="grid two-one">
+            <article class="card" data-od-id="portfolio-expenditure-chart">
+              <div class="card-head"><div><h2>Expenditure and delivery capacity</h2><p>Forecast demand exceeds modelled capacity in FY28 and FY29 · nominal $bn</p></div><span class="badge">FY26–30</span></div>
+              <svg class="chart" viewBox="0 0 760 320" role="img" aria-label="Expenditure plan, forecast and market capacity by financial year">
+                <defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="var(--border)"/></pattern></defs>
+                <line class="axis" x1="56" y1="270" x2="730" y2="270"/><line class="axis" x1="56" y1="210" x2="730" y2="210"/><line class="axis" x1="56" y1="150" x2="730" y2="150"/><line class="axis" x1="56" y1="90" x2="730" y2="90"/>
+                <text x="20" y="274">0</text><text x="14" y="214">15</text><text x="14" y="154">30</text><text x="14" y="94">45</text>
+                <g><rect class="forecast" x="86" y="154" width="58" height="116"/><rect class="forecast" x="216" y="126" width="58" height="144"/><rect class="forecast" x="346" y="90" width="58" height="180"/><rect class="forecast" x="476" y="102" width="58" height="168"/><rect class="forecast" x="606" y="130" width="58" height="140"/></g>
+                <path class="plan" d="M115 166 L245 138 L375 106 L505 114 L635 142"/>
+                <path class="capacity" d="M115 172 L245 144 L375 124 L505 132 L635 136"/>
+                <text x="94" y="294">FY26</text><text x="224" y="294">FY27</text><text x="354" y="294">FY28</text><text x="484" y="294">FY29</text><text x="614" y="294">FY30</text>
+              </svg>
+              <div class="legend"><span><i class="swatch forecast"></i>Forecast</span><span><i class="swatch plan"></i>Plan</span><span><i class="swatch capacity"></i>Modelled capacity</span></div>
+            </article>
+            <article class="card" data-od-id="priority-exceptions">
+              <div class="card-head"><div><h2>Priority exceptions</h2><p>Ranked by financial and delivery exposure</p></div><span class="badge risk">14 open</span></div>
+              <div class="exception-list">
+                <div class="exception"><div class="exception-top"><strong>Eastern Transit Corridor</strong><span class="delta bad">+$2.1bn</span></div><p>Labour constraint · FY28 · confidence 58%</p></div>
+                <div class="exception"><div class="exception-top"><strong>North Grid Resilience</strong><span class="delta bad">+11 mo</span></div><p>Long-lead equipment · Gateway amber/red</p></div>
+                <div class="exception"><div class="exception-top"><strong>Regional Water Security</strong><span class="delta good">−$0.4bn</span></div><p>Packaging change reduces peak demand</p></div>
+                <div class="exception"><div class="exception-top"><strong>Western Freight Link</strong><span class="delta bad">+$0.8bn</span></div><p>Forecast variance outside tolerance</p></div>
+              </div>
+            </article>
+          </div>
+          <article class="card" style="margin-top: var(--space-4);" data-od-id="portfolio-project-table">
+            <div class="card-head"><div><h2>Portfolio attention list</h2><p>Projects with material cost, schedule or capacity exposure</p></div><button class="button">View all 86 projects</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Project</th><th>Sector</th><th>Assurance</th><th class="num">Plan FY26–30</th><th class="num">Forecast</th><th class="num">Variance</th><th>Capacity driver</th></tr></thead><tbody>
+              <tr><td><div class="project"><i class="project-mark"></i><div><strong>Eastern Transit Corridor</strong><small>Program · 9 projects</small></div></div></td><td>Transport</td><td><span class="badge risk">Amber/red</span></td><td class="num">$18.4bn</td><td class="num">$20.5bn</td><td class="num"><span class="delta bad">+$2.1bn</span></td><td>Skilled labour</td></tr>
+              <tr><td><div class="project"><i class="project-mark" style="background:var(--viz-5)"></i><div><strong>Regional Water Security</strong><small>Program · 6 projects</small></div></div></td><td>Water</td><td><span class="badge good">Green</span></td><td class="num">$9.6bn</td><td class="num">$9.2bn</td><td class="num"><span class="delta good">−$0.4bn</span></td><td>Concrete supply</td></tr>
+              <tr><td><div class="project"><i class="project-mark" style="background:var(--viz-4)"></i><div><strong>North Grid Resilience</strong><small>Program · 12 projects</small></div></div></td><td>Energy</td><td><span class="badge risk">Amber</span></td><td class="num">$14.1bn</td><td class="num">$15.0bn</td><td class="num"><span class="delta bad">+$0.9bn</span></td><td>Electrical equipment</td></tr>
+            </tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="scenarios" data-od-id="scenario-studio-screen">
+          <div class="page-head"><div><p class="eyebrow">Scenario studio</p><h1>Allocation scenario comparison</h1><p class="subtitle">Adjust project timing, funding limits and capacity assumptions. Compare each option with the working baseline.</p></div><div class="freshness"><strong>3 saved scenarios</strong>Baseline locked · draft changes autosaved</div></div>
+          <div class="scenario-strip" data-od-id="scenario-selector">
+            <button class="scenario-card active"><strong>Working baseline</strong><span>$184.6bn · 72% confidence · 2 capacity breaches</span></button>
+            <button class="scenario-card"><strong>Capacity balanced</strong><span>$181.2bn · 81% confidence · no capacity breaches</span></button>
+            <button class="scenario-card"><strong>Accelerated delivery</strong><span>$191.4bn · 63% confidence · 4 capacity breaches</span></button>
+          </div>
+          <div class="grid two-one">
+            <article class="card"><div class="card-head"><div><h2>Scenario impact by year</h2><p>Selected scenario compared with working baseline · nominal $bn</p></div><span class="badge">Draft v7</span></div><div class="bars">
+              <div class="bar-row"><span>FY26</span><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><span class="bar-value">$28.9</span></div>
+              <div class="bar-row"><span>FY27</span><div class="bar-track"><div class="bar-fill" style="width:76%"></div></div><span class="bar-value">$35.2</span></div>
+              <div class="bar-row"><span>FY28</span><div class="bar-track"><div class="bar-fill risk" style="width:92%"></div></div><span class="bar-value">$43.1</span></div>
+              <div class="bar-row"><span>FY29</span><div class="bar-track"><div class="bar-fill warn" style="width:87%"></div></div><span class="bar-value">$40.3</span></div>
+              <div class="bar-row"><span>FY30</span><div class="bar-track"><div class="bar-fill" style="width:80%"></div></div><span class="bar-value">$37.1</span></div>
+            </div></article>
+            <article class="card"><div class="card-head"><div><h2>Baseline differences</h2><p>Funding, capacity and service changes</p></div></div><div class="exception-list">
+              <div class="exception"><div class="exception-top"><strong>Affordability</strong><span class="delta">−$3.4bn</span></div><p>Within the synthetic five-year funding envelope.</p></div>
+              <div class="exception"><div class="exception-top"><strong>Deliverability</strong><span class="delta good">2 resolved</span></div><p>FY28 labour and equipment breaches removed.</p></div>
+              <div class="exception"><div class="exception-top"><strong>Service impact</strong><span class="delta bad">3 deferred</span></div><p>Regional benefits move beyond FY30.</p></div>
+            </div></article>
+          </div>
+        </section>
+
+        <section class="page" id="capacity" data-od-id="capacity-screen">
+          <div class="page-head"><div><p class="eyebrow">Market capacity</p><h1>Delivery capacity · FY26–30</h1><p class="subtitle">Compare portfolio demand with available labour, materials, equipment and engineering services.</p></div><div class="freshness"><strong>Model version CAP-2026.10</strong>Assumptions reviewed 18 Oct 2026</div></div>
+          <div class="grid kpis"><article class="card"><p class="kpi-label">Constrained categories</p><div class="kpi-value">4</div><p class="kpi-detail">of 12 modelled capacity categories</p></article><article class="card"><p class="kpi-label">Peak demand / capacity</p><div class="kpi-value">118%</div><p class="kpi-detail">FY28 · skilled civil labour</p></article><article class="card"><p class="kpi-label">Projects affected</p><div class="kpi-value">23</div><p class="kpi-detail">across 7 programs</p></article><article class="card"><p class="kpi-label">Resolvable by sequencing</p><div class="kpi-value">$6.9bn</div><p class="kpi-detail">without removing scope · synthetic</p></article></div>
+          <article class="card"><div class="card-head"><div><h2>Capacity pressure by delivery input</h2><p>Peak annual demand as a share of modelled available capacity</p></div><select class="select"><option>FY28 peak</option><option>FY27</option><option>FY29</option></select></div><div class="bars">
+            <div class="bar-row"><span>Skilled civil labour</span><div class="bar-track"><div class="bar-fill risk" style="width:100%"></div></div><span class="bar-value">118%</span></div>
+            <div class="bar-row"><span>Electrical equipment</span><div class="bar-track"><div class="bar-fill risk" style="width:96%"></div></div><span class="bar-value">112%</span></div>
+            <div class="bar-row"><span>Concrete</span><div class="bar-track"><div class="bar-fill warn" style="width:89%"></div></div><span class="bar-value">96%</span></div>
+            <div class="bar-row"><span>Engineering services</span><div class="bar-track"><div class="bar-fill warn" style="width:82%"></div></div><span class="bar-value">91%</span></div>
+            <div class="bar-row"><span>Steel</span><div class="bar-track"><div class="bar-fill" style="width:65%"></div></div><span class="bar-value">74%</span></div>
+          </div></article>
+        </section>
+
+        <section class="page" id="variance" data-od-id="variance-screen">
+          <div class="page-head"><div><p class="eyebrow">Variance & actuals</p><h1>Plan, forecast and actuals · FY26</h1><p class="subtitle">Review cost and schedule variance by program, project and recorded driver.</p></div><div class="freshness"><strong>Actuals through Sep 2026</strong>Partial FY26 · 3-day source lag</div></div>
+          <div class="grid kpis"><article class="card"><p class="kpi-label">YTD actual</p><div class="kpi-value">$7.8bn</div><p class="kpi-detail">vs $7.4bn plan · <span class="delta bad">+$0.4bn</span></p></article><article class="card"><p class="kpi-label">FY26 forecast</p><div class="kpi-value">$28.9bn</div><p class="kpi-detail">vs $27.6bn plan · <span class="delta bad">+$1.3bn</span></p></article><article class="card"><p class="kpi-label">Schedule variance</p><div class="kpi-value">+4.2mo</div><p class="kpi-detail">portfolio-weighted average</p></article><article class="card"><p class="kpi-label">Unexplained variance</p><div class="kpi-value">$0.2bn</div><p class="kpi-detail"><span class="badge risk">Needs attribution</span></p></article></div>
+          <article class="card"><div class="card-head"><div><h2>Variance bridge · FY26 forecast vs plan</h2><p>Driver attribution · nominal $bn · synthetic</p></div><button class="button">Review assumptions</button></div><div class="bars">
+            <div class="bar-row"><span>Escalation</span><div class="bar-track"><div class="bar-fill risk" style="width:76%"></div></div><span class="bar-value">+$0.7</span></div>
+            <div class="bar-row"><span>Schedule shift</span><div class="bar-track"><div class="bar-fill risk" style="width:52%"></div></div><span class="bar-value">+$0.5</span></div>
+            <div class="bar-row"><span>Scope change</span><div class="bar-track"><div class="bar-fill warn" style="width:31%"></div></div><span class="bar-value">+$0.3</span></div>
+            <div class="bar-row"><span>Packaging</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span class="bar-value">−$0.2</span></div>
+          </div></article>
+        </section>
+
+        <section class="page" id="assurance" data-od-id="assurance-screen">
+          <div class="page-head"><div><p class="eyebrow">Assurance register</p><h1>Forecast assumptions and approvals</h1><p class="subtitle">Review evidence, ownership, confidence and approval status for material portfolio inputs.</p></div><div class="freshness"><strong>86 governed records</strong>12 awaiting owner attestation</div></div>
+          <article class="card"><div class="card-head"><div><h2>Assumption and assurance register</h2><p>Latest approval state for material portfolio inputs</p></div><button class="button">Request attestations</button></div><div class="table-wrap"><table><thead><tr><th>Record</th><th>Type</th><th>Owner</th><th>Confidence</th><th>Approval</th><th>Last reviewed</th></tr></thead><tbody>
+            <tr><td><strong>Construction escalation · transport</strong></td><td>Economic assumption</td><td>Portfolio Economics</td><td>Medium</td><td><span class="badge good">Endorsed</span></td><td>18 Oct 2026</td></tr>
+            <tr><td><strong>Eastern Transit Corridor</strong></td><td>Gateway 2 review</td><td>Program Executive</td><td>Low</td><td><span class="badge risk">Action required</span></td><td>12 Oct 2026</td></tr>
+            <tr><td><strong>Electrical equipment capacity</strong></td><td>Market assumption</td><td>Capacity Office</td><td>Medium</td><td><span class="badge">Working</span></td><td>08 Oct 2026</td></tr>
+          </tbody></table></div></article>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <button class="assistant-launcher" id="assistantLauncher" data-od-id="open-genie">Ask portfolio data</button>
+  <aside class="assistant" id="assistantPanel" aria-label="Portfolio data assistant" data-od-id="genie-panel">
+    <div class="assistant-head"><div><strong>Portfolio Genie</strong><div class="kpi-label">Runs as planner@nba.gov.au</div></div><button class="button icon-button" id="closeAssistant" aria-label="Close assistant">×</button></div>
+    <div class="assistant-body"><p><strong>Which FY28 projects are most exposed to labour capacity?</strong></p><p class="kpi-detail">Eastern Transit Corridor, Western Freight Link and Metro Renewal account for 61% of the modelled skilled-labour gap.</p><details><summary>Generated SQL</summary><pre class="sql">SELECT project_name, labour_gap
+FROM gold.capacity_exposure
+WHERE financial_year = 'FY28'
+ORDER BY labour_gap DESC</pre></details><p class="kpi-detail" style="margin-top:var(--space-3)">AI-generated · verify against cited portfolio records.</p><div class="prompt"><input aria-label="Ask a portfolio question" placeholder="Ask about cost, timing or capacity…"/><button class="button">Send</button></div></div>
+  </aside>
+
+  <div class="modal-backdrop" id="scenarioModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" data-od-id="scenario-dialog">
+    <div class="modal"><div class="modal-head"><div><p class="eyebrow">New scenario</p><h2 id="modalTitle">Start from a governed baseline</h2></div><button class="button icon-button" id="closeModal" aria-label="Close dialog">×</button></div>
+      <div class="field"><label for="scenarioName">Scenario name</label><input id="scenarioName" value="FY28 capacity response"/></div>
+      <div class="field"><label for="scenarioBase">Start from</label><select id="scenarioBase"><option>Working baseline · v12</option><option>Capacity balanced · v4</option><option>Endorsed plan · v8</option></select></div>
+      <div class="field"><label for="scenarioPurpose">Decision purpose</label><input id="scenarioPurpose" placeholder="e.g. Executive Budget Committee review"/></div>
+      <div class="modal-actions"><button class="button" id="cancelModal">Cancel</button><button class="button primary" id="createModal">Create draft</button></div>
+    </div>
+  </div>
+
+  <script>
+    const pages = document.querySelectorAll('.page');
+    const navButtons = document.querySelectorAll('[data-page]');
+    navButtons.forEach((button) => button.addEventListener('click', () => {
+      navButtons.forEach((item) => item.classList.remove('active'));
+      button.classList.add('active');
+      pages.forEach((page) => page.classList.toggle('active', page.id === button.dataset.page));
+      document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+    }));
+
+    document.querySelectorAll('.scenario-card').forEach((card) => card.addEventListener('click', () => {
+      document.querySelectorAll('.scenario-card').forEach((item) => item.classList.remove('active'));
+      card.classList.add('active');
+    }));
+
+    const assistantPanel = document.getElementById('assistantPanel');
+    document.getElementById('assistantLauncher').addEventListener('click', () => assistantPanel.classList.add('open'));
+    document.getElementById('closeAssistant').addEventListener('click', () => assistantPanel.classList.remove('open'));
+
+    const scenarioModal = document.getElementById('scenarioModal');
+    const closeScenario = () => scenarioModal.classList.remove('open');
+    document.getElementById('newScenario').addEventListener('click', () => scenarioModal.classList.add('open'));
+    document.getElementById('closeModal').addEventListener('click', closeScenario);
+    document.getElementById('cancelModal').addEventListener('click', closeScenario);
+    document.getElementById('createModal').addEventListener('click', () => {
+      closeScenario();
+      document.querySelector('[data-page="scenarios"]').click();
+    });
+    scenarioModal.addEventListener('click', (event) => { if (event.target === scenarioModal) closeScenario(); });
+  </script>
+</body>
+</html>
