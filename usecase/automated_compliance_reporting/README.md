@@ -6,7 +6,7 @@
 | **Selected function** | Automated Compliance Reporting |
 | **Evidence anchor** | [Gateway Reviews Process](https://www.finance.gov.au/government/assurance-reviews-and-risk-assessment/gateway-reviews-process) |
 | **Target KPI** | Review accuracy and evidence coverage |
-| **Status** | **Data, pipelines and AI built** - synthetic data, Lakeflow Jobs, AI mapping, reports, alerts. Application UI not yet built (design in `design/`) |
+| **Status** | **Implemented** - synthetic data, Lakeflow Jobs, AI mapping, reports, alerts, and a hybrid AppKit application using DBSQL analytics with Lakebase state. |
 
 ## Problem
 
@@ -189,9 +189,25 @@ How the build meets these notes:
   reproduces the same `findings_digest`. All seeded reports pass this check. Delta table versions at
   generation are also stored in `compliance_reports.table_versions`.
 
-## Not built yet
+## Application
 
-* The application UI from `design/compliance-reporting-wireframe.html` (the data contract above is ready for it).
+`app/nba-compliance-reports` implements the design handoff as a responsive Databricks AppKit
+application. DBSQL queries the governed compliance tables at request time; Lakebase stores user
+preferences and saved views in the app-owned `compliance_app` schema. The app can trigger the
+bundle-managed report job and surfaces overview, obligation, evidence, report, and audit views.
+
+Deploy all assets together with the additional Lakebase bindings:
+
+```bash
+databricks bundle deploy --target dev \
+  --var catalog=<YOUR_CATALOG> \
+  --var warehouse_id=<YOUR_WAREHOUSE_ID> \
+  --var postgres_branch=<YOUR_POSTGRES_BRANCH_RESOURCE> \
+  --var postgres_database=<YOUR_POSTGRES_DATABASE_RESOURCE>
+```
+
+## Further integration
+
 * Real source-system connectors. Set `simulate_connectors=false` and write to the landing path.
 * PDF rendering. The package contains printable `report.html`, `findings.json` and `evidence_manifest.csv`.
 * Integration with the `intelligent_document_processing` parsed bronze layer for document text.

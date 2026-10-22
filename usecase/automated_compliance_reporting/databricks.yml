@@ -33,6 +33,16 @@ variables:
       SQL warehouse that evaluates the gap / expiry / audit-chain SQL alerts (and that the
       application will query). Supply via --var or variable-overrides.json.
 
+  postgres_branch:
+    description: Full Lakebase Postgres branch resource name used for application state.
+
+  postgres_database:
+    description: Full Lakebase Postgres database resource name used for application state.
+
+  app_name:
+    description: Databricks App name. Override when deploying another isolated environment.
+    default: nba-compliance-reports
+
   model_endpoint:
     description: >-
       Foundation model serving endpoint used for AI evidence-mapping suggestions and report
