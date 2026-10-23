@@ -1,0 +1,257 @@
+# Budget Planning & Financial Projections - Lakeflow Jobs (serverless)
+#
+#   budget_bootstrap  one-off build: synthetic world, landing extracts, bronze/silver, Working baseline
+#                     forecast, scenarios + capacity, variance gold and the Portfolio Genie space
+#   budget_daily      scheduled: land the next ledger/register deliveries, ingest, conform, re-forecast,
+#                     re-test scenarios against capacity and refresh variance reporting
+#   budget_forecast   on demand (e.g. after a planner saves a scenario from the app): recompute the
+#                     forecast, scenarios, capacity and variance from the current silver layer
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    budget_bootstrap:
+      name: nba-budget-bootstrap-${var.environment}
+      description: >-
+        One-off build of the synthetic national infrastructure portfolio (16 programs, 86 projects, ~11
+        years of ledger history), Auto Loader ingestion, conformed silver with data quality rules, the
+        Working baseline expenditure forecast, scenario and market-capacity analysis, variance
+        reporting gold and the Portfolio Genie space. Set reset=true to drop and rebuild everything.
+      tags:
+        usecase: budget_planning_and_projections
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      parameters:
+        - name: reset
+          default: "false"
+        - name: world_anchor_date
+          default: ""
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              reset: "{{job.parameters.reset}}"
+
+        - task_key: generate_synthetic_data
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              mode: bootstrap
+              seed: ${var.synthetic_seed}
+              world_anchor_date: "{{job.parameters.world_anchor_date}}"
+              as_of_date: ""
+              actuals_lag_days: ${var.actuals_lag_days}
+              txn_per_project_month: ${var.txn_per_project_month}
+              endorsed_window_target_aud_bn: ${var.endorsed_window_target_aud_bn}
+
+        - task_key: ingest_bronze
+          depends_on:
+            - task_key: generate_synthetic_data
+          notebook_task:
+            notebook_path: ../src/02_ingest_bronze.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+        - task_key: conform_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../src/03_conform_silver.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "{{job.run_id}}"
+
+        - task_key: expenditure_forecast
+          depends_on:
+            - task_key: conform_silver
+          notebook_task:
+            notebook_path: ../src/04_expenditure_forecast.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "RUN-{{job.run_id}}"
+              run_type: bootstrap
+              as_of_date: ""
+              horizon_years: ${var.horizon_years}
+              performance_window_months: ${var.performance_window_months}
+
+        - task_key: scenarios_and_capacity
+          depends_on:
+            - task_key: expenditure_forecast
+          notebook_task:
+            notebook_path: ../src/05_scenarios_and_capacity.py
+            base_parameters: &scenario_params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              sequencing_step_months: ${var.sequencing_step_months}
+              max_deferral_months: ${var.max_deferral_months}
+              capacity_confidence_penalty: ${var.capacity_confidence_penalty}
+
+        - task_key: variance_reporting
+          depends_on:
+            - task_key: scenarios_and_capacity
+          notebook_task:
+            notebook_path: ../src/06_variance_reporting.py
+            base_parameters: &variance_params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              tolerance_pct: ${var.tolerance_pct}
+              tolerance_floor_aud_m: ${var.tolerance_floor_aud_m}
+
+        - task_key: genie_space
+          depends_on:
+            - task_key: variance_reporting
+          notebook_task:
+            notebook_path: ../src/07_genie_space.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              warehouse_id: ${var.warehouse_id}
+              space_title: ${var.genie_space_title}
+              parent_path: ${workspace.file_path}
+
+    budget_daily:
+      name: nba-budget-daily-${var.environment}
+      description: >-
+        Daily: land the next synthetic ledger and register deliveries, ingest (Auto Loader), conform with
+        data quality rules, re-forecast the Working baseline, re-test every scenario against market
+        capacity and refresh variance reporting.
+      tags:
+        usecase: budget_planning_and_projections
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      schedule:
+        quartz_cron_expression: ${var.daily_schedule}
+        timezone_id: ${var.timezone_id}
+      tasks:
+        - task_key: land_deliveries
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              mode: incremental
+              seed: ${var.synthetic_seed}
+              world_anchor_date: ""
+              as_of_date: ""
+              actuals_lag_days: ${var.actuals_lag_days}
+              txn_per_project_month: ${var.txn_per_project_month}
+              endorsed_window_target_aud_bn: ${var.endorsed_window_target_aud_bn}
+
+        - task_key: ingest_bronze
+          depends_on:
+            - task_key: land_deliveries
+          notebook_task:
+            notebook_path: ../src/02_ingest_bronze.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+        - task_key: conform_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../src/03_conform_silver.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "{{job.run_id}}"
+
+        - task_key: expenditure_forecast
+          depends_on:
+            - task_key: conform_silver
+          notebook_task:
+            notebook_path: ../src/04_expenditure_forecast.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "RUN-{{job.run_id}}"
+              run_type: scheduled
+              as_of_date: ""
+              horizon_years: ${var.horizon_years}
+              performance_window_months: ${var.performance_window_months}
+
+        - task_key: scenarios_and_capacity
+          depends_on:
+            - task_key: expenditure_forecast
+          notebook_task:
+            notebook_path: ../src/05_scenarios_and_capacity.py
+            base_parameters: *scenario_params
+
+        - task_key: variance_reporting
+          depends_on:
+            - task_key: scenarios_and_capacity
+          notebook_task:
+            notebook_path: ../src/06_variance_reporting.py
+            base_parameters: *variance_params
+
+    budget_forecast:
+      name: nba-budget-forecast-${var.environment}
+      description: >-
+        On demand: recompute the Working baseline forecast, all scenarios (including newly saved
+        scenario versions and levers), market capacity and variance reporting from the current silver
+        layer. Set as_of_date to reproduce the forecast as at an earlier date.
+      tags:
+        usecase: budget_planning_and_projections
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      parameters:
+        - name: as_of_date
+          default: ""
+        - name: run_type
+          default: on_demand
+      tasks:
+        - task_key: expenditure_forecast
+          notebook_task:
+            notebook_path: ../src/04_expenditure_forecast.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "RUN-{{job.run_id}}"
+              run_type: "{{job.parameters.run_type}}"
+              as_of_date: "{{job.parameters.as_of_date}}"
+              horizon_years: ${var.horizon_years}
+              performance_window_months: ${var.performance_window_months}
+
+        - task_key: scenarios_and_capacity
+          depends_on:
+            - task_key: expenditure_forecast
+          notebook_task:
+            notebook_path: ../src/05_scenarios_and_capacity.py
+            base_parameters: *scenario_params
+
+        - task_key: variance_reporting
+          depends_on:
+            - task_key: scenarios_and_capacity
+          notebook_task:
+            notebook_path: ../src/06_variance_reporting.py
+            base_parameters: *variance_params
