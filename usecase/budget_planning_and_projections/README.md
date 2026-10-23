@@ -6,7 +6,8 @@
 | **Selected function** | Budget Planning & Financial Projections |
 | **Evidence anchor** | [2025 Infrastructure Market Capacity Report](https://www.infrastructureaustralia.gov.au/reports/2025-infrastructure-market-capacity-report) |
 | **Target KPI** | Planning cycle productivity (measure to instrument) |
-| **Status** | **Data layer built** - synthetic generator, bronze/silver/gold pipeline, forecast, scenarios, capacity, variance and Portfolio Genie. No application yet. |
+| **Status** | **Implemented** - React Databricks App, typed analytics and Genie integration |
+
 
 ## Problem
 
@@ -152,6 +153,16 @@ databricks bundle deploy --target dev --var catalog=<YOUR_CATALOG> --var warehou
 databricks bundle run budget_bootstrap --target dev
 ```
 
+
+The React app is implemented in `src/nba-budget-portfolio`. For the selected workspace:
+
+```bash
+cd src/nba-budget-portfolio
+npm run dev
+databricks apps validate --path . --profile au-pubsec
+databricks apps deploy --profile au-pubsec --auto-approve
+```
+
 Replace `<YOUR_CATALOG>` and `<YOUR_WAREHOUSE_ID>` (angle brackets included) with a catalog you can
 write to and a SQL warehouse id for Genie, or put them in
 `.databricks/bundle/dev/variable-overrides.json`. The catalog must already exist; the schema and
@@ -161,6 +172,7 @@ volume are created. Jobs:
 * `budget_daily` - scheduled: next deliveries -> bronze -> silver -> forecast -> scenarios -> variance.
 * `budget_forecast` - on demand after a scenario is saved; `as_of_date` reproduces an earlier forecast.
 
+
 ## Assurance notes
 
 Pre-decision budget data is typically sensitive and often cabinet-in-confidence in real settings,
@@ -169,13 +181,8 @@ than the modelling. Forecasts should carry their assumptions as data rather than
 scenario can be re-run and audited later. Nothing in this use case should produce a number without
 a traceable basis.
 
-Every table carries `nba_usecase`, `nba_classification = protected_working_figures`,
-`nba_synthetic` and `nba_layer` tags; KPIs carry `figure_status = Working`. Each run writes one
-`forecast_runs` row recording the plan version, capacity model version, assumption and scenario
-versions and parameters used.
+## Application
 
-## Not built yet
-
-* The Portfolio Command Centre application (design in `design/`).
-* AI/BI dashboard.
-* Monte Carlo / P50-P90 forecast ranges (confidence is currently assurance- and capacity-based).
+The Portfolio Command Centre provides live portfolio KPIs, expenditure and capacity analysis,
+scenario comparison, variance reporting, an assurance register and governed natural-language
+questions through the Portfolio Genie space. All displayed values remain synthetic.
