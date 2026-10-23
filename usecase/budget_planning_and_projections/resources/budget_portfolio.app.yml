@@ -1,0 +1,52 @@
+resources:
+  apps:
+    budget_portfolio:
+      name: ${var.app_name}
+      description: National infrastructure budget planning, capacity and variance command centre
+      source_code_path: ../src/nba-budget-portfolio
+      user_api_scopes:
+        - genie
+      lifecycle:
+        started: true
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+        - name: genie-space
+          genie_space:
+            name: ${var.genie_space_name}
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+        - name: expenditure-fy
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.expenditure_fy", permission: SELECT}
+        - name: project-confidence
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.project_confidence", permission: SELECT}
+        - name: dim-project
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.dim_project", permission: SELECT}
+        - name: capacity-exposure
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.capacity_exposure", permission: SELECT}
+        - name: attention-list
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_attention_list", permission: SELECT}
+        - name: portfolio-kpis
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_kpis", permission: SELECT}
+        - name: portfolio-capacity
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_capacity_fy", permission: SELECT}
+        - name: priority-exceptions
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.priority_exceptions", permission: SELECT}
+        - name: scenario-summary
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_summary", permission: SELECT}
+        - name: scenario-comparison
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_comparison", permission: SELECT}
+        - name: capacity-demand
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.capacity_demand", permission: SELECT}
+        - name: variance-bridge
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.variance_bridge", permission: SELECT}
+        - name: assurance-register
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.assurance_register", permission: SELECT}
+      config:
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: DATABRICKS_GENIE_SPACE_ID
+            value_from: genie-space

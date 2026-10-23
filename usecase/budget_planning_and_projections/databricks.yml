@@ -29,6 +29,16 @@ variables:
     description: SQL warehouse backing dashboards and SQL tasks.
     default: ""
 
+  app_name:
+    description: Databricks App name.
+    default: nba-budget-portfolio
+
+  genie_space_id:
+    description: Existing governed Portfolio Genie space ID.
+
+  genie_space_name:
+    description: Existing governed Portfolio Genie space display name.
+
   notifications_email:
     description: Address notified when a job run fails.
     default: ${workspace.current_user.userName}
@@ -37,8 +47,8 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
 
 targets:
   dev:

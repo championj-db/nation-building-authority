@@ -6,7 +6,7 @@
 | **Selected function** | Budget Planning & Financial Projections |
 | **Evidence anchor** | [2025 Infrastructure Market Capacity Report](https://www.infrastructureaustralia.gov.au/reports/2025-infrastructure-market-capacity-report) |
 | **Target KPI** | Planning cycle productivity (measure to instrument) |
-| **Status** | **Stub** - README and DAB skeleton only |
+| **Status** | **Implemented** - React Databricks App, typed analytics and Genie integration |
 
 ## Problem
 
@@ -84,8 +84,14 @@ Infrastructure Australia reporting; none of the figures are real.
 databricks bundle validate --target dev --var catalog=<YOUR_CATALOG>
 ```
 
-Replace `<YOUR_CATALOG>` (angle brackets included) with a catalog you can write to. There is
-nothing to deploy or run yet.
+The React app is implemented in `src/nba-budget-portfolio`. For the selected workspace:
+
+```bash
+cd src/nba-budget-portfolio
+npm run dev
+databricks apps validate --path . --profile au-pubsec
+databricks apps deploy --profile au-pubsec --auto-approve
+```
 
 ## Assurance notes
 
@@ -95,7 +101,8 @@ than the modelling. Forecasts should carry their assumptions as data rather than
 scenario can be re-run and audited later. Nothing in this use case should produce a number without
 a traceable basis.
 
-## Not built yet
+## Application
 
-Everything. This is a stub: README plus a validating DAB skeleton. No synthetic generator, no
-portfolio model, no forecast, no scenarios, no capacity analysis, no reporting.
+The Portfolio Command Centre provides live portfolio KPIs, expenditure and capacity analysis,
+scenario comparison, variance reporting, an assurance register and governed natural-language
+questions through the Portfolio Genie space. All displayed values remain synthetic.
