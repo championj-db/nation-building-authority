@@ -147,6 +147,7 @@ $171.8bn over the horizon, ledger history from FY16 with ~150 GL postings per pr
 | `assurance_register` | record | Assumptions and Gateway reviews with owner, confidence and approval |
 | `dim_project`, `dim_program`, `dim_scenario`, `dim_capacity_category`, `dim_financial_year` | dimension | Lookups |
 | `forecast_runs`, `dq_results`, `pipeline_control` | run / rule / key | Run record with every input version; DQ outcomes; run context |
+| `scenario_events`, `forecast_submissions`, `variance_commentary`, `assurance_actions`, `briefing_packs` | event | App-written, append-only workflow records (latest event = current state) |
 
 ## Deploy
 
@@ -156,14 +157,17 @@ databricks bundle run budget_bootstrap --target dev
 ```
 
 
-The React app is implemented in `src/nba-budget-portfolio`. For the selected workspace:
+The React app in `src/nba-budget-portfolio` is part of this bundle (`resources/budget_portfolio.app.yml`), so
+`databricks bundle deploy` builds and deploys it together with the jobs. For local development:
 
 ```bash
 cd src/nba-budget-portfolio
-npm run dev
-databricks apps validate --path . --profile au-pubsec
-databricks apps deploy --profile au-pubsec --auto-approve
+npm run dev          # runs as your CLI profile; reads use your identity, as in production
+npm run typegen      # after changing SQL in config/query-templates; commit shared/appkit-types
 ```
+
+The deployed build uses the committed query types: the app service principal has no read grants on
+portfolio tables, because every read runs on behalf of the signed-in user.
 
 Replace `<YOUR_CATALOG>` and `<YOUR_WAREHOUSE_ID>` (angle brackets included) with a catalog you can
 write to and a SQL warehouse id for Genie, or put them in
@@ -185,6 +189,32 @@ a traceable basis.
 
 ## Application
 
-The Portfolio Command Centre provides live portfolio KPIs, expenditure and capacity analysis,
-scenario comparison, variance reporting, an assurance register and governed natural-language
-questions through the Portfolio Genie space. All displayed values remain synthetic.
+The Portfolio Command Centre is the planning tool, not a dashboard over it. Every figure carries the
+forecast run, actuals date, plan and capacity model versions it came from.
+
+| Page | What a user does |
+| --- | --- |
+| Portfolio overview | Plan vs forecast vs deliverable capacity with a P10-P90 range and the gap shaded; exceptions and the attention list open program -> project drill-downs (monthly phasing, recorded drivers, Gateway, exposure to constrained inputs) |
+| Scenario studio | Builds a scenario from levers (defer, accelerate, escalation, scope, exclude, capacity uplift; optionally then capacity-aware sequencing), saves it as a versioned draft in `scenario_definitions` / `scenario_levers` and triggers `budget_forecast`; compares up to three scenarios on affordability, breaches, confidence, spend pushed past FY31 and indicative delay cost; shows what moved and why and the sequencer's decision log; submit -> endorse / return |
+| Market capacity | Input x year utilisation heatmap; a cell opens the projects driving it and which are Deferrable |
+| Variance & actuals | Plan-to-forecast waterfall for YTD, current FY or horizon; projects outside tolerance; owners attribute unexplained variance with a reason code, optionally from an AI first draft grounded on the project's drivers and approved changes |
+| Monthly forecast cycle | Program offices submit their forecast and commentary; the portfolio office returns, approves and locks the cycle |
+| Assurance register | Owners attest assumptions, raise and close actions, comment |
+| Briefing packs | An AI first draft of the Executive Budget Committee briefing from the figures the user can read, edited, approved, versioned and printed |
+
+**Identity.** Reads (`.obo.sql` queries, Genie, AI drafting context) run as the signed-in user, so Unity
+Catalog grants and row filters apply per person. Writes are append-only records made by the app service
+principal with the user recorded as the actor; latest event = current state. The *Acting as* role
+switch is a demo convenience; in production derive it from workspace groups.
+
+**AI.** Drafting uses the `briefing_endpoint` Foundation Model endpoint (default
+`databricks-claude-sonnet-5-5`). Drafts only see rows the user can read, are instructed to use only the
+supplied figures, and are saved as the author's own words after review; briefing packs record the model
+and the figures they were grounded on.
+
+**Uncertainty and delay cost.** `05` adds a seeded 1,000-draw Monte Carlo on unspent work (wider for
+low-confidence projects and later years, with a common market factor and a modest overrun skew) to
+`portfolio_capacity_fy` and `scenario_summary`, and an indicative delay cost for scenario deferrals at the
+endorsed delay-cost rate. The delay cost is reported, not added to the forecast.
+
+All displayed values remain synthetic.

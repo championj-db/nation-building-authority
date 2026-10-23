@@ -42,7 +42,8 @@ T = {t: table_name(t) for t in (
     "dim_project", "dim_program", "dim_financial_year", "dim_scenario", "dim_capacity_category", "expenditure_fy",
     "portfolio_capacity_fy", "capacity_demand", "capacity_exposure", "project_confidence", "scenario_summary",
     "scenario_project_changes", "variance_project", "variance_bridge", "portfolio_attention_list", "priority_exceptions",
-    "portfolio_kpis", "assurance_register", "silver_change_register", "forecast_runs")}
+    "portfolio_kpis", "assurance_register", "silver_change_register", "forecast_runs",
+    "variance_commentary", "forecast_submissions", "scenario_events", "scenario_sequencing_decisions")}
 horizon_label = f"{fy_label(HORIZON[0])}-{fy_label(HORIZON[-1])}"
 
 INSTRUCTIONS = f"""You are the Portfolio Genie for the Nation Building Authority (NBA), answering questions from budget planners and portfolio executives about the national infrastructure portfolio: multi-year expenditure, scenarios, delivery-market capacity, variance and assurance.

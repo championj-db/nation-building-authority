@@ -283,13 +283,16 @@ assump = spark.table(table_name("silver_assumptions")).toPandas()
 reg = assump.rename(columns={"assumption_id": "record_id", "title": "record", "assumption_type": "record_type"})[
     ["record_id", "record", "record_type", "owner", "confidence", "approval_status", "version", "last_reviewed", "next_review_due",
      "evidence_reference", "value_summary"]]
+reg["record"] = reg.record.str.replace(r"\bcapacity capacity\b", "capacity", regex=True)
+# Gateway records are owned by the accountable program executive in the delivery agency.
+prog_owner = proj.groupby("program_id").delivery_agency.agg(lambda s_: s_.mode().iloc[0])
 rv = spark.table(table_name("silver_gateway_reviews")).filter("is_latest").toPandas().merge(
     proj[["program_id", "program_name"]].reset_index(), on="project_id")
 worst_rv = rv.assign(rank=rv.delivery_confidence.map({v: k for k, v in RANK_NAME.items()})).sort_values(["rank", "report_date"], ascending=False).groupby("program_id").head(1)
 CONF = {1: "High", 2: "Medium", 3: "Medium", 4: "Low", 5: "Low"}
 reg_rv = pd.DataFrame(dict(
     record_id=worst_rv.review_id, record=worst_rv.program_name, record_type=worst_rv.gate.map(lambda g_: f"Gateway {g_} review"),
-    owner="Program Executive", confidence=worst_rv["rank"].map(CONF),
+    owner=worst_rv.program_id.map(lambda p_: f"Program Executive, {prog_owner.get(p_, 'delivery agency')}"), confidence=worst_rv["rank"].map(CONF),
     approval_status=worst_rv["rank"].map(lambda r_: "Action required" if r_ >= 4 else ("Awaiting attestation" if r_ == 3 else "Endorsed")),
     version=1, last_reviewed=worst_rv.report_date, next_review_due=worst_rv.report_date.map(lambda d_: d_ + timedelta(days=180)),
     evidence_reference=worst_rv.review_id, value_summary=worst_rv.delivery_confidence + " - " + worst_rv.summary))

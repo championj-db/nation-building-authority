@@ -4,3 +4,10 @@ env:
     valueFrom: sql-warehouse
   - name: DATABRICKS_GENIE_SPACE_ID
     valueFrom: genie-space
+  - name: DATABRICKS_JOB_FORECAST
+    valueFrom: forecast-job
+  - name: DATABRICKS_SERVING_ENDPOINT_NAME
+    valueFrom: briefing-llm
+  # Full name of a bound portfolio table; the app derives the catalog and schema from it.
+  - name: PORTFOLIO_TABLE
+    valueFrom: scenario-definitions

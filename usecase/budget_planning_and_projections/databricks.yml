@@ -42,6 +42,10 @@ variables:
   genie_space_name:
     description: Existing governed Portfolio Genie space display name.
 
+  briefing_endpoint:
+    description: Foundation Model serving endpoint that drafts variance commentary and briefing packs.
+    default: databricks-claude-sonnet-5-5
+
   notifications_email:
     description: Address notified when a job run fails.
     default: ${workspace.current_user.userName}

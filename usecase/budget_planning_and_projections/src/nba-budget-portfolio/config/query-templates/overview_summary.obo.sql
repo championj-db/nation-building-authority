@@ -1,5 +1,6 @@
 -- @param scenario_id STRING
 -- @param sector STRING
+-- @param data_version STRING
 WITH expenditure AS (
   SELECT
     scenario_id,
@@ -8,7 +9,7 @@ WITH expenditure AS (
     SUM(forecast_aud_m) AS forecast_aud_m,
     SUM(forecast_real_aud_m) AS forecast_real_aud_m,
     SUM(plan_aud_m) AS plan_aud_m
-  FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.expenditure_fy
+  FROM {{schema}}.expenditure_fy
   WHERE scenario_id = :scenario_id
     AND is_horizon
     AND (:sector = 'ALL' OR sector = :sector)
@@ -16,8 +17,8 @@ WITH expenditure AS (
 ), confidence AS (
   SELECT
     SUM(pc.confidence_pct * pc.horizon_spend_aud_m) / NULLIF(SUM(pc.horizon_spend_aud_m), 0) AS confidence_pct
-  FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.project_confidence pc
-  INNER JOIN au_pubsec_catalog.budget_planning_and_projections_jared_champion.dim_project project
+  FROM {{schema}}.project_confidence pc
+  INNER JOIN {{schema}}.dim_project project
     ON project.project_id = pc.project_id
   WHERE pc.scenario_id = :scenario_id
     AND (:sector = 'ALL' OR project.sector = :sector)
@@ -29,8 +30,8 @@ WITH expenditure AS (
     SUM(exposure.gap_value_aud_m) AS gap_aud_m,
     COUNT(DISTINCT IF(exposure.gap_value_aud_m > 0, exposure.project_id, NULL)) AS projects_affected,
     COUNT(DISTINCT IF(exposure.gap_value_aud_m > 0, exposure.program_id, NULL)) AS programs_affected
-  FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.capacity_exposure exposure
-  INNER JOIN au_pubsec_catalog.budget_planning_and_projections_jared_champion.dim_project project
+  FROM {{schema}}.capacity_exposure exposure
+  INNER JOIN {{schema}}.dim_project project
     ON project.project_id = exposure.project_id
   WHERE exposure.scenario_id = :scenario_id
     AND (:sector = 'ALL' OR project.sector = :sector)
@@ -42,11 +43,16 @@ WITH expenditure AS (
   LIMIT 1
 ), attention AS (
   SELECT COALESCE(SUM(attention_projects), 0) AS attention_projects
-  FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.portfolio_attention_list
+  FROM {{schema}}.portfolio_attention_list
   WHERE (:sector = 'ALL' OR sector = :sector)
 ), base AS (
   SELECT *
-  FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.portfolio_kpis
+  FROM {{schema}}.portfolio_kpis
+  WHERE scenario_id = :scenario_id
+    AND :data_version IS NOT NULL
+), mc_range AS (
+  SELECT forecast_p10_aud_m, forecast_p90_aud_m
+  FROM {{schema}}.scenario_summary
   WHERE scenario_id = :scenario_id
 )
 SELECT
@@ -83,8 +89,12 @@ SELECT
   MAX(base.plan_version) AS plan_version,
   MAX(base.capacity_model_version) AS capacity_model_version,
   MAX(base.figure_status) AS figure_status,
-  MAX(base.refreshed_at) AS refreshed_at
+  MAX(base.refreshed_at) AS refreshed_at,
+  MAX(mc_range.forecast_p10_aud_m) AS forecast_p10_aud_m,
+  MAX(mc_range.forecast_p90_aud_m) AS forecast_p90_aud_m,
+  MAX(base.run_id) AS run_id
 FROM base
+CROSS JOIN mc_range
 CROSS JOIN confidence
 CROSS JOIN attention
 LEFT JOIN expenditure ON TRUE

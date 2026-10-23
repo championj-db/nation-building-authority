@@ -1,4 +1,5 @@
 -- @param period STRING
+-- @param data_version STRING
 SELECT
   period,
   period_label,
@@ -7,8 +8,9 @@ SELECT
   amount_aud_m,
   plan_aud_m,
   forecast_aud_m
-FROM au_pubsec_catalog.budget_planning_and_projections_jared_champion.variance_bridge
+FROM {{schema}}.variance_bridge
 WHERE scope_level = 'portfolio'
   AND scope_id = 'PORTFOLIO'
   AND period = :period
+  AND :data_version IS NOT NULL
 ORDER BY driver_order;

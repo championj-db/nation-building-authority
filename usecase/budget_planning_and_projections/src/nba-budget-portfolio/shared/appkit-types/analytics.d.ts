@@ -7,7 +7,10 @@ declare module "@databricks/appkit-ui/react" {
   interface QueryRegistry {
     assurance_register: {
         name: "assurance_register";
-        parameters: Record<string, never>;
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
         result: Array<{
           /** @sqlType STRING */
           record_id: string;
@@ -19,8 +22,10 @@ declare module "@databricks/appkit-ui/react" {
           owner: string;
           /** @sqlType STRING */
           confidence: string;
-          /** Endorsed | Working | Awaiting attestation | Action required. */
+          /** @sqlType STRING */
           approval_status: string;
+          /** Endorsed | Working | Awaiting attestation | Action required. */
+          register_status: string;
           /** @sqlType BIGINT */
           version: number;
           /** @sqlType DATE */
@@ -31,39 +36,220 @@ declare module "@databricks/appkit-ui/react" {
           evidence_reference: string;
           /** @sqlType STRING */
           value_summary: string;
+          /** Attested | Comment | Action raised | Closed */
+          last_action: string;
+          /** @sqlType STRING */
+          last_action_comment: string;
+          /** @sqlType STRING */
+          last_action_actor: string;
+          /** @sqlType TIMESTAMP */
+          last_action_at: string;
+          /** @sqlType BIGINT */
+          action_count: number;
         }>;
       };
-    capacity_pressure: {
-        name: "capacity_pressure";
+    briefing_packs: {
+        name: "briefing_packs";
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          pack_id: string;
+          /** @sqlType INT */
+          version: number;
+          /** @sqlType STRING */
+          title: string;
+          /** @sqlType STRING */
+          scenario_id: string;
+          /** @sqlType STRING */
+          forecast_run_id: string;
+          /** Markdown briefing narrative */
+          narrative: string;
+          /** Draft | Approved */
+          status: string;
+          /** Serving endpoint that drafted the first version (null if written by hand) */
+          model: string;
+          /** @sqlType STRING */
+          actor: string;
+          /** @sqlType TIMESTAMP */
+          created_at: string;
+        }>;
+      };
+    capacity_drivers: {
+        name: "capacity_drivers";
         parameters: {
           /** STRING - use sql.string() */
           scenario_id: SQLStringMarker;
           /** STRING - use sql.string() */
           financial_year: SQLStringMarker;
+          /** STRING - use sql.string() */
+          category_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
+          /** Program display name. */
+          program_name: string;
+          /** @sqlType STRING */
+          schedule_flexibility: string;
+          /** @sqlType INT */
+          priority_tier: number;
+          /** Metropolitan, Regional or Remote - where benefits accrue. */
+          region_type: string;
+          /** @sqlType DOUBLE */
+          spend_aud_m: number;
+          /** Project share of total portfolio demand for the input that year, %. */
+          share_of_demand_pct: number;
+          /** Project's attributed share of the gap value, AUD m. For labour gap use capacity_category = 'Skilled civil labour'. */
+          gap_value_aud_m: number;
+          /** True when the project's subsector uses this input at or above the median intensity. */
+          heavy_user: boolean;
+          /** Scenario forecast confidence, %. */
+          confidence_pct: number;
+        }>;
+      };
+    capacity_heatmap: {
+        name: "capacity_heatmap";
+        parameters: {
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          category_id: string;
           /** Delivery-market input category (e.g. Skilled civil labour). Join to dim_capacity_category. */
           capacity_category: string;
           /** @sqlType STRING */
           unit: string;
+          /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
+          financial_year: string;
+          /** Australian Government financial year as an integer, labelled by the year it ends (2027 = 1 Jul 2026 - 30 Jun 2027). */
+          fy: number;
           /** Portfolio demand in the category unit. */
           demand_units: number;
           /** Supply available to the portfolio (incl. scenario uplift levers). */
           available_units: number;
           /** demand / available x 100. */
           utilisation_pct: number;
+          /** Utilisation of the same input and year in the Working baseline. */
+          baseline_utilisation_pct: number;
           /** @sqlType STRING */
           status: string;
           /** Demand above supply, category units. */
           gap_units: number;
           /** Portfolio spend that year that cannot be delivered given this input = forecast x (1 - 1/utilisation). */
           gap_value_aud_m: number;
-          /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
-          financial_year: string;
-          /** Australian Government financial year as an integer, labelled by the year it ends (2027 = 1 Jul 2026 - 30 Jun 2027). */
-          fy: number;
           /** @sqlType STRING */
           capacity_model_version: string;
+        }>;
+      };
+    forecast_cycle: {
+        name: "forecast_cycle";
+        parameters: {
+          /** STRING - use sql.string() */
+          cycle: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
+          /** Program display name. */
+          program_name: string;
+          /** Infrastructure sector: Transport, Energy, Water or Social. */
+          sector: string;
+          /** @sqlType STRING */
+          delivery_agency: string;
+          /** @sqlType STRING */
+          program_executive: string;
+          /** Endorsed plan (budget) expenditure, AUD millions, nominal. */
+          plan_aud_m: number;
+          /** Forecast expenditure, AUD millions, nominal. Actuals for closed months, forecast thereafter. */
+          forecast_aud_m: number;
+          /** Forecast minus plan, AUD millions. Positive = overspend / cost growth. */
+          variance_aud_m: number;
+          /** @sqlType BOOLEAN */
+          outside_tolerance: boolean;
+          /** Program Gateway rating: forecast-weighted average of its projects' latest ratings. */
+          assurance_rating: string;
+          /** @sqlType BOOLEAN */
+          requires_attention: boolean;
+          /** @sqlType STRING */
+          status: string;
+          /** @sqlType STRING */
+          status_actor: string;
+          /** Program office | Portfolio office */
+          status_role: string;
+          /** @sqlType TIMESTAMP */
+          status_at: string;
+          /** @sqlType STRING */
+          status_note: string;
+          /** @sqlType STRING */
+          submission_commentary: string;
+          /** @sqlType STRING */
+          submitted_by: string;
+          /** @sqlType TIMESTAMP */
+          submitted_at: string;
+          /** Program horizon forecast at submission, AUD m */
+          submitted_forecast_aud_m: number;
+          /** @sqlType BIGINT */
+          events: number;
+        }>;
+      };
+    forecast_runs: {
+        name: "forecast_runs";
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          run_id: string;
+          /** @sqlType STRING */
+          run_type: string;
+          /** @sqlType DATE */
+          as_of_date: string;
+          /** @sqlType DATE */
+          actuals_through: string;
+          /** @sqlType STRING */
+          plan_version: string;
+          /** @sqlType STRING */
+          capacity_model_version: string;
+          /** JSON: scenario_id -> version used */
+          scenario_versions: string;
+          /** @sqlType TIMESTAMP */
+          started_at: string;
+          /** @sqlType TIMESTAMP */
+          completed_at: string;
+          /** @sqlType STRING */
+          status: string;
+        }>;
+      };
+    lever_targets: {
+        name: "lever_targets";
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          target_type: string;
+          /** Program identifier. Join to dim_program. */
+          target_id: string;
+          /** Program display name. */
+          target_name: string;
+          /** Infrastructure sector: Transport, Energy, Water or Social. */
+          detail: string;
         }>;
       };
     overview_summary: {
@@ -73,6 +259,8 @@ declare module "@databricks/appkit-ui/react" {
           scenario_id: SQLStringMarker;
           /** STRING - use sql.string() */
           sector: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
           /** @sqlType STRING */
@@ -143,6 +331,12 @@ declare module "@databricks/appkit-ui/react" {
           figure_status: string;
           /** @sqlType TIMESTAMP */
           refreshed_at: string;
+          /** @sqlType DOUBLE */
+          forecast_p10_aud_m: number;
+          /** @sqlType DOUBLE */
+          forecast_p90_aud_m: number;
+          /** @sqlType STRING */
+          run_id: string;
         }>;
       };
     overview_timeseries: {
@@ -154,6 +348,8 @@ declare module "@databricks/appkit-ui/react" {
           sector: SQLStringMarker;
           /** STRING - use sql.string() */
           scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
           /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
@@ -168,6 +364,14 @@ declare module "@databricks/appkit-ui/react" {
           actual_aud_bn: number;
           /** @sqlType DOUBLE */
           capacity_aud_bn: number;
+          /** @sqlType DOUBLE */
+          p10_aud_bn: number;
+          /** @sqlType DOUBLE */
+          p90_aud_bn: number;
+          /** @sqlType STRING */
+          binding_category: string;
+          /** @sqlType DOUBLE */
+          capacity_gap_aud_bn: number;
         }>;
       };
     portfolio_attention: {
@@ -175,10 +379,14 @@ declare module "@databricks/appkit-ui/react" {
         parameters: {
           /** STRING - use sql.string() */
           sector: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
           /** @sqlType BIGINT */
           rank: number;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
           /** Program display name. */
           program_name: string;
           /** Infrastructure sector: Transport, Energy, Water or Social. */
@@ -187,16 +395,28 @@ declare module "@databricks/appkit-ui/react" {
           projects: number;
           /** Program Gateway rating: forecast-weighted average of its projects' latest ratings. */
           assurance_rating: string;
+          /** Worst latest Gateway rating among the program's projects. */
+          worst_gateway_rating: string;
           /** Endorsed plan (budget) expenditure, AUD millions, nominal. */
           plan_aud_m: number;
           /** Forecast expenditure, AUD millions, nominal. Actuals for closed months, forecast thereafter. */
           forecast_aud_m: number;
           /** Forecast minus plan, AUD millions. Positive = overspend / cost growth. */
           variance_aud_m: number;
+          /** @sqlType DOUBLE */
+          variance_pct: number;
+          /** @sqlType BOOLEAN */
+          outside_tolerance: boolean;
           /** Delivery input contributing most to the program's capacity gap (or its most constrained input). */
           capacity_driver: string;
+          /** Program's attributed share of capacity gaps across the horizon, AUD m. */
+          capacity_gap_aud_m: number;
+          /** @sqlType BIGINT */
+          max_slip_months: number;
           /** @sqlType DOUBLE */
           confidence_pct: number;
+          /** @sqlType BIGINT */
+          attention_projects: number;
           /** @sqlType BOOLEAN */
           requires_attention: boolean;
         }>;
@@ -206,10 +426,16 @@ declare module "@databricks/appkit-ui/react" {
         parameters: {
           /** STRING - use sql.string() */
           sector: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
           /** @sqlType BIGINT */
           rank: number;
+          /** @sqlType STRING */
+          exception_id: string;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
           /** Program display name. */
           program_name: string;
           /** @sqlType STRING */
@@ -224,13 +450,316 @@ declare module "@databricks/appkit-ui/react" {
           status: string;
         }>;
       };
-    scenario_comparison: {
-        name: "scenario_comparison";
+    program_projects: {
+        name: "program_projects";
         parameters: {
           /** STRING - use sql.string() */
           scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          program_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** State or territory where the asset is delivered. */
+          jurisdiction: string;
+          /** Metropolitan, Regional or Remote - where benefits accrue. */
+          region_type: string;
+          /** @sqlType STRING */
+          lifecycle_stage: string;
+          /** @sqlType STRING */
+          delivery_model: string;
+          /** @sqlType STRING */
+          schedule_flexibility: string;
+          /** @sqlType INT */
+          priority_tier: number;
+          /** Latest Gateway delivery confidence: Green, Amber/Green, Amber, Amber/Red, Red. */
+          gateway_rating: string;
+          /** @sqlType STRING */
+          latest_gate_name: string;
+          /** @sqlType BIGINT */
+          slip_months: number;
+          /** Actual to date / forecast EAC, %. */
+          percent_complete: number;
+          /** @sqlType DOUBLE */
+          eac_plan_aud_m: number;
+          /** @sqlType DOUBLE */
+          eac_forecast_aud_m: number;
+          /** @sqlType DATE */
+          plan_finish: string;
+          /** @sqlType DATE */
+          forecast_finish: string;
+          /** @sqlType DOUBLE */
+          plan_aud_m: number;
+          /** @sqlType DOUBLE */
+          forecast_aud_m: number;
+          /** @sqlType DOUBLE */
+          variance_aud_m: number;
+          /** Scenario forecast confidence, %. */
+          confidence_pct: number;
+          /** @sqlType STRING */
+          program_executive: string;
+          /** @sqlType STRING */
+          delivery_agency: string;
+        }>;
+      };
+    project_detail: {
+        name: "project_detail";
+        parameters: {
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          project_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
+          /** Program display name. */
+          program_name: string;
+          /** Infrastructure sector: Transport, Energy, Water or Social. */
+          sector: string;
+          /** Infrastructure subsector (e.g. Urban rail, Transmission, Bulk water). */
+          subsector: string;
+          /** State or territory where the asset is delivered. */
+          jurisdiction: string;
+          /** Metropolitan, Regional or Remote - where benefits accrue. */
+          region_type: string;
+          /** @sqlType STRING */
+          delivery_agency: string;
+          /** @sqlType STRING */
+          delivery_model: string;
+          /** @sqlType STRING */
+          lifecycle_stage: string;
+          /** @sqlType INT */
+          priority_tier: number;
+          /** @sqlType STRING */
+          schedule_flexibility: string;
+          /** @sqlType STRING */
+          funding_source: string;
+          /** @sqlType DOUBLE */
+          tec_p50_aud_m: number;
+          /** @sqlType DOUBLE */
+          tec_p90_aud_m: number;
+          /** @sqlType DOUBLE */
+          contingency_pct: number;
+          /** @sqlType DOUBLE */
+          bcr: number;
+          /** @sqlType STRING */
+          latest_gate_name: string;
+          /** Latest Gateway delivery confidence: Green, Amber/Green, Amber, Amber/Red, Red. */
+          gateway_rating: string;
+          /** @sqlType DATE */
+          gateway_report_date: string;
+          /** @sqlType DATE */
+          baseline_start: string;
+          /** @sqlType DATE */
+          baseline_finish: string;
+          /** @sqlType DATE */
+          plan_finish: string;
+          /** @sqlType DATE */
+          forecast_finish: string;
+          /** Actual to date / forecast EAC, %. */
+          percent_complete: number;
+          /** Approved schedule slip, months. */
+          slip_months: number;
+          /** @sqlType DOUBLE */
+          delay_cost_aud_m: number;
+          /** @sqlType DOUBLE */
+          approved_scope_aud_m: number;
+          /** @sqlType DOUBLE */
+          approved_packaging_aud_m: number;
+          /** Trailing 12-month actual vs explained spend, % (positive = overrunning); carried onto unspent work as the unexplained driver. */
+          cost_performance_pct: number;
+          /** @sqlType DOUBLE */
+          actual_to_date_aud_m: number;
+          /** @sqlType DOUBLE */
+          plan_to_date_aud_m: number;
+          /** Endorsed total cost (plan), AUD m nominal. */
+          eac_plan_aud_m: number;
+          /** Estimate at completion, AUD m nominal. */
+          eac_forecast_aud_m: number;
+          /** Change requests under assessment - not in the forecast. */
+          pending_changes: number;
+          /** @sqlType DOUBLE */
+          base_confidence_pct: number;
+          /** Percentage-point reduction from exposure to breached inputs. */
+          capacity_penalty_pct: number;
+          /** Scenario forecast confidence, %. */
+          confidence_pct: number;
+        }>;
+      };
+    project_exposure: {
+        name: "project_exposure";
+        parameters: {
+          /** STRING - use sql.string() */
+          project_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
+          financial_year: string;
+          /** Delivery-market input category (e.g. Skilled civil labour). Join to dim_capacity_category. */
+          capacity_category: string;
+          /** Project share of total portfolio demand for the input that year, %. */
+          share_of_demand_pct: number;
+          /** @sqlType DOUBLE */
+          utilisation_pct: number;
+          /** Project's attributed share of the gap value, AUD m. For labour gap use capacity_category = 'Skilled civil labour'. */
+          gap_value_aud_m: number;
+          /** True when the project's subsector uses this input at or above the median intensity. */
+          heavy_user: boolean;
+        }>;
+      };
+    project_monthly: {
+        name: "project_monthly";
+        parameters: {
+          /** STRING - use sql.string() */
+          project_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** First day of the calendar month. */
+          month: string;
+          /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
+          financial_year: string;
+          /** Endorsed plan (budget) expenditure, AUD millions, nominal. */
+          plan_aud_m: number;
+          /** Forecast expenditure, AUD millions, nominal. Actuals for closed months, forecast thereafter. */
+          forecast_aud_m: number;
+          /** Recorded actual expenditure from the general ledger, AUD millions, nominal. */
+          actual_aud_m: number;
+          /** @sqlType BOOLEAN */
+          is_actual_month: boolean;
+        }>;
+      };
+    scenario_changes: {
+        name: "scenario_changes";
+        parameters: {
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
+          /** Program display name. */
+          program_name: string;
+          /** Infrastructure sector: Transport, Energy, Water or Social. */
+          sector: string;
+          /** @sqlType STRING */
+          region_type: string;
+          /** @sqlType DOUBLE */
+          baseline_horizon_aud_m: number;
+          /** @sqlType DOUBLE */
+          scenario_horizon_aud_m: number;
+          /** @sqlType DOUBLE */
+          delta_aud_m: number;
+          /** @sqlType DATE */
+          baseline_finish: string;
+          /** @sqlType DATE */
+          scenario_finish: string;
+          /** @sqlType BIGINT */
+          finish_shift_months: number;
+          /** @sqlType BOOLEAN */
+          completion_moves_beyond_horizon: boolean;
+          /** Indicative cost of the later completion at the endorsed delay-cost rate (% of P50 per month); not in the forecast, AUD m. */
+          delay_cost_aud_m: number;
+          /** @sqlType STRING */
+          changes: string;
+        }>;
+      };
+    scenario_decisions: {
+        name: "scenario_decisions";
+        parameters: {
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType BIGINT */
+          iteration: number;
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** @sqlType BIGINT */
+          defer_months: number;
+          /** @sqlType BIGINT */
+          cumulative_defer_months: number;
+          /** @sqlType STRING */
+          trigger_financial_year: string;
+          /** Delivery-market input category (e.g. Skilled civil labour). Join to dim_capacity_category. */
+          trigger_category: string;
+          /** @sqlType DOUBLE */
+          trigger_utilisation_pct: number;
+        }>;
+      };
+    scenario_detail: {
+        name: "scenario_detail";
+        parameters: {
+          /** STRING - use sql.string() */
+          scenario_id: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          record_kind: string;
+          /** @sqlType STRING */
+          record_id: string;
+          /** @sqlType INT */
+          version: number;
+          /** defer_months | accelerate_months | escalation_delta_pp | capacity_uplift_pct | scope_change_aud_m | exclude_project */
+          label: string;
+          /** project | program | sector | capacity_category | portfolio */
+          target_type: string;
+          /** Identifier of the target (null for portfolio) */
+          target_id: string;
+          /** @sqlType STRING */
+          target_name: string;
+          /** Lever value in the unit implied by lever_type */
+          value: number;
+          /** @sqlType STRING */
+          note: string;
+          /** @sqlType STRING */
+          actor: string;
+          /** @sqlType TIMESTAMP */
+          created_at: string;
+          /** @sqlType BIGINT */
+          job_run_id: number;
+        }>;
+      };
+    scenario_fy: {
+        name: "scenario_fy";
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Scenario identifier (BASE = Working baseline, CAP_BAL = Capacity balanced, ACCEL = Accelerated delivery, or a user draft). Join to dim_scenario. */
+          scenario_id: string;
           /** Financial year label, e.g. FY27 = 2026-27 (1 Jul 2026 - 30 Jun 2027). */
           financial_year: string;
           /** Australian Government financial year as an integer, labelled by the year it ends (2027 = 1 Jul 2026 - 30 Jun 2027). */
@@ -247,30 +776,65 @@ declare module "@databricks/appkit-ui/react" {
           capacity_breaches: number;
           /** @sqlType STRING */
           status: string;
+          /** Spend the modelled market can deliver that year = forecast / peak input utilisation. */
+          capacity_aud_m: number;
+          /** Funding envelope for the year, AUD m. */
+          envelope_aud_m: number;
+          /** 10th percentile of simulated forecast spend for the year (1,000 seeded draws on unspent work), AUD m. */
+          forecast_p10_aud_m: number;
+          /** 90th percentile of simulated forecast spend for the year, AUD m. */
+          forecast_p90_aud_m: number;
         }>;
       };
     scenario_summary: {
         name: "scenario_summary";
-        parameters: Record<string, never>;
+        parameters: {
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
         result: Array<{
-          /** Scenario identifier (BASE = Working baseline, CAP_BAL = Capacity balanced, ACCEL = Accelerated delivery, or a user draft). Join to dim_scenario. */
+          /** Scenario identifier */
           scenario_id: string;
-          /** Display name of the scenario. */
+          /** @sqlType STRING */
           scenario_name: string;
+          /** Scenario version; levers are versioned with it */
+          latest_version: number;
           /** @sqlType BIGINT */
-          version: number;
-          /** @sqlType STRING */
+          computed_version: number;
+          /** @sqlType BOOLEAN */
+          pending_recompute: boolean;
+          /** as_forecast | levers | auto_sequence (capacity-aware sequencing optimiser) */
           method: string;
+          /** Scenario this one starts from (null = forecast from recorded drivers only) */
+          base_scenario_id: string;
           /** @sqlType STRING */
-          status: string;
+          decision_purpose: string;
+          /** @sqlType STRING */
+          description: string;
+          /** @sqlType STRING */
+          created_by: string;
+          /** @sqlType TIMESTAMP */
+          created_at: string;
+          /** seed (pipeline) | app (user-created) */
+          source: string;
+          /** @sqlType STRING */
+          workflow_status: string;
+          /** @sqlType STRING */
+          workflow_actor: string;
+          /** @sqlType TIMESTAMP */
+          workflow_at: string;
+          /** @sqlType STRING */
+          workflow_note: string;
+          /** budget_forecast run triggered by the event, if any */
+          last_job_run_id: number;
           /** @sqlType STRING */
           horizon_label: string;
           /** Forecast expenditure over the five-year horizon, AUD m nominal. */
           total_forecast_aud_m: number;
-          /** @sqlType DOUBLE */
-          total_forecast_real_aud_m: number;
           /** Horizon total minus Working baseline, AUD m. */
           vs_baseline_aud_m: number;
+          /** @sqlType DOUBLE */
+          envelope_aud_m: number;
           /** Funding envelope minus horizon total (negative = unaffordable). */
           headroom_aud_m: number;
           /** @sqlType BOOLEAN */
@@ -280,6 +844,8 @@ declare module "@databricks/appkit-ui/react" {
           /** Count of (year, input) cells above 100% utilisation. */
           capacity_breaches: number;
           /** @sqlType BIGINT */
+          constrained_cells: number;
+          /** @sqlType BIGINT */
           breaches_resolved_vs_baseline: number;
           /** @sqlType DOUBLE */
           peak_utilisation_pct: number;
@@ -287,10 +853,32 @@ declare module "@databricks/appkit-ui/react" {
           peak_category: string;
           /** @sqlType STRING */
           peak_financial_year: string;
+          /** @sqlType DOUBLE */
+          peak_gap_aud_m: number;
+          /** @sqlType STRING */
+          peak_gap_financial_year: string;
           /** @sqlType BIGINT */
           projects_changed: number;
           /** Regional/remote projects whose completion moves beyond the horizon vs baseline. */
           regional_completions_deferred: number;
+          /** @sqlType BIGINT */
+          optimizer_deferrals: number;
+          /** @sqlType BIGINT */
+          levers: number;
+          /** Horizon spend pushed past FY31 by deferring projects (later completion) vs baseline, AUD m. */
+          spend_beyond_horizon_aud_m: number;
+          /** Indicative cost of later completions at the endorsed delay-cost rate; not added to the forecast, AUD m. */
+          indicative_delay_cost_aud_m: number;
+          /** Projects whose completion moves beyond the horizon vs baseline. */
+          completions_beyond_horizon: number;
+          /** @sqlType DOUBLE */
+          forecast_p10_aud_m: number;
+          /** @sqlType DOUBLE */
+          forecast_p50_aud_m: number;
+          /** 90th percentile of simulated horizon spend, AUD m. */
+          forecast_p90_aud_m: number;
+          /** Forecast run that produced the row; joins to forecast_runs for assumptions and inputs. */
+          run_id: string;
         }>;
       };
     variance_bridge: {
@@ -298,6 +886,8 @@ declare module "@databricks/appkit-ui/react" {
         parameters: {
           /** STRING - use sql.string() */
           period: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
         };
         result: Array<{
           /** @sqlType STRING */
@@ -314,6 +904,104 @@ declare module "@databricks/appkit-ui/react" {
           plan_aud_m: number;
           /** Forecast expenditure, AUD millions, nominal. Actuals for closed months, forecast thereafter. */
           forecast_aud_m: number;
+        }>;
+      };
+    variance_commentary: {
+        name: "variance_commentary";
+        parameters: {
+          /** STRING - use sql.string() */
+          period: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          commentary_id: string;
+          /** YTD | CURRENT_FY | HORIZON */
+          period: string;
+          /** portfolio | program | project */
+          scope_level: string;
+          /** @sqlType STRING */
+          scope_id: string;
+          /** @sqlType STRING */
+          scope_name: string;
+          /** Attribution for unexplained variance (e.g. Contractor claim, Productivity, Data timing) */
+          reason_code: string;
+          /** Variance attributed by this entry, AUD m */
+          amount_aud_m: number;
+          /** @sqlType STRING */
+          commentary: string;
+          /** user | ai_draft (accepted by the author) */
+          source: string;
+          /** @sqlType STRING */
+          actor: string;
+          /** @sqlType TIMESTAMP */
+          created_at: string;
+        }>;
+      };
+    variance_projects: {
+        name: "variance_projects";
+        parameters: {
+          /** STRING - use sql.string() */
+          period: SQLStringMarker;
+          /** STRING - use sql.string() */
+          sector: SQLStringMarker;
+          /** STRING - use sql.string() */
+          data_version: SQLStringMarker;
+        };
+        result: Array<{
+          /** Project identifier. Join to dim_project. */
+          project_id: string;
+          /** Project display name. */
+          project_name: string;
+          /** Program identifier. Join to dim_program. */
+          program_id: string;
+          /** Program display name. */
+          program_name: string;
+          /** Infrastructure sector: Transport, Energy, Water or Social. */
+          sector: string;
+          /** Endorsed plan (budget) expenditure, AUD millions, nominal. */
+          plan_aud_m: number;
+          /** Forecast expenditure, AUD millions, nominal. Actuals for closed months, forecast thereafter. */
+          forecast_aud_m: number;
+          /** Recorded actual expenditure from the general ledger, AUD millions, nominal. */
+          actual_aud_m: number;
+          /** Forecast minus plan, AUD millions. Positive = overspend / cost growth. */
+          variance_aud_m: number;
+          /** @sqlType DOUBLE */
+          variance_pct: number;
+          /** Reporting tolerance: max(5% of plan, $25m per year / $50m over the horizon). */
+          tolerance_aud_m: number;
+          /** @sqlType BOOLEAN */
+          outside_tolerance: boolean;
+          /** @sqlType DOUBLE */
+          escalation_aud_m: number;
+          /** @sqlType DOUBLE */
+          schedule_shift_aud_m: number;
+          /** @sqlType DOUBLE */
+          scope_change_aud_m: number;
+          /** @sqlType DOUBLE */
+          packaging_aud_m: number;
+          /** Variance not explained by any recorded driver (cost performance and actuals timing); needs attribution. */
+          unexplained_aud_m: number;
+          /** Driver with the largest absolute contribution to the variance. */
+          primary_driver: string;
+          /** @sqlType BIGINT */
+          slip_months: number;
+          /** @sqlType STRING */
+          gateway_rating: string;
+          /** @sqlType DOUBLE */
+          confidence_pct: number;
+          /** @sqlType STRING */
+          attention_reasons: string;
+          /** True when two or more executive-attention rules fire (see attention_reasons). */
+          requires_attention: boolean;
+          /** @sqlType DOUBLE */
+          attributed_aud_m: number;
+          /** @sqlType BIGINT */
+          commentary_count: number;
+          /** @sqlType TIMESTAMP */
+          last_commentary_at: string;
         }>;
       };
   }

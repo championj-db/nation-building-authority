@@ -64,6 +64,14 @@ intensity = spark.table(table_name("silver_demand_intensity")).toPandas()
 envelope = spark.table(table_name("silver_funding_envelope")).toPandas().set_index("fy").envelope_aud_m
 defl = deflator_index(spark.table(table_name("silver_price_deflator")).toPandas(), H0)
 
+# Indicative cost of delay for scenario deferrals: the endorsed delay-cost assumption (% of P50 per month of slip).
+_dc = spark.table(table_name("silver_assumptions")).filter("assumption_id = 'DELAY-COST'").select("value_summary").collect()
+_dc_pct = next((float(t.rstrip("%")) for t in (_dc[0][0].split() if _dc else []) if t.endswith("%")), 0.25)
+DELAY_RATE = _dc_pct / 100.0
+N_SIM = 1000
+RNG = np.random.default_rng(int(get_control("seed") or 42))
+FUTURE = np.arange(N_MONTHS) >= T0
+
 CATS = list(cats.index)
 I = np.array([[float(intensity[(intensity.subsector == proj.loc[p, "subsector"]) & (intensity.category_id == c)].units_per_aud_m.sum())
                for c in CATS] for p in PIDS])                                   # P x C units per $m
@@ -274,6 +282,19 @@ for sid, b in built.items():
         conf_rows.append(dict(scenario_id=sid, project_id=p, base_confidence_pct=proj.loc[p, "base_confidence_pct"],
                               capacity_penalty_pct=pen[i] * K_PEN * 100, confidence_pct=conf[i], horizon_spend_aud_m=S_[i].sum()))
     port_conf = float((conf * S_.sum(axis=1)).sum() / S_.sum())
+    # Monte Carlo range: lognormal cost uncertainty on unspent work only (actuals are fixed), wider for
+    # low-confidence projects and later years, with a portfolio-wide market factor and a modest upward
+    # skew (overruns are more likely than underruns). Seeded, so a re-run reproduces the same range.
+    fut = np.array([[b["paths"][p][FY_MASKS[h] & FUTURE].sum() for h in range(len(HORIZON))] for p in PIDS])  # P x H
+    sig = (0.02 + 0.20 * (1 - conf / 100.0))[:, None] * np.sqrt(1 + np.arange(len(HORIZON)))[None, :]
+    z = 0.8 * RNG.standard_normal((N_SIM, len(PIDS), 1)) + 0.6 * RNG.standard_normal((N_SIM, 1, 1))
+    sims = ((S_ - fut)[None] + fut[None] * np.exp(sig[None] * z + 0.15 * sig[None])).sum(axis=1)  # N x H
+    pct = np.percentile(sims, [10, 50, 90], axis=0)
+    hpct = np.percentile(sims.sum(axis=1), [10, 50, 90])
+    for r in port_rows:
+        if r["scenario_id"] == sid:
+            h = HORIZON.index(r["fy"])
+            r.update(forecast_p10_aud_m=float(pct[0, h]), forecast_p50_aud_m=float(pct[1, h]), forecast_p90_aud_m=float(pct[2, h]))
     # changes vs baseline
     deferred_regional = 0
     for i, p in enumerate(PIDS):
@@ -284,7 +305,10 @@ for sid, b in built.items():
             moved_out = (f0 is not None and f is not None and f0 <= horizon_end_idx < f)
             if moved_out and proj.loc[p, "region_type"] in ("Regional", "Remote"):
                 deferred_regional += 1
+            shift = (f - f0) if (f is not None and f0 is not None) else 0
             chg_rows.append(dict(scenario_id=sid, project_id=p, project_name=proj.loc[p, "project_name"], program_name=proj.loc[p, "program_name"],
+                                 program_id=proj.loc[p, "program_id"], sector=proj.loc[p, "sector"],
+                                 delay_cost_aud_m=max(0, shift) * DELAY_RATE * float(proj.loc[p, "tec_p50_aud_m"]),
                                  baseline_horizon_aud_m=a0[HORIZON_MASK].sum(), scenario_horizon_aud_m=a[HORIZON_MASK].sum(), delta_aud_m=dh,
                                  baseline_finish=month_end(f0) if f0 is not None else None, scenario_finish=month_end(f) if f is not None else None,
                                  finish_shift_months=(f - f0) if (f is not None and f0 is not None) else None,
@@ -308,6 +332,11 @@ for sid, b in built.items():
         peak_utilisation_pct=float(U[pk] * 100), peak_category=cats.loc[CATS[pk[1]], "category_name"], peak_financial_year=fy_label(HORIZON[pk[0]]),
         peak_gap_aud_m=pg["capacity_gap_aud_m"], peak_gap_financial_year=pg["financial_year"],
         projects_changed=sum(1 for r in chg_rows if r["scenario_id"] == sid), regional_completions_deferred=deferred_regional,
+        spend_beyond_horizon_aud_m=float(sum(max(0.0, -r["delta_aud_m"]) for r in chg_rows
+                                             if r["scenario_id"] == sid and d.method != "plan" and (r["finish_shift_months"] or 0) > 0)),
+        indicative_delay_cost_aud_m=float(sum(r["delay_cost_aud_m"] for r in chg_rows if r["scenario_id"] == sid)),
+        completions_beyond_horizon=sum(1 for r in chg_rows if r["scenario_id"] == sid and r["completion_moves_beyond_horizon"]),
+        forecast_p10_aud_m=float(hpct[0]), forecast_p50_aud_m=float(hpct[1]), forecast_p90_aud_m=float(hpct[2]),
         optimizer_deferrals=len(b["decisions"]), levers=int((levers.scenario_id == sid).sum()), capacity_model_version=cap_version))
     for h, fy in enumerate(HORIZON):
         cmp_rows.append(dict(scenario_id=sid, fy=fy, financial_year=fy_label(fy), forecast_aud_m=fy_tot[h], baseline_forecast_aud_m=base_fy[h],
@@ -356,7 +385,10 @@ write_table(with_run(port_rows), "portfolio_capacity_fy",
             {"capacity_aud_m": "Spend the modelled market can deliver that year = forecast / peak input utilisation.",
              "capacity_gap_aud_m": "Forecast spend above deliverable capacity, AUD m (0 when within capacity).",
              "binding_category": "Delivery input with the highest utilisation that year.",
-             "envelope_aud_m": "Funding envelope for the year, AUD m."}, tags=GOLD)
+             "envelope_aud_m": "Funding envelope for the year, AUD m.",
+             "forecast_p10_aud_m": "10th percentile of simulated forecast spend for the year (1,000 seeded draws on unspent work), AUD m.",
+             "forecast_p50_aud_m": "Median simulated forecast spend for the year, AUD m.",
+             "forecast_p90_aud_m": "90th percentile of simulated forecast spend for the year, AUD m."}, tags=GOLD)
 write_table(with_run(cap_rows), "capacity_demand",
             "Demand vs modelled available supply for each delivery-market input by scenario and FY, with utilisation and status (Within capacity / Constrained >= 90% / Breach > 100%).",
             {"demand_units": "Portfolio demand in the category unit.", "available_units": "Supply available to the portfolio (incl. scenario uplift levers).",
@@ -377,10 +409,15 @@ write_table(with_run(summ_rows), "scenario_summary",
              "vs_baseline_aud_m": "Horizon total minus Working baseline, AUD m.",
              "headroom_aud_m": "Funding envelope minus horizon total (negative = unaffordable).",
              "capacity_breaches": "Count of (year, input) cells above 100% utilisation.",
-             "regional_completions_deferred": "Regional/remote projects whose completion moves beyond the horizon vs baseline."}, tags=GOLD)
+             "regional_completions_deferred": "Regional/remote projects whose completion moves beyond the horizon vs baseline.",
+             "spend_beyond_horizon_aud_m": "Horizon spend pushed past FY31 by deferring projects (later completion) vs baseline, AUD m.",
+             "indicative_delay_cost_aud_m": "Indicative cost of later completions at the endorsed delay-cost rate; not added to the forecast, AUD m.",
+             "completions_beyond_horizon": "Projects whose completion moves beyond the horizon vs baseline.",
+             "forecast_p90_aud_m": "90th percentile of simulated horizon spend, AUD m."}, tags=GOLD)
 write_table(with_run(cmp_rows), "scenario_comparison", "Scenario vs Working baseline by FY: forecast, delta and capacity status.", tags=GOLD)
 chg = pd.DataFrame(chg_rows) if chg_rows else pd.DataFrame(columns=["scenario_id", "project_id"])
-write_table(with_run(chg), "scenario_project_changes", "Projects whose timing or cost differs from the Working baseline in each scenario, with the levers or sequencing decisions that caused it.", tags=GOLD)
+write_table(with_run(chg), "scenario_project_changes", "Projects whose timing or cost differs from the Working baseline in each scenario, with the levers or sequencing decisions that caused it.",
+            {"delay_cost_aud_m": "Indicative cost of the later completion at the endorsed delay-cost rate (% of P50 per month); not in the forecast, AUD m."}, tags=GOLD)
 dec = pd.DataFrame(dec_rows) if dec_rows else pd.DataFrame(columns=["scenario_id", "iteration", "project_id"])
 write_table(with_run(dec), "scenario_sequencing_decisions", "Audit trail of the capacity-aware sequencer: each deferral, the project, and the breached input-year that triggered it.", tags=GOLD)
 

@@ -1,3 +1,11 @@
+# Portfolio Command Centre (Databricks App, AppKit).
+#
+# Reads run on behalf of the signed-in user (`sql` scope, `.obo.sql` queries), so Unity Catalog grants
+# and any row filters apply per person; the service principal has no read grants on portfolio tables
+# (build-time type generation falls back to the committed shared/appkit-types files). Writes are append-only workflow records (scenarios, levers,
+# submissions, commentary, attestations, briefing packs) made by the app service principal with the
+# signed-in user recorded as the actor. Saving a scenario triggers the budget_forecast job.
+
 resources:
   apps:
     budget_portfolio:
@@ -6,6 +14,7 @@ resources:
       source_code_path: ../src/nba-budget-portfolio
       user_api_scopes:
         - genie
+        - sql
       lifecycle:
         started: true
       resources:
@@ -18,35 +27,38 @@ resources:
             name: ${var.genie_space_name}
             space_id: ${var.genie_space_id}
             permission: CAN_RUN
-        - name: expenditure-fy
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.expenditure_fy", permission: SELECT}
-        - name: project-confidence
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.project_confidence", permission: SELECT}
-        - name: dim-project
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.dim_project", permission: SELECT}
-        - name: capacity-exposure
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.capacity_exposure", permission: SELECT}
-        - name: attention-list
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_attention_list", permission: SELECT}
-        - name: portfolio-kpis
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_kpis", permission: SELECT}
-        - name: portfolio-capacity
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.portfolio_capacity_fy", permission: SELECT}
-        - name: priority-exceptions
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.priority_exceptions", permission: SELECT}
-        - name: scenario-summary
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_summary", permission: SELECT}
-        - name: scenario-comparison
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_comparison", permission: SELECT}
-        - name: capacity-demand
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.capacity_demand", permission: SELECT}
-        - name: variance-bridge
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.variance_bridge", permission: SELECT}
-        - name: assurance-register
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.assurance_register", permission: SELECT}
+        - name: forecast-job
+          job:
+            id: ${resources.jobs.budget_forecast.id}
+            permission: CAN_MANAGE_RUN
+        - name: briefing-llm
+          serving_endpoint:
+            name: ${var.briefing_endpoint}
+            permission: CAN_QUERY
+        # App-writable, append-only workflow tables (MODIFY; reads of these run as the user)
+        - name: scenario-definitions
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_definitions", permission: MODIFY}
+        - name: scenario-levers
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_levers", permission: MODIFY}
+        - name: scenario-events
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.scenario_events", permission: MODIFY}
+        - name: forecast-submissions
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.forecast_submissions", permission: MODIFY}
+        - name: variance-commentary
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.variance_commentary", permission: MODIFY}
+        - name: assurance-actions
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.assurance_actions", permission: MODIFY}
+        - name: briefing-packs
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.briefing_packs", permission: MODIFY}
       config:
         env:
           - name: DATABRICKS_WAREHOUSE_ID
             value_from: sql-warehouse
           - name: DATABRICKS_GENIE_SPACE_ID
             value_from: genie-space
+          - name: DATABRICKS_JOB_FORECAST
+            value_from: forecast-job
+          - name: DATABRICKS_SERVING_ENDPOINT_NAME
+            value_from: briefing-llm
+          - name: PORTFOLIO_TABLE
+            value_from: scenario-definitions

@@ -18,11 +18,14 @@
     "format:fix": "prettier --write .",
     "test": "vitest run",
     "clean": "rm -rf client/dist dist build node_modules",
-    "prebuild": "npm run sync && appkit generate-types --wait",
+    "prebuild": "npm run sync",
     "predev": "npm run sync && npm run typegen",
     "sync": "appkit plugin sync --write --silent",
-    "typegen": "appkit generate-types",
-    "setup": "appkit setup --write"
+    "typegen": "npm run render:queries && appkit generate-types",
+    "setup": "appkit setup --write",
+    "typegen:check": "npm run render:queries && appkit generate-types --wait",
+    "render:queries": "node --env-file-if-exists=./.env scripts/render-queries.mjs",
+    "prestart": "npm run render:queries"
   },
   "keywords": [],
   "author": "",

@@ -11,6 +11,7 @@
 # MAGIC | `scenario_definitions`, `scenario_levers` | Scenario inputs **as data**. Seeded by the pipeline; the application will insert user drafts here |
 # MAGIC | `forecast_runs` | Append-only register of every forecast run and the assumption versions it used |
 # MAGIC | `dq_results` | Append-only data-quality results per run |
+# MAGIC | `scenario_events`, `forecast_submissions`, `variance_commentary`, `assurance_actions`, `briefing_packs` | Append-only workflow records written by the application (latest event = current state) |
 # MAGIC
 # MAGIC `reset=true` drops every table in the schema and clears the volume so the synthetic demo can be
 # MAGIC rebuilt from scratch. It defaults to `false`.
@@ -113,6 +114,47 @@ DDL = {
         """run_id STRING, checked_at TIMESTAMP, table_name STRING, rule STRING, severity STRING COMMENT 'error rows are dropped; warn rows are kept',
            failed_rows BIGINT, total_rows BIGINT, passed BOOLEAN""",
         "Append-only data quality results for the silver conformance step.",
+        "TBLPROPERTIES ('delta.appendOnly' = 'true')",
+    ),
+    # ---- written by the Portfolio Command Centre app (append-only events; latest event = current state) ----
+    "scenario_events": (
+        """event_id STRING NOT NULL, scenario_id STRING NOT NULL, scenario_version INT NOT NULL,
+           event STRING NOT NULL COMMENT 'Created | Recompute requested | Submitted | Returned | Endorsed | Archived',
+           note STRING, job_run_id BIGINT COMMENT 'budget_forecast run triggered by the event, if any',
+           actor STRING, created_at TIMESTAMP""",
+        "Scenario workflow and audit log written by the app: creation, recompute requests, submission, endorsement.",
+        "TBLPROPERTIES ('delta.appendOnly' = 'true')",
+    ),
+    "forecast_submissions": (
+        """submission_id STRING NOT NULL, cycle STRING NOT NULL COMMENT 'Forecast cycle, YYYY-MM of the actuals month being closed',
+           program_id STRING NOT NULL, status STRING NOT NULL COMMENT 'Submitted | Returned | Approved | Locked',
+           forecast_aud_m DOUBLE COMMENT 'Program horizon forecast at submission, AUD m', commentary STRING,
+           actor STRING, actor_role STRING COMMENT 'Program office | Portfolio office', created_at TIMESTAMP""",
+        "Monthly forecast cycle: program office submissions and portfolio office review decisions.",
+        "TBLPROPERTIES ('delta.appendOnly' = 'true')",
+    ),
+    "variance_commentary": (
+        """commentary_id STRING NOT NULL, period STRING NOT NULL COMMENT 'YTD | CURRENT_FY | HORIZON',
+           scope_level STRING NOT NULL COMMENT 'portfolio | program | project', scope_id STRING NOT NULL,
+           reason_code STRING COMMENT 'Attribution for unexplained variance (e.g. Contractor claim, Productivity, Data timing)',
+           amount_aud_m DOUBLE COMMENT 'Variance attributed by this entry, AUD m', commentary STRING,
+           source STRING COMMENT 'user | ai_draft (accepted by the author)', actor STRING, created_at TIMESTAMP""",
+        "Variance explanations and attributions recorded against the variance bridge by program and portfolio offices.",
+        "TBLPROPERTIES ('delta.appendOnly' = 'true')",
+    ),
+    "assurance_actions": (
+        """action_id STRING NOT NULL, record_id STRING NOT NULL,
+           action STRING NOT NULL COMMENT 'Attested | Comment | Action raised | Closed', comment STRING,
+           actor STRING, created_at TIMESTAMP""",
+        "Owner attestations, comments and actions on assurance register records.",
+        "TBLPROPERTIES ('delta.appendOnly' = 'true')",
+    ),
+    "briefing_packs": (
+        """pack_id STRING NOT NULL, version INT NOT NULL, title STRING, scenario_id STRING, forecast_run_id STRING,
+           narrative STRING COMMENT 'Markdown briefing narrative', status STRING NOT NULL COMMENT 'Draft | Approved',
+           model STRING COMMENT 'Serving endpoint that drafted the first version (null if written by hand)',
+           sources STRING COMMENT 'JSON: figures the draft was grounded on', actor STRING, created_at TIMESTAMP""",
+        "Executive briefing packs: AI-drafted, human-edited and approved narratives tied to a forecast run.",
         "TBLPROPERTIES ('delta.appendOnly' = 'true')",
     ),
 }

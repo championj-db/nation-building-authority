@@ -12,3 +12,6 @@ playwright-report/
 # Auto-generated types (endpoint-specific, varies per developer)
 shared/appkit-types/serving.d.ts
 
+
+# Rendered from config/query-templates at dev/start time (contains the deployment schema)
+config/queries/
