@@ -1,5 +1,7 @@
 # Budget Planning & Financial Projections
 
+![](design/app_ui.png)
+
 | | |
 | --- | --- |
 | **Category** | Resource Allocation |

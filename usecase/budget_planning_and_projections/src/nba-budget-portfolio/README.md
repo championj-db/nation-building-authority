@@ -2,6 +2,8 @@
 
 React and TypeScript Databricks App for the Nation Building Authority synthetic infrastructure portfolio. It combines typed SQL Warehouse analytics with the governed Portfolio Genie space.
 
+![](../../design/app_ui.png)
+
 ## Local preview
 
 ```bash
