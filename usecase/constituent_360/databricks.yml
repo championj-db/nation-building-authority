@@ -1,8 +1,14 @@
 # Citizen & Constituent 360 - Personalized Engagement
 # Publicly citable government reference: https://www.databricks.com/customers/govtech
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# Resources: two serverless Lakeflow Jobs (resources/c360_jobs.job.yml).
+#
+# Deploy:  databricks bundle deploy -t dev --var catalog=<catalog>
+#          databricks bundle run c360_bootstrap -t dev
+# (or put catalog / warehouse_id in .databricks/bundle/<target>/variable-overrides.json - git-ignored)
+#
+# The catalog must already exist. The pipeline creates one schema + volume inside it and only ever
+# modifies objects it created (nba.managed_by table property + pipeline_object_registry).
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -36,13 +42,123 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+  timezone_id:
+    description: Time zone for job schedules and synthetic local times.
+    default: Australia/Sydney
+
+  refresh_schedule:
+    description: Quartz cron for the refresh job (new deliveries + incremental rebuild).
+    default: "0 0 7 * * ?"
+
+  refresh_pause_status:
+    description: PAUSED or UNPAUSED for the refresh schedule.
+    default: PAUSED
+
+  # ---- people and access ----------------------------------------------------------------------
+  demo_officer_principal:
+    description: >-
+      Principal who plays the housing officer in the design (owns the persona cases and is authorised
+      for housing_case_support + general_enquiry). Use the job principal to enable the policy self-test.
+    default: ${workspace.current_user.userName}
+
+  staff_group:
+    description: >-
+      Account group granted SELECT on serving tables / views and EXECUTE on procedures. Empty = no grants.
+      USE CATALOG must be granted separately by the catalog owner.
+    default: ""
+
+  session_minutes:
+    description: Lifetime of a purpose-of-use access session.
+    default: "60"
+
+  small_cell_threshold:
+    description: Aggregate cells below this count are suppressed.
+    default: "5"
+
+  # ---- synthetic world ------------------------------------------------------------------------
+  synthetic_seed:
+    description: Random seed (same seed + anchor = same synthetic world).
+    default: "42"
+
+  population_size:
+    description: Synthetic people (each appears in one or more identity source systems).
+    default: "3000"
+
+  history_days:
+    description: Days of interaction history generated at bootstrap.
+    default: "180"
+
+  interactions_per_person:
+    description: Average interactions per person over the history window (dbldatagen scale knob).
+    default: "4"
+
+  # ---- entity resolution ----------------------------------------------------------------------
+  embedding_endpoint:
+    description: Embedding serving endpoint used for semantic identity candidates.
+    default: databricks-gte-large-en
+
+  semantic_neighbours:
+    description: k for APPROX NEAREST k BY SIMILARITY.
+    default: "5"
+
+  semantic_hi:
+    description: Cosine similarity treated as a strong semantic neighbour.
+    default: "0.95"
+
+  semantic_lo:
+    description: Minimum cosine similarity for a semantic candidate pair.
+    default: "0.90"
+
+  auto_match_threshold:
+    description: Splink match probability at or above which records link automatically.
+    default: "0.95"
+
+  review_threshold:
+    description: Splink match probability at or above which a pair goes to steward review.
+    default: "0.75"
+
+  u_max_pairs:
+    description: Random pairs sampled to estimate Splink u probabilities.
+    default: "2000000"
+
+  min_er_f1:
+    description: Validation fails below this pairwise F1 against ground truth.
+    default: "0.85"
+
+  # ---- AI signals and gold --------------------------------------------------------------------
+  llm_endpoint:
+    description: Foundation Model endpoint for structured interaction signals.
+    default: databricks-claude-haiku-4-5
+
+  ai_max_rows_per_run:
+    description: Cap on interactions scored per run (0 = no cap).
+    default: "0"
+
+  min_intent_accuracy:
+    description: Warning threshold for AI intent accuracy against ground truth.
+    default: "0.6"
+
+  repeat_contact_target:
+    description: Target shown on the repeat-contact KPI.
+    default: "0.15"
+
+  due_soon_days:
+    description: Days before due date a journey counts as due soon.
+    default: "3"
+
+  policy_self_test:
+    description: Run the row filter / mask self-test as the job principal in 08_validate.
+    default: "true"
+
+include:
+  - resources/*.yml
 
 targets:
   dev:
     mode: development
     default: true
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: constituent_360_${workspace.current_user.short_name}

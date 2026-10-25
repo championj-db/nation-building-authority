@@ -1,0 +1,223 @@
+# Citizen & Constituent 360 - Lakeflow Jobs (serverless)
+#
+#   c360_bootstrap  one-off build: synthetic constituents (dbldatagen), 12 landing extracts, bronze (Auto
+#                   Loader), silver, entity resolution (NEAREST BY + Splink), AI signals, gold, consent-
+#                   enforced serving, validation. reset=true drops ONLY objects this bundle created.
+#   c360_refresh    scheduled: land the next interaction / consent / case deliveries and rebuild
+#                   incrementally (embeddings and AI signals are cached by text hash).
+#
+# No environment-specific value is written as a literal. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    c360_bootstrap:
+      name: nba-c360-bootstrap-${var.environment}
+      description: >-
+        One-off build of the synthetic Constituent 360 world and every downstream layer. Set reset=true
+        to drop and rebuild the objects this pipeline created (anything else in the schema is untouched).
+      tags:
+        usecase: constituent_360
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      parameters:
+        - name: reset
+          default: "false"
+        - name: as_of_ts
+          default: ""
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              reset: "{{job.parameters.reset}}"
+
+        - task_key: generate_synthetic_data
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              mode: bootstrap
+              seed: ${var.synthetic_seed}
+              population_size: ${var.population_size}
+              history_days: ${var.history_days}
+              interactions_per_person: ${var.interactions_per_person}
+              as_of_ts: "{{job.parameters.as_of_ts}}"
+              timezone_id: ${var.timezone_id}
+              demo_officer_principal: ${var.demo_officer_principal}
+              dry_run: "false"
+
+        - task_key: ingest_bronze
+          depends_on:
+            - task_key: generate_synthetic_data
+          notebook_task: &bronze
+            notebook_path: ../src/02_ingest_bronze.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+
+        - task_key: standardise_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task: &silver
+            notebook_path: ../src/03_standardise_silver.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+
+        - task_key: entity_resolution
+          depends_on:
+            - task_key: standardise_silver
+          notebook_task: &er
+            notebook_path: ../src/04_entity_resolution.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+              embedding_endpoint: ${var.embedding_endpoint}
+              semantic_neighbours: ${var.semantic_neighbours}
+              semantic_hi: ${var.semantic_hi}
+              semantic_lo: ${var.semantic_lo}
+              auto_match_threshold: ${var.auto_match_threshold}
+              review_threshold: ${var.review_threshold}
+              u_max_pairs: ${var.u_max_pairs}
+
+        - task_key: sentiment_and_intent
+          depends_on:
+            - task_key: standardise_silver
+          notebook_task: &ai
+            notebook_path: ../src/05_sentiment_and_intent.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+              llm_endpoint: ${var.llm_endpoint}
+              max_rows_per_run: ${var.ai_max_rows_per_run}
+
+        - task_key: gold_360
+          depends_on:
+            - task_key: entity_resolution
+            - task_key: sentiment_and_intent
+          notebook_task: &gold
+            notebook_path: ../src/06_gold_360.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+              repeat_contact_target: ${var.repeat_contact_target}
+              due_soon_days: ${var.due_soon_days}
+
+        - task_key: consent_and_serving
+          depends_on:
+            - task_key: gold_360
+          notebook_task: &serving
+            notebook_path: ../src/07_consent_and_serving.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+              staff_group: ${var.staff_group}
+              demo_officer_principal: ${var.demo_officer_principal}
+              small_cell_threshold: ${var.small_cell_threshold}
+              session_minutes: ${var.session_minutes}
+
+        - task_key: validate
+          depends_on:
+            - task_key: consent_and_serving
+          notebook_task: &validate
+            notebook_path: ../src/08_validate.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              run_id: "C360-{{job.run_id}}"
+              min_er_f1: ${var.min_er_f1}
+              min_intent_accuracy: ${var.min_intent_accuracy}
+              small_cell_threshold: ${var.small_cell_threshold}
+              policy_self_test: ${var.policy_self_test}
+
+    c360_refresh:
+      name: nba-c360-refresh-${var.environment}
+      description: >-
+        Scheduled: land the next synthetic interaction, consent and case-status deliveries, then ingest,
+        standardise, re-resolve identities (honouring steward decisions), score new interactions and
+        republish gold and consent-enforced serving.
+      tags:
+        usecase: constituent_360
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      schedule:
+        quartz_cron_expression: ${var.refresh_schedule}
+        timezone_id: ${var.timezone_id}
+        pause_status: ${var.refresh_pause_status}
+      tasks:
+        - task_key: land_deliveries
+          notebook_task:
+            notebook_path: ../src/01_generate_synthetic_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              mode: incremental
+              seed: ${var.synthetic_seed}
+              population_size: ${var.population_size}
+              history_days: ${var.history_days}
+              interactions_per_person: ${var.interactions_per_person}
+              as_of_ts: ""
+              timezone_id: ${var.timezone_id}
+              demo_officer_principal: ${var.demo_officer_principal}
+              dry_run: "false"
+
+        - task_key: ingest_bronze
+          depends_on:
+            - task_key: land_deliveries
+          notebook_task: *bronze
+
+        - task_key: standardise_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task: *silver
+
+        - task_key: entity_resolution
+          depends_on:
+            - task_key: standardise_silver
+          notebook_task: *er
+
+        - task_key: sentiment_and_intent
+          depends_on:
+            - task_key: standardise_silver
+          notebook_task: *ai
+
+        - task_key: gold_360
+          depends_on:
+            - task_key: entity_resolution
+            - task_key: sentiment_and_intent
+          notebook_task: *gold
+
+        - task_key: consent_and_serving
+          depends_on:
+            - task_key: gold_360
+          notebook_task: *serving
+
+        - task_key: validate
+          depends_on:
+            - task_key: consent_and_serving
+          notebook_task: *validate
