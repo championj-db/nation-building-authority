@@ -311,8 +311,14 @@ def build_population() -> DataFrame:
         .withColumn("street_ix", "int", minValue=0, maxValue=len(STREETS) - 1, random=True)
         .withColumn("type_ix", "int", minValue=0, maxValue=len(STREET_TYPES) - 1, random=True)
         .withColumn("unit_no", "int", minValue=1, maxValue=48, random=True, percentNulls=0.72)
-        .withColumn("landline", "string", template=r"02 9ddd dddd", random=True, percentNulls=0.6)
         .build()
+        # Phone numbers are derived from a seeded hash of the row id rather than a dbldatagen text template:
+        # templates re-seed per partition with a fixed seed, which repeats numbers across partitions and makes
+        # one number look shared by several unrelated households.
+        .withColumn("_ll", F.expr(f"lpad(CAST(pmod(xxhash64({SEED}, 'landline', id), 10000000) AS STRING), 7, '0')"))
+        .withColumn("landline", F.expr(f"IF({U('llnull', 'id')} < 0.6, NULL, "
+                                       f"concat('02 9', substr(_ll, 1, 3), ' ', substr(_ll, 4, 4)))"))
+        .drop("_ll")
         .withColumnRenamed("id", "hh_ix")
     )
     people = (
@@ -324,7 +330,6 @@ def build_population() -> DataFrame:
         .withColumn("own_family", "string", values=FAMILY, random=True)
         .withColumn("hh_ix", "long", minValue=0, maxValue=hh_n - 1, random=True)
         .withColumn("dob", "date", data_range=dg.DateRange("1936-01-01 00:00:00", "2007-12-31 00:00:00", "days=1"), random=True)
-        .withColumn("mobile", "string", template=r"04dd ddd ddd", random=True)
         .withColumn("email_domain", "string", values=EMAIL_DOMAINS, weights=[34, 22, 12, 12, 8, 7, 5], random=True)
         .withColumn("alt_domain", "string", values=EMAIL_DOMAINS, random=True)
         .withColumn("pref_channel", "string", values=["phone", "web", "email", "shopfront"], weights=[35, 35, 18, 12], random=True)
@@ -335,6 +340,9 @@ def build_population() -> DataFrame:
         .withColumn("p_type_ix", "int", minValue=0, maxValue=len(STREET_TYPES) - 1, random=True)
         .withColumn("p_unit_no", "int", minValue=1, maxValue=48, random=True, percentNulls=0.7)
         .build()
+        .withColumn("_mb", F.expr(f"lpad(CAST(pmod(xxhash64({SEED}, 'mobile', id), 100000000) AS STRING), 8, '0')"))
+        .withColumn("mobile", F.expr("concat('04', substr(_mb, 1, 2), ' ', substr(_mb, 3, 3), ' ', substr(_mb, 6, 3))"))
+        .drop("_mb")
     )
     p = (people.join(households.select("hh_ix", "hh_family", "suburb_ix", "street_no", "street_ix", "type_ix", "unit_no", "landline"), "hh_ix")
          .selectExpr(
