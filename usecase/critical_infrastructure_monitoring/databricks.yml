@@ -2,8 +2,8 @@
 # Modelled on the National Heavy Vehicle Regulator:
 # https://www.databricks.com/customers/national-heavy-vehicle-regulator
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# The end-to-end pipeline job is defined in resources/critical_infrastructure_job.yml
+# and included below.
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -37,8 +37,8 @@ variables:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
 
 targets:
   dev:
