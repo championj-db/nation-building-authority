@@ -428,8 +428,8 @@ PROCEDURES = {
           END IF;
           IF NOT EXISTS (SELECT 1 FROM {T('staff_purpose_authorisations')} a
                          WHERE a.principal = session_user() AND a.purpose_code = p_purpose AND {VALID_AUTH}) THEN
-            {AUDIT} VALUES (uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
-                            'session_start', 'denied', 'Not authorised for this purpose', 'start_access_session');
+            {AUDIT} SELECT uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
+                            'session_start', 'denied', 'Not authorised for this purpose', 'start_access_session';
             SIGNAL SQLSTATE '42501' SET MESSAGE_TEXT = 'You are not authorised to act under this purpose of use';
           END IF;
           IF v_requires THEN
@@ -441,17 +441,17 @@ PROCEDURES = {
                              WHERE constituent_id = p_constituent_id AND has_verified_source);
           END IF;
           IF v_subject IS NULL THEN
-            {AUDIT} VALUES (uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
-                            'session_start', 'denied', 'Case not in caller caseload, or constituent not verified', 'start_access_session');
+            {AUDIT} SELECT uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
+                            'session_start', 'denied', 'Case not in caller caseload, or constituent not verified', 'start_access_session';
             SIGNAL SQLSTATE '42501' SET MESSAGE_TEXT = 'The case is not in your caseload for this purpose (or the constituent is not verified)';
           END IF;
           UPDATE {T('access_sessions')} SET ended_at = current_timestamp(), end_reason = 'superseded' WHERE {ACTIVE};
           INSERT INTO {T('access_sessions')} (session_id, principal, purpose_code, case_id, subject_constituent_id, justification,
                                               started_at, expires_at, ended_at, end_reason)
-            VALUES (v_sid, session_user(), p_purpose, p_case_id, v_subject, p_justification, current_timestamp(),
-                    current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES, NULL, NULL);
-          {AUDIT} VALUES (uuid(), current_timestamp(), session_user(), v_subject, p_case_id, p_purpose,
-                          'session_start', 'allowed', p_justification, 'start_access_session');
+            SELECT v_sid, session_user(), p_purpose, p_case_id, v_subject, p_justification, current_timestamp(),
+                    current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES, NULL, NULL;
+          {AUDIT} SELECT uuid(), current_timestamp(), session_user(), v_subject, p_case_id, p_purpose,
+                          'session_start', 'allowed', p_justification, 'start_access_session';
           SELECT v_sid AS session_id, v_subject AS constituent_id, p_purpose AS purpose_code,
                  current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES AS expires_at;
         END""",
@@ -469,7 +469,7 @@ PROCEDURES = {
         COMMENT 'Record an application access event (record opened, restricted attempt, assistant briefing) against the active session.'
         AS BEGIN
           IF NOT EXISTS (SELECT 1 FROM {T('access_sessions')} WHERE {ACTIVE}) THEN
-            {AUDIT} VALUES (uuid(), current_timestamp(), session_user(), NULL, NULL, NULL, p_event_type, 'no_session', p_detail, 'log_access_event');
+            {AUDIT} SELECT uuid(), current_timestamp(), session_user(), NULL, NULL, NULL, p_event_type, 'no_session', p_detail, 'log_access_event';
           ELSE
             {AUDIT} SELECT uuid(), current_timestamp(), session_user(), subject_constituent_id, case_id, purpose_code,
                            p_event_type, 'logged', p_detail, 'log_access_event'
@@ -510,7 +510,7 @@ PROCEDURES = {
           END IF;
           INSERT INTO {T('identity_review_decisions')} (decision_id, decided_at, principal, decision, source_record_id_l,
                                                         source_record_id_r, reason, active)
-            VALUES (uuid(), current_timestamp(), session_user(), p_decision, p_source_record_id_l, p_source_record_id_r, p_reason, true);
+            SELECT uuid(), current_timestamp(), session_user(), p_decision, p_source_record_id_l, p_source_record_id_r, p_reason, true;
           {AUDIT} SELECT uuid(), current_timestamp(), session_user(), subject_constituent_id, case_id, purpose_code,
                          'identity_decision', p_decision, concat(p_source_record_id_l, ' / ', p_source_record_id_r), 'record_identity_decision'
                   FROM {T('access_sessions')} WHERE {ACTIVE};

@@ -1,0 +1,10 @@
+command: ['npm', 'run', 'start']
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    value: 083bec41aa3ab495
+  - name: DATABRICKS_GENIE_SPACE_ID
+    value: 01f1d0d9f200150297e8a40bc60f367b
+  - name: DATABRICKS_CATALOG
+    value: au_pubsec_catalog
+  - name: DATABRICKS_SCHEMA
+    value: constituent_360_jared_champion

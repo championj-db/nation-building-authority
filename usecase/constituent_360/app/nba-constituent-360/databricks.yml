@@ -1,0 +1,53 @@
+bundle:
+  name: nba-constituent-360-app
+
+variables:
+  app_name:
+    description: Databricks App resource name.
+    default: nba-constituent-360
+  catalog:
+    description: Unity Catalog catalog containing the governed serving layer.
+    default: au_pubsec_catalog
+  schema:
+    description: Unity Catalog schema containing the governed serving layer.
+    default: constituent_360_jared_champion
+  warehouse_id:
+    description: SQL warehouse used for OBO Analytics and mutations.
+    default: 083bec41aa3ab495
+  genie_space_id:
+    description: Constituent 360 Case Assistant Genie Agent ID.
+    default: 01f1d0d9f200150297e8a40bc60f367b
+  genie_space_name:
+    description: Constituent 360 Case Assistant display name.
+    default: Constituent 360 Case Assistant
+
+resources:
+  apps:
+    app:
+      name: ${var.app_name}
+      description: Governed Constituent 360 case workspace
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - genie
+      permissions:
+        - user_name: jared.champion@databricks.com
+          level: CAN_USE
+      config:
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value: ${var.warehouse_id}
+          - name: DATABRICKS_GENIE_SPACE_ID
+            value: ${var.genie_space_id}
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: https://fevm-au-pubsec.cloud.databricks.com

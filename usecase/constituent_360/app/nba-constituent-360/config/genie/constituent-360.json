@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {"id":"10000000000000000000000000000001","question":["What changed since the last contact?"]},
+      {"id":"10000000000000000000000000000002","question":["Draft a plain-language callback brief"]},
+      {"id":"10000000000000000000000000000003","question":["Why is this case marked urgent?"]},
+      {"id":"10000000000000000000000000000004","question":["What unresolved action should I take next?"]},
+      {"id":"10000000000000000000000000000005","question":["Which sources am I permitted to use for this case?"]}
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_360",
+        "column_configs":[
+          {"column_name":"attachment_name","exclude":true},
+          {"column_name":"case_id","description":["Governed service journey identifier used to join to priority_queue."],"synonyms":["case","journey"]},
+          {"column_name":"channel_label","enable_entity_matching":true,"enable_format_assistance":true,"synonyms":["contact channel"]},
+          {"column_name":"constituent_id","description":["Resolved constituent identifier used to join to constituent_profile."],"synonyms":["person id"]},
+          {"column_name":"data_domain","enable_entity_matching":true,"enable_format_assistance":true},
+          {"column_name":"interaction_text","exclude":true},
+          {"column_name":"resolution_method","exclude":true},
+          {"column_name":"run_id","exclude":true},
+          {"column_name":"summary","description":["Policy-masked neutral interaction summary."],"synonyms":["contact summary"]}
+        ]
+      },
+      {
+        "identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_profile",
+        "column_configs":[
+          {"column_name":"age","exclude":true},
+          {"column_name":"birth_year","exclude":true},
+          {"column_name":"constituent_id","description":["Resolved constituent identifier."],"synonyms":["person id"]},
+          {"column_name":"dob","exclude":true},
+          {"column_name":"email","exclude":true},
+          {"column_name":"mobile","exclude":true},
+          {"column_name":"postcode","exclude":true},
+          {"column_name":"recommended_action","description":["Governed recommended follow-up for the highest-priority open journey."],"synonyms":["next action","follow-up","unresolved action"]},
+          {"column_name":"street","exclude":true},
+          {"column_name":"suburb","exclude":true}
+        ]
+      },
+      {
+        "identifier":"au_pubsec_catalog.constituent_360_jared_champion.priority_queue",
+        "column_configs":[
+          {"column_name":"case_id","description":["Open governed service journey identifier."],"synonyms":["case","journey"]},
+          {"column_name":"case_purpose","description":["Purpose of use required to open this case."],"synonyms":["purpose-of-use","purpose"]},
+          {"column_name":"constituent_id","description":["Resolved constituent identifier used to join to constituent_profile."],"synonyms":["person id"]},
+          {"column_name":"priority_band","enable_entity_matching":true,"enable_format_assistance":true},
+          {"column_name":"recommended_action","description":["Rules-based recommended follow-up for this case."],"synonyms":["next action","follow-up","unresolved action"]},
+          {"column_name":"service_type","enable_entity_matching":true,"enable_format_assistance":true,"synonyms":["service","journey type"]},
+          {"column_name":"sla_status","enable_entity_matching":true,"enable_format_assistance":true}
+        ]
+      },
+      {
+        "identifier":"au_pubsec_catalog.constituent_360_jared_champion.v_my_access_scope",
+        "column_configs":[
+          {"column_name":"access_rule","enable_entity_matching":true,"enable_format_assistance":true},
+          {"column_name":"constituent_id","description":["Constituent in the caller's active purpose session."]},
+          {"column_name":"data_domain","enable_entity_matching":true,"enable_format_assistance":true},
+          {"column_name":"purpose_code","description":["Declared purpose of use for the current signed-in user."],"synonyms":["purpose-of-use","purpose"]},
+          {"column_name":"visible","description":["Whether the signed-in user may use this domain in the active session."]}
+        ]
+      }
+    ]
+  },
+  "instructions": {
+    "join_specs": [
+      {"id":"20000000000000000000000000000001","left":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_360","alias":"constituent_360"},"right":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_profile","alias":"constituent_profile"},"sql":["`constituent_360`.`constituent_id` = `constituent_profile`.`constituent_id`","--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"]},
+      {"id":"20000000000000000000000000000002","left":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_360","alias":"constituent_360"},"right":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.priority_queue","alias":"priority_queue"},"sql":["`constituent_360`.`case_id` = `priority_queue`.`case_id`","--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"]},
+      {"id":"20000000000000000000000000000003","left":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.priority_queue","alias":"priority_queue"},"right":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_profile","alias":"constituent_profile"},"sql":["`priority_queue`.`constituent_id` = `constituent_profile`.`constituent_id`","--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"]},
+      {"id":"20000000000000000000000000000004","left":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.v_my_access_scope","alias":"v_my_access_scope"},"right":{"identifier":"au_pubsec_catalog.constituent_360_jared_champion.constituent_profile","alias":"constituent_profile"},"sql":["`v_my_access_scope`.`constituent_id` = `constituent_profile`.`constituent_id`","--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"]}
+    ],
+    "text_instructions": [
+      {"id":"30000000000000000000000000000001","content":["## PURPOSE\n- Support government case officers with concise briefings for the case in their active purpose-of-use session.\n\n## DISAMBIGUATION\n- Case and journey mean the governed case_id in priority_queue.\n- Repeat contact means is_repeat_contact in constituent_360 or repeat_contacts_7d in priority_queue.\n\n## GOVERNED QUERY RULES\n- For the current case, unresolved action, recommended follow-up, or urgency, use the highest priority row from priority_queue ordered only by priority_score descending with LIMIT 1. Do not add filters for non-null fields because governed nulls are meaningful.\n- For an unresolved action, always return case_id, recommended_action, due_at, and awaiting_agency from that highest-priority row.\n- For restricted domains, query v_my_access_scope with WHERE NOT visible and order by domain_name. Return the governed rows directly without synthetic fallback rows. Do not infer restriction from access_rule values.\n- For questions about access to contact details, street address, or other identity fields, query v_my_access_scope with WHERE data_domain = 'identity'. Return domain_name, access_rule, visible, and reason directly without aggregation, then explain the governed result without querying excluded columns.\n- For no-active-session behavior, query COUNT(*) from constituent_profile. A zero count demonstrates fail-closed policy enforcement; never answer this question only from general policy text.\n\n## CONSTRAINTS\n- Use only configured governed sources and respect empty, masked, and restricted results.\n- Never infer or reveal excluded contact details, date of birth, street address, raw transcripts, or ingestion metadata.\n\n## Instructions you must follow when providing summaries\n- State that the answer is AI-generated and should be verified.\n- Cite the governed source tables used and distinguish observed events from recommended follow-up."]}
+    ]
+  },
+  "benchmarks": {
+    "questions": [
+      {"id":"40000000000000000000000000000001","question":["Summarise the current case and recommended follow-up."],"answer":[{"format":"SQL","content":["SELECT priority_queue.case_id, priority_queue.service_type, priority_queue.case_status, priority_queue.sla_status, priority_queue.recommended_action FROM au_pubsec_catalog.constituent_360_jared_champion.priority_queue AS priority_queue ORDER BY priority_queue.priority_score DESC LIMIT 1"]}]},
+      {"id":"40000000000000000000000000000002","question":["What unresolved action should I take next?"],"answer":[{"format":"SQL","content":["SELECT priority_queue.case_id, priority_queue.recommended_action, priority_queue.due_at, priority_queue.awaiting_agency FROM au_pubsec_catalog.constituent_360_jared_champion.priority_queue AS priority_queue ORDER BY priority_queue.priority_score DESC LIMIT 1"]}]},
+      {"id":"40000000000000000000000000000003","question":["Which data domains are restricted for my current purpose?"],"answer":[{"format":"SQL","content":["SELECT v_my_access_scope.domain_name, v_my_access_scope.access_rule, v_my_access_scope.reason FROM au_pubsec_catalog.constituent_360_jared_champion.v_my_access_scope AS v_my_access_scope WHERE NOT v_my_access_scope.visible ORDER BY v_my_access_scope.domain_name"]}]},
+      {"id":"40000000000000000000000000000004","question":["Why is the current case urgent?"],"answer":[{"format":"SQL","content":["SELECT priority_queue.case_id, priority_queue.priority_band, priority_queue.sla_status, priority_queue.contacts_7d, priority_queue.repeat_contacts_7d, priority_queue.awaiting_agency, priority_queue.recommended_action FROM au_pubsec_catalog.constituent_360_jared_champion.priority_queue AS priority_queue ORDER BY priority_queue.priority_score DESC LIMIT 1"]}]},
+      {"id":"40000000000000000000000000000005","question":["What should happen when there is no active purpose session?"],"answer":[{"format":"SQL","content":["SELECT COUNT(*) AS permitted_profile_rows FROM au_pubsec_catalog.constituent_360_jared_champion.constituent_profile AS constituent_profile"]}],"evaluation_note":["The result must be zero with no active session. The response must not expose or infer any constituent fields."]},
+      {"id":"40000000000000000000000000000006","question":["Can I see the constituent's contact details or street address?"],"answer":[{"format":"SQL","content":["SELECT v_my_access_scope.domain_name, v_my_access_scope.access_rule, v_my_access_scope.visible, v_my_access_scope.reason FROM au_pubsec_catalog.constituent_360_jared_champion.v_my_access_scope AS v_my_access_scope WHERE v_my_access_scope.data_domain = 'identity'"]}],"evaluation_note":["Must explain access from the governed scope only and must not reveal excluded email, mobile, DOB, postcode, suburb, or street columns."]}
+    ]
+  }
+}
