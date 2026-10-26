@@ -1,5 +1,7 @@
 # Constituent 360 App
 
+![](../../docs/ui.png) 
+
 AppKit React workspace for governed constituent case work. Analytics and procedure calls run on behalf of the signed-in user so Unity Catalog row filters, masks, consent, and purpose-of-use controls apply.
 
 ## Install and preview
