@@ -429,7 +429,7 @@ PROCEDURES = {
           IF NOT EXISTS (SELECT 1 FROM {T('staff_purpose_authorisations')} a
                          WHERE a.principal = session_user() AND a.purpose_code = p_purpose AND {VALID_AUTH}) THEN
             {AUDIT} SELECT uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
-                           'session_start', 'denied', 'Not authorised for this purpose', 'start_access_session';
+                            'session_start', 'denied', 'Not authorised for this purpose', 'start_access_session';
             SIGNAL SQLSTATE '42501' SET MESSAGE_TEXT = 'You are not authorised to act under this purpose of use';
           END IF;
           IF v_requires THEN
@@ -442,16 +442,16 @@ PROCEDURES = {
           END IF;
           IF v_subject IS NULL THEN
             {AUDIT} SELECT uuid(), current_timestamp(), session_user(), p_constituent_id, p_case_id, p_purpose,
-                           'session_start', 'denied', 'Case not in caller caseload, or constituent not verified', 'start_access_session';
+                            'session_start', 'denied', 'Case not in caller caseload, or constituent not verified', 'start_access_session';
             SIGNAL SQLSTATE '42501' SET MESSAGE_TEXT = 'The case is not in your caseload for this purpose (or the constituent is not verified)';
           END IF;
           UPDATE {T('access_sessions')} SET ended_at = current_timestamp(), end_reason = 'superseded' WHERE {ACTIVE};
           INSERT INTO {T('access_sessions')} (session_id, principal, purpose_code, case_id, subject_constituent_id, justification,
                                               started_at, expires_at, ended_at, end_reason)
-            VALUES (v_sid, session_user(), p_purpose, p_case_id, v_subject, p_justification, current_timestamp(),
-                    current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES, NULL, NULL);
+            SELECT v_sid, session_user(), p_purpose, p_case_id, v_subject, p_justification, current_timestamp(),
+                    current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES, NULL, NULL;
           {AUDIT} SELECT uuid(), current_timestamp(), session_user(), v_subject, p_case_id, p_purpose,
-                         'session_start', 'allowed', p_justification, 'start_access_session';
+                          'session_start', 'allowed', p_justification, 'start_access_session';
           SELECT v_sid AS session_id, v_subject AS constituent_id, p_purpose AS purpose_code,
                  current_timestamp() + INTERVAL {SESSION_MINUTES} MINUTES AS expires_at;
         END""",
