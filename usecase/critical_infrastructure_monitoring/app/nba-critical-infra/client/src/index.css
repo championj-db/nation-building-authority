@@ -356,6 +356,9 @@ dialog[open] { animation: dialog-in var(--ioc-motion-base) var(--ioc-ease-standa
 .network-map .river.intermittent { opacity: .45; }
 .network-map .closed-section { fill: none; stroke: var(--ioc-lava-600); stroke-linecap: round; stroke-linejoin: round; }
 .network-map .closed-section.restriction { stroke: var(--ioc-hazard); }
+.network-map .affected-section { fill: none; stroke: var(--ioc-lava-600); opacity: .55; stroke-linecap: round; stroke-linejoin: round; cursor: pointer; }
+.network-map .affected-section:hover { opacity: 1; }
+.network-map .affected-section.restriction { stroke: var(--ioc-hazard); }
 .network-map .detour { fill: none; stroke: var(--ioc-navy-900); stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
 .network-headline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--ioc-space-2) 0 var(--ioc-space-3); }
 .network-facts { display: grid; gap: var(--ioc-space-2); margin: 0 0 var(--ioc-space-3); }
