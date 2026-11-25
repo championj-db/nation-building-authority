@@ -1,273 +1,278 @@
-"""Shared model definitions for the critical infrastructure monitoring use case.
+"""Shared model contract for the critical infrastructure monitoring use case.
 
-Every pipeline step imports this module so that the synthetic generators
-(01, 02), the identity resolver (04) and the risk engine (05, 06) all agree on
-the same registration plate alphabet, OCR confusion classes, site catalogue,
-risk factor weights and alert copy. If a definition changes, it changes here
-and every step picks it up on the next run.
+A national, cross-sector Infrastructure Operations Centre: one operating picture across roads,
+rail, water and energy assets run by many operators. Every pipeline step imports this module so
+the synthetic generators (01, 02), the conformance step (04) and the risk engine (05, 06) agree on
+the same asset classes, metrics and engineering limits, hazard behaviour, storylines and risk
+weights. If a definition changes it changes here, and every step picks it up on the next run.
 
-No environment-specific value lives in this file: catalog, schema and volume
-names arrive as job parameters, never as literals.
+No environment-specific value lives in this file: catalog, schema and volume names arrive as job
+parameters, never as literals. All geography is real public Australian place data; every asset,
+operator, reading and warning is synthetic.
 """
 
 import datetime as dt
+import math
 from contextlib import contextmanager
 from zoneinfo import ZoneInfo
 
 # ---------------------------------------------------------------------------
-# Registration plates
+# Sectors and asset classes
 # ---------------------------------------------------------------------------
-# Synthetic Australian heavy-vehicle format XX99XX (two letters, two digits,
-# two letters). The expression below bijectively encodes a numeric seed into
-# that alphabet, so plates are deterministic and collision-free without any
-# lookup table.
-PLATE_REGEX = r"^[A-Z]{2}[0-9]{2}[A-Z]{2}$"
+SECTORS = ["roads", "rail", "water", "energy"]
+SECTOR_LABELS = {"roads": "Roads", "rail": "Rail", "water": "Water", "energy": "Energy"}
+
+# key: (sector, label, code prefix, relative count, metrics, people served range,
+#       needs power from a zone substation, states it occurs in (None = all))
+_RAIL_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "ACT"]
+ASSET_CLASSES = {
+    "bridge":            ("roads",  "Bridge",              "BR", 10, ["strain_microstrain", "vibration_mm_s"], (5_000, 90_000),   False, None),
+    "tunnel":            ("roads",  "Road tunnel",         "TN",  3, ["co_ppm"],                               (20_000, 120_000), True,  ["NSW", "VIC", "QLD"]),
+    "road_corridor":     ("roads",  "Road corridor",       "RC", 10, ["surface_water_mm"],                     (3_000, 60_000),   False, None),
+    "track_section":     ("rail",   "Track section",       "TK", 10, ["rail_temp_c"],                          (2_000, 60_000),   False, _RAIL_STATES),
+    "signalling":        ("rail",   "Signalling interlocking", "SG", 6, ["signal_faults"],                     (10_000, 150_000), True,  _RAIL_STATES),
+    "overhead_wiring":   ("rail",   "Overhead wiring",     "OW",  5, ["wire_temp_c"],                          (10_000, 120_000), True,  ["NSW", "VIC", "QLD", "SA", "WA"]),
+    "level_crossing":    ("rail",   "Level crossing",      "LX",  5, ["activation_faults"],                    (1_000, 15_000),   True,  _RAIL_STATES),
+    "reservoir":         ("water",  "Reservoir",           "RS",  6, ["level_pct"],                            (20_000, 400_000), False, None),
+    "trunk_main":        ("water",  "Trunk main",          "TM",  8, ["pressure_kpa"],                         (10_000, 250_000), False, None),
+    "pump_station":      ("water",  "Pumping station",     "PS",  7, ["pump_load_pct"],                        (5_000, 120_000),  True,  None),
+    "treatment_plant":   ("water",  "Treatment plant",     "TP",  3, ["turbidity_ntu"],                        (50_000, 900_000), True,  None),
+    "zone_substation":   ("energy", "Zone substation",     "ZS", 10, ["transformer_temp_c", "load_pct"],       (12_000, 200_000), False, None),
+    "transmission_line": ("energy", "Transmission line",   "TL",  5, ["line_load_pct"],                        (50_000, 600_000), False, None),
+    "feeder":            ("energy", "Distribution feeder", "FD",  8, ["feeder_faults"],                        (1_000, 12_000),   False, None),
+}
+
+# Fictional operators. Real infrastructure is run by many organisations per sector; the centre's
+# job is to see across all of them. Names are deliberately generic and invented.
+OPERATORS = {
+    "roads": ["Eastern Highways Authority", "Southern Road Network", "Northern Roads Corporation", "Western Motorways"],
+    "rail": ["Coastal Rail Network", "Metropolitan Rail Services", "Inland Rail Freight", "Southern Cross Rail"],
+    "water": ["Harbour Water", "Riverlands Water Corporation", "Coastal Water Utilities", "Western Water Supply"],
+    "energy": ["Southern Grid", "Eastern Distribution", "National Transmission Co", "Northern Power Networks"],
+}
+
+# Real public geography (name, state, latitude, longitude, relative asset density).
+LOCALITIES = [
+    ("Sydney", "NSW", -33.87, 151.21, 6), ("Parramatta", "NSW", -33.81, 151.00, 4), ("Penrith", "NSW", -33.75, 150.69, 4),
+    ("Liverpool", "NSW", -33.92, 150.92, 3), ("Campbelltown", "NSW", -34.07, 150.81, 3), ("Newcastle", "NSW", -32.93, 151.78, 4),
+    ("Maitland", "NSW", -32.73, 151.55, 2), ("Wollongong", "NSW", -34.42, 150.89, 3), ("Gosford", "NSW", -33.43, 151.34, 2),
+    ("Lismore", "NSW", -28.81, 153.28, 2), ("Grafton", "NSW", -29.69, 152.93, 2), ("Tamworth", "NSW", -31.09, 150.93, 1),
+    ("Dubbo", "NSW", -32.25, 148.60, 1), ("Wagga Wagga", "NSW", -35.12, 147.37, 1), ("Goulburn", "NSW", -34.75, 149.72, 1),
+    ("Albury", "NSW", -36.08, 146.92, 1), ("Orange", "NSW", -33.28, 149.10, 1), ("Port Macquarie", "NSW", -31.43, 152.91, 1),
+    ("Canberra", "ACT", -35.28, 149.13, 3),
+    ("Melbourne", "VIC", -37.81, 144.96, 6), ("Sunshine", "VIC", -37.79, 144.83, 3), ("Dandenong", "VIC", -37.99, 145.21, 3),
+    ("Geelong", "VIC", -38.15, 144.36, 2), ("Ballarat", "VIC", -37.56, 143.85, 1), ("Bendigo", "VIC", -36.76, 144.28, 1),
+    ("Traralgon", "VIC", -38.20, 146.54, 2), ("Sale", "VIC", -38.10, 147.07, 1), ("Bairnsdale", "VIC", -37.82, 147.61, 1),
+    ("Shepparton", "VIC", -36.38, 145.40, 1), ("Wodonga", "VIC", -36.12, 146.89, 1), ("Warrnambool", "VIC", -38.38, 142.48, 1),
+    ("Brisbane", "QLD", -27.47, 153.03, 6), ("Ipswich", "QLD", -27.61, 152.76, 2), ("Logan", "QLD", -27.64, 153.11, 2),
+    ("Gold Coast", "QLD", -28.02, 153.40, 3), ("Sunshine Coast", "QLD", -26.65, 153.07, 2), ("Toowoomba", "QLD", -27.56, 151.95, 1),
+    ("Rockhampton", "QLD", -23.38, 150.51, 1), ("Mackay", "QLD", -21.14, 149.19, 1), ("Townsville", "QLD", -19.26, 146.82, 2),
+    ("Cairns", "QLD", -16.92, 145.77, 1),
+    ("Adelaide", "SA", -34.93, 138.60, 4), ("Salisbury", "SA", -34.77, 138.64, 2), ("Murray Bridge", "SA", -35.12, 139.27, 1),
+    ("Port Augusta", "SA", -32.49, 137.77, 1), ("Mount Gambier", "SA", -37.83, 140.78, 1),
+    ("Perth", "WA", -31.95, 115.86, 5), ("Joondalup", "WA", -31.74, 115.77, 2), ("Fremantle", "WA", -32.05, 115.75, 2),
+    ("Mandurah", "WA", -32.53, 115.72, 1), ("Bunbury", "WA", -33.33, 115.64, 1), ("Kalgoorlie", "WA", -30.75, 121.47, 1),
+    ("Hobart", "TAS", -42.88, 147.33, 2), ("Launceston", "TAS", -41.44, 147.14, 1),
+    ("Darwin", "NT", -12.46, 130.84, 2), ("Katherine", "NT", -14.47, 132.26, 1), ("Alice Springs", "NT", -23.70, 133.88, 1),
+]
+
+# ---------------------------------------------------------------------------
+# Metrics and engineering limits
+# ---------------------------------------------------------------------------
+# metric: (label, unit, baseline, noise sd, diurnal amplitude, warn, alarm, direction, kind)
+# direction "high": larger is worse; "low": smaller is worse. kind "gauge" or "count" (faults
+# per 15 minutes, which are Poisson-like and never negative).
+METRICS = {
+    "strain_microstrain": ("Deck strain", "µε", 180.0, 12.0, 25.0, 320.0, 400.0, "high", "gauge"),
+    "vibration_mm_s": ("Vibration", "mm/s", 2.0, 0.25, 0.6, 5.0, 8.0, "high", "gauge"),
+    "co_ppm": ("Carbon monoxide", "ppm", 12.0, 2.5, 8.0, 50.0, 80.0, "high", "gauge"),
+    "surface_water_mm": ("Surface water", "mm", 0.0, 0.8, 0.0, 50.0, 150.0, "high", "gauge"),
+    "rail_temp_c": ("Rail temperature", "°C", 28.0, 1.5, 10.0, 50.0, 58.0, "high", "gauge"),
+    "signal_faults": ("Signal faults", "per 15 min", 0.05, 0.0, 0.0, 3.0, 6.0, "high", "count"),
+    "wire_temp_c": ("Contact wire temperature", "°C", 35.0, 1.5, 10.0, 70.0, 85.0, "high", "gauge"),
+    "activation_faults": ("Activation faults", "per 15 min", 0.02, 0.0, 0.0, 2.0, 4.0, "high", "count"),
+    "level_pct": ("Storage level", "%", 78.0, 0.6, 2.0, 40.0, 25.0, "low", "gauge"),
+    "pressure_kpa": ("Line pressure", "kPa", 550.0, 10.0, 35.0, 380.0, 300.0, "low", "gauge"),
+    "pump_load_pct": ("Pump load", "%", 55.0, 3.0, 15.0, 90.0, 100.0, "high", "gauge"),
+    "turbidity_ntu": ("Treated water turbidity", "NTU", 0.15, 0.02, 0.0, 0.5, 1.0, "high", "gauge"),
+    "transformer_temp_c": ("Transformer temperature", "°C", 62.0, 1.5, 12.0, 95.0, 110.0, "high", "gauge"),
+    "load_pct": ("Substation load", "% of rating", 58.0, 3.0, 18.0, 90.0, 105.0, "high", "gauge"),
+    "line_load_pct": ("Line load", "% of thermal limit", 52.0, 3.0, 15.0, 90.0, 100.0, "high", "gauge"),
+    "feeder_faults": ("Feeder faults", "per 15 min", 0.05, 0.0, 0.0, 3.0, 6.0, "high", "count"),
+}
+
+READING_INTERVAL_MINUTES = 15
+
+# Incident titles and the first action for an incident triggered by each metric.
+METRIC_INCIDENT = {
+    "strain_microstrain": ("Bridge strain above design band", "Restrict heavy loading and dispatch a structures inspector"),
+    "vibration_mm_s": ("Bridge vibration anomaly", "Inspect for debris strike or scour and consider closure"),
+    "co_ppm": ("Tunnel air quality alarm", "Boost ventilation and prepare traffic management for closure"),
+    "surface_water_mm": ("Road surface flooding", "Close the corridor and activate the signed detour"),
+    "rail_temp_c": ("Rail temperature near buckling threshold", "Impose a heat speed restriction and patrol the track"),
+    "signal_faults": ("Signalling fault cluster", "Dispatch a signalling technician and prepare degraded working"),
+    "wire_temp_c": ("Overhead wiring heat sag risk", "Reduce traction load and inspect wire tensioning"),
+    "activation_faults": ("Level crossing activation faults", "Dispatch a crossing technician and flag for road users"),
+    "level_pct": ("Reservoir level below operating band", "Increase transfers and prepare demand restrictions"),
+    "pressure_kpa": ("Trunk main pressure drop", "Isolate the suspected burst section and dispatch a crew"),
+    "pump_load_pct": ("Pumping station overload", "Bring standby pumps online and check for blockage"),
+    "turbidity_ntu": ("Treated water turbidity rising", "Adjust treatment dosing and notify the health regulator"),
+    "transformer_temp_c": ("Transformer temperature approaching limit", "Shed or transfer load and dispatch a crew"),
+    "load_pct": ("Substation load near rating", "Transfer load to adjacent substations"),
+    "line_load_pct": ("Transmission line near thermal limit", "Re-dispatch generation to relieve the line"),
+    "feeder_faults": ("Feeder fault cluster", "Dispatch a line crew and patrol the feeder"),
+}
+
+# ---------------------------------------------------------------------------
+# Hazards (synthetic Bureau-style warnings)
+# ---------------------------------------------------------------------------
+HAZARD_TYPES = ["heatwave", "flood", "bushfire", "storm"]
+HAZARD_LABELS = {"heatwave": "Heatwave", "flood": "Flood", "bushfire": "Bushfire", "storm": "Severe storm"}
+SEVERITY_WEIGHT = {"minor": 0.3, "moderate": 0.55, "severe": 0.8, "extreme": 1.0}
+
+# How strongly each hazard type bears on each sector (0-1).
+HAZARD_RELEVANCE = {
+    "heatwave": {"energy": 1.0, "rail": 1.0, "water": 0.8, "roads": 0.2},
+    "flood":    {"roads": 1.0, "water": 0.9, "rail": 0.9, "energy": 0.4},
+    "bushfire": {"energy": 1.0, "roads": 0.8, "rail": 0.7, "water": 0.5},
+    "storm":    {"energy": 0.9, "rail": 0.8, "roads": 0.6, "water": 0.3},
+}
+
+# Physical effect of a hazard at full intensity on each metric (added to the reading). The
+# generator scales this by severity, proximity to the warning centre and how long it has run.
+HAZARD_EFFECTS = {
+    "heatwave": {"rail_temp_c": 22, "wire_temp_c": 38, "transformer_temp_c": 30, "load_pct": 32,
+                 "line_load_pct": 32, "pump_load_pct": 30, "level_pct": -22, "pressure_kpa": -90},
+    "flood":    {"surface_water_mm": 220, "vibration_mm_s": 5, "turbidity_ntu": 0.9, "signal_faults": 4,
+                 "activation_faults": 3, "level_pct": 12},
+    "bushfire": {"feeder_faults": 6, "line_load_pct": 30, "wire_temp_c": 30, "signal_faults": 3,
+                 "co_ppm": 55, "turbidity_ntu": 0.35},
+    "storm":    {"feeder_faults": 6, "signal_faults": 5, "activation_faults": 3, "surface_water_mm": 90,
+                 "vibration_mm_s": 2.5},
+}
+
+# Active warnings for the demo, relative to the run time: (warning id, title, type, severity,
+# centre locality or (lat, lon), radius km, started hours ago, ends hours from now).
+HAZARD_WARNINGS = [
+    ("HW-NSW-01", "Heatwave warning - Greater Western Sydney and Hunter", "heatwave", "severe", (-33.45, 150.95), 150, 30, 48),
+    ("FW-NSW-02", "Flood warning - Northern Rivers", "flood", "severe", (-29.05, 153.05), 95, 18, 36),
+    ("BF-VIC-03", "Bushfire emergency warning - Gippsland", "bushfire", "extreme", (-38.05, 146.95), 65, 10, 24),
+    ("ST-QLD-04", "Severe thunderstorm warning - South East Queensland", "storm", "moderate", (-27.60, 153.05), 70, 4, 8),
+    ("HW-SA-05", "Heatwave warning - Adelaide Plains", "heatwave", "moderate", (-34.80, 138.62), 80, 20, 30),
+    # expired: kept so the warnings feed has history and the UI must filter on validity
+    ("ST-WA-90", "Severe thunderstorm warning - Perth metropolitan", "storm", "moderate", (-31.95, 115.86), 60, 70, -50),
+]
+
+# ---------------------------------------------------------------------------
+# Storylines: deterministic asset-specific events layered on top of hazards, so the demo has a
+# clear narrative every run. (asset class, nearest locality, metric, target exceedance of the
+# alarm band 0-1, ramp hours ending at the run time)
+# ---------------------------------------------------------------------------
+STORYLINES = [
+    ("zone_substation", "Penrith", "transformer_temp_c", 0.95, 10),   # heatwave + cascade to rail and water
+    ("trunk_main", "Sunshine", "pressure_kpa", 0.9, 3),               # burst, no hazard involved
+    ("reservoir", "Mandurah", "level_pct", 0.8, 96),                  # slow draw-down
+    ("bridge", "Rockhampton", "strain_microstrain", 0.85, 48),        # structural deterioration
+    ("treatment_plant", "Lismore", "turbidity_ntu", 0.7, 12),         # flood runoff
+    ("transmission_line", "Traralgon", "line_load_pct", 0.75, 8),     # bushfire-constrained corridor
+    ("signalling", "Brisbane", "signal_faults", 0.6, 4),              # storm-related faults
+]
+
+# Storyline assets are anchored at their locality, and these get explicit supply links so the
+# cascade narrative holds on every seed: (asset class, locality) -> dependent classes it powers.
+STORYLINE_LINKS = {
+    ("zone_substation", "Penrith"): ["signalling", "overhead_wiring", "pump_station"],
+}
+
+# Background deterioration: a share of assets drift up to this exceedance over the window.
+DRIFTING_ASSET_PCT = 5
+DRIFT_MAX_EXCEEDANCE = 0.55
+
+# Telemetry quality, handled in silver.
+LATE_READING_PCT = 3          # arrive 1-6 hours after the event
+DUPLICATE_READING_PCT = 0.5   # delivered twice
+UNKNOWN_SENSOR_PCT = 0.2      # sensor id not in the registry -> quarantine
+GLITCH_READING_PCT = 0.1      # physically implausible spike -> flagged, excluded from features
+
+# ---------------------------------------------------------------------------
+# Risk engine: likelihood x consequence (transparent, human in the loop)
+# ---------------------------------------------------------------------------
+# Likelihood of a service-affecting failure, as a weighted sum of normalised factors (0-1).
+# Direct evidence that an asset is failing now (exceedance, anomaly) outweighs context that makes
+# failure more likely (hazard, condition): an asset at its alarm limit is an incident with or
+# without a storm nearby.
+LIKELIHOOD_WEIGHTS = {
+    "limit_exceedance": 0.50,  # how far the worst metric has moved from normal toward its alarm limit
+    "anomaly": 0.20,           # deviation from the asset's own recent baseline
+    "hazard_exposure": 0.20,   # inside an active warning, weighted by severity and relevance
+    "condition": 0.10,         # poor inspection grade (3-5) and overdue inspections
+}
+# Consequence from people affected, including everything downstream that depends on the asset.
+# consequence = log10(people) mapped from CONSEQUENCE_LOG_RANGE onto 0-1.
+CONSEQUENCE_LOG_RANGE = (3.0, 6.0)  # 1,000 people -> 0, 1,000,000 -> 1
+CASCADE_DEPTH = 2
+# risk = 100 x likelihood x (CONSEQUENCE_FLOOR + (1 - CONSEQUENCE_FLOOR) x consequence)
+CONSEQUENCE_FLOOR = 0.7
+
+# Risk ratings (standard likelihood-consequence vocabulary) and the incident threshold.
+RISK_RATINGS = [("extreme", 70), ("high", 57), ("medium", 48)]
+INCIDENT_THRESHOLD = 48
+DISPOSITIONS = ["dispatch", "notify", "monitor"]
+
+MODEL_VERSION = "ioc-likelihood-consequence-v1"
 
 
-PLATE_SPACE = 26 * 26 * 10 * 10 * 26 * 26  # every XX99XX plate
-# Affine scramble seed -> seed * A + B (mod PLATE_SPACE). A (~space / golden ratio) is coprime with it
-# (no factor of 2, 5 or 13), so the map is a bijection: plates stay unique, but sequential
-# ids no longer all start with "AA0", which reads as test data in a demo.
-PLATE_SCRAMBLE_A = 28243009  # ~PLATE_SPACE / golden ratio, coprime with it
-PLATE_SCRAMBLE_B = 1234567
-
-
-def plate_expr(seed_col: str = "id") -> str:
-    """SQL expression mapping a numeric seed column to a unique XX99XX plate."""
-    s = f"pmod(cast({seed_col} as bigint) * {PLATE_SCRAMBLE_A} + {PLATE_SCRAMBLE_B}, {PLATE_SPACE})"
+def haversine_km_expr(lat1: str, lon1: str, lat2: str, lon2: str) -> str:
+    """SQL expression: great-circle distance in km between two lat/lon column pairs."""
     return (
-        "concat("
-        f"char(65 + floor({s} / 1757600) % 26), "
-        f"char(65 + floor({s} / 67600) % 26), "
-        f"cast(floor({s} / 2600) % 10 as string), "
-        f"cast(floor({s} / 260) % 10 as string), "
-        f"char(65 + floor({s} / 10) % 26), "
-        f"char(65 + {s} % 26))"
+        f"2 * 6371 * asin(sqrt(pow(sin(radians({lat2} - {lat1}) / 2), 2) + "
+        f"cos(radians({lat1})) * cos(radians({lat2})) * pow(sin(radians({lon2} - {lon1}) / 2), 2)))"
     )
 
 
-# ---------------------------------------------------------------------------
-# OCR confusion classes
-# ---------------------------------------------------------------------------
-# The telemetry generator (02) injects camera read errors by substituting a
-# single character through this map; the resolver (04) canonicalises the same
-# classes back to a single representative character per class. The two sides
-# must change together or resolution breaks.
-OCR_CONFUSION_SRC = "OB8SIZ2G6DQ"
-OCR_CONFUSION_DST = "08B512Z6G00"
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in km (used when building reference data in Python)."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * 6371 * math.asin(math.sqrt(a))
 
 
-def canonical_plate_expr(col: str) -> str:
-    """SQL expression collapsing each OCR confusion class to one representative."""
-    return f"translate({col}, '0OQD8BS15IZ26G', 'OOOB8BSIIIZZGG')"
+def exceedance_expr(metric_col: str, value_col: str) -> str:
+    """SQL CASE: normalised exceedance (0-1) of a reading toward its alarm limit."""
+    cases = []
+    for metric, (_l, _u, base, _sd, _d, _w, alarm, direction, _k) in METRICS.items():
+        span = (alarm - base) if direction == "high" else (base - alarm)
+        delta = f"({value_col} - {base})" if direction == "high" else f"({base} - {value_col})"
+        cases.append(f"WHEN '{metric}' THEN least(1.0, greatest(0.0, {delta} / {span}))")
+    return f"CASE {metric_col} " + " ".join(cases) + " END"
 
-
-# ---------------------------------------------------------------------------
-# Synthetic reference data vocabularies (public Australian geography)
-# ---------------------------------------------------------------------------
-OPERATOR_NAME_REGIONS = [
-    "Southern", "Eastline", "North Coast", "Metro", "Western", "Central",
-    "Murray", "Sunrise", "Outback", "Coastal", "Northern", "Regional",
-]
-OPERATOR_NAME_DOMAINS = [
-    "Freight", "Civil", "Produce", "Aggregate", "Livestock", "Fuel",
-    "Grain", "Steel", "Timber", "Waste",
-]
-OPERATOR_NAME_SUFFIXES = [
-    "Logistics", "Haulage", "Transport", "Cartage", "Carriers", "Freightlines",
-]
-
-OPERATOR_TYPES = ["general", "freight", "construction", "agriculture", "bulk"]
-OPERATOR_STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"]
-
-# Sighting sites: road, locality, state, latitude, longitude. Real public
-# geography, fictional traffic. The design mock-up places alerts on the Hume
-# Hwy at Marulan, the New England Hwy at Hexham and the Pacific Hwy at Grafton.
-SITE_CATALOGUE = [
-    ("Hume Hwy", "Marulan", "NSW", -34.71, 150.38),
-    ("New England Hwy", "Hexham", "NSW", -32.83, 151.64),
-    ("Pacific Hwy", "Grafton", "NSW", -29.69, 152.93),
-    ("Hume Hwy", "Tarcutta", "NSW", -35.30, 147.90),
-    ("Princes Hwy", "Nowra", "NSW", -34.88, 150.60),
-    ("Great Western Hwy", "Katoomba", "NSW", -33.71, 150.31),
-    ("Federal Hwy", "Goulburn", "NSW", -34.98, 149.73),
-    ("Oxley Hwy", "Wauchope", "NSW", -31.57, 152.58),
-    ("Bruce Hwy", "Caboolture", "QLD", -27.08, 152.95),
-    ("Bruce Hwy", "Gympie", "QLD", -26.19, 152.67),
-    ("Cunningham Hwy", "Warwick", "QLD", -28.21, 152.10),
-    ("Pacific Motorway", "Tugun", "QLD", -28.16, 153.50),
-    ("Warrego Hwy", "Toowoomba", "QLD", -27.56, 151.95),
-    ("Monash Fwy", "Warragul", "VIC", -38.16, 145.93),
-    ("Hume Hwy", "Wodonga", "VIC", -36.12, 146.88),
-    ("Western Hwy", "Ballarat", "VIC", -37.56, 143.86),
-    ("Princes Hwy", "Traralgon", "VIC", -38.20, 146.54),
-    ("Sturt Hwy", "Mildura", "VIC", -34.19, 142.13),
-    ("Great Eastern Hwy", "Kalgoorlie", "WA", -30.75, 121.47),
-    ("Mitchell Fwy", "Joondalup", "WA", -31.74, 115.77),
-    ("Stuart Hwy", "Katherine", "NT", -14.46, 132.26),
-    ("Barkly Hwy", "Tennant Creek", "NT", -19.65, 134.19),
-    ("Dukes Hwy", "Bordertown", "SA", -36.31, 140.78),
-    ("Augusta Hwy", "Port Pirie", "SA", -33.19, 138.01),
-]
-SITE_TYPES = ["anpr_camera", "weigh_in_motion", "gps_gateway"]
-
-ASSET_TYPES = [
-    "prime mover", "prime mover + trailer", "b-double", "tipper", "tanker",
-]
-INSPECTION_TYPES = ["routine", "roadside", "annual"]
-DEFECT_CODES = [
-    "brakes", "tyres", "suspension", "lighting", "load restraint",
-]
 
 # ---------------------------------------------------------------------------
-# Telemetry model constants
+# Synthetic data generation, time and helpers
 # ---------------------------------------------------------------------------
-# Hour-of-day buckets used by the generator and the feature builder. The
-# fatigue engines care about rest-window movement (00:00-05:59) and night
-# movement (20:00-05:59).
-NIGHT_HOURS = [20, 21, 22, 23, 0, 1, 2, 3, 4, 5]
-DAY_HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-REST_WINDOW_END_HOUR = 6  # exclusive: rest window is [00:00, 06:00)
-
-# Mass model: normal sightings sit below the registered mass; over-mass
-# cohorts overload above it. The over-mass feature uses the threshold below.
-OVER_MASS_RATIO_THRESHOLD = 1.05
-NORMAL_MASS_MULTIPLIERS = (0.82, 1.02)
-OVERLOAD_MASS_MULTIPLIERS = (1.06, 1.24)
-
-SIGHTING_SOURCES = ["anpr_camera", "weigh_in_motion", "gps_gateway"]
-
-# Per-asset intensity: real fleets have a spread of offenders, not a cohort of identical
-# ones. Each risk asset draws a propensity in [lo, hi] percent, skewed so most offenders
-# are moderate and a few are severe. Without this every cohort member scores the same.
-COHORT_INTENSITY_PCT = {
-    "fatigue": (25, 85),          # share of movements pushed into night hours
-    "route": (30, 90),            # share of movements on the unusual corridor
-    "mass": (20, 85),             # share of movements loaded over registered mass
-    "roadworthiness": (30, 90),   # chance an inspection records a defect
-}
-INTENSITY_SKEW = 1.6
-
-# Escalation storyline: a share of risk assets intensify activity in the last few days,
-# which the recent_pattern factor detects. ESCALATION_DAYS matches the feature step's
-# recent_days default.
-ESCALATING_ASSET_PCT = 35
-ESCALATION_SHARE_PCT = (25, 60)
-ESCALATION_DAYS = 3
-
-
-def intensity_pct_expr(cohort: str, key_col: str) -> str:
-    """SQL expression: the asset's deterministic propensity (percent) for its cohort."""
-    lo, hi = COHORT_INTENSITY_PCT[cohort]
-    u = f"(pmod(hash('intensity_{cohort}', {key_col}), 1000) / 1000.0)"
-    return f"({lo} + ({hi} - {lo}) * pow({u}, {INTENSITY_SKEW}))"
-
-# ---------------------------------------------------------------------------
-# Risk scoring engine (illustrative, transparent, human-in-the-loop)
-# ---------------------------------------------------------------------------
-# Per-entity scores are a weighted sum of normalised factors. This is a rules
-# engine, not a trained model: every score resolves to contributing factors an
-# officer can read, which is the design intent (decision support, not
-# automated enforcement).
-RISK_TYPES = ["fatigue", "roadworthiness", "mass", "route"]
-
-FACTOR_WEIGHTS = {
-    # Each risk type: ~70% primary evidence, 15-20% escalation (recent_pattern), the rest
-    # corroborating. A fully evidenced offender scores ~70 (alerts); escalation lifts it
-    # into the critical band, so priority 1 means "strong evidence and getting worse".
-    "fatigue": {
-        "rest_window_anomaly": 0.40,
-        "night_movement": 0.30,
-        "recent_pattern": 0.20,
-        "route_variance": 0.10,
-    },
-    "roadworthiness": {
-        "defect_history": 0.70,
-        "recent_pattern": 0.15,
-        "night_movement": 0.05,
-        "rest_window_anomaly": 0.05,
-        "route_variance": 0.05,
-    },
-    "mass": {
-        "mass_variance": 0.70,
-        "recent_pattern": 0.15,
-        "route_variance": 0.10,
-        "night_movement": 0.05,
-    },
-    "route": {
-        "route_variance": 0.70,
-        "recent_pattern": 0.15,
-        "night_movement": 0.10,
-        "rest_window_anomaly": 0.05,
-    },
-}
-
-# Factor normalisation bands: score = clip((raw - baseline) / (full - baseline), 0, 1).
-# baseline is what a normal vehicle shows; full is unambiguous evidence. Stating both ends
-# keeps every factor value readable as "share of the way from normal to clear evidence".
-FACTOR_BANDS = {
-    "rest_window_anomaly": ("rest_window_ratio", 0.05, 0.40),     # share of sightings 00:00-05:59
-    "night_movement": ("night_sightings_ratio", 0.10, 0.65),      # share of sightings 20:00-05:59
-    "recent_pattern": ("recent_surge_ratio", 1.30, 3.30),         # recent vs prior daily rate
-    "route_variance": ("max_site_share", 0.08, 0.30),             # share at the single busiest site
-    "mass_variance": ("over_mass_ratio", 0.03, 0.58),             # share of sightings over mass
-    "defect_history": ("defect_points", 1.0, 8.0),                # defects + 2 x critical, 365 days
-}
-
-
-def factor_score_expr(factor: str) -> str:
-    """SQL expression normalising a raw feature column into its 0-1 factor score."""
-    column, baseline, full = FACTOR_BANDS[factor]
-    return f"least(1.0, greatest(0.0, ({column} - {baseline}) / {full - baseline}))"
-
-
-# Severity bands for the alert queue. Priority 1 rows are the design
-# mock-up's "Open - priority 1" critical alerts.
-SEVERITY_BANDS = {"critical": 85, "high": 75}
-MODEL_VERSION = "transparent-rules-v2"
-
-# Synthetic data generation. Each generation (data version + as-of date) lands in its own
-# folder and silver resolves only the current one, so a rerun on a later day - or after a
-# generator change - produces a clean world instead of stacking backfills. Bump this
-# when the generator's behaviour changes.
-DATA_VERSION = "synthetic-v3"
+# Each generation (data version + as-of date) lands in its own folder and silver resolves only
+# the current one, so a rerun on a later day - or after a generator change - produces a clean
+# world instead of stacking backfills. Bump this when the generator's behaviour changes.
+DATA_VERSION = "ioc-v2"
 
 
 def generation_tag(as_of: str) -> str:
     """Landing sub-folder name for one synthetic generation."""
     return f"generation={DATA_VERSION}_{as_of}"
 
-# Alert copy mirrors the operations-centre design mock-up so the dashboard
-# reads exactly like the mock-up: title, machine-readable summary pattern and
-# the two dispositions an officer can record.
-ALERT_COPY = {
-    "fatigue": ("Fatigue pattern detected", "Repeated night movement - rest-window anomaly"),
-    "roadworthiness": ("Roadworthiness risk elevated", "Inspection history - repeated defect pattern"),
-    "mass": ("Potential over-mass event", "Axle estimate - route and load variance"),
-    "route": ("Route variance detected", "Unusual corridor concentration - pattern shift"),
-}
-DISPOSITIONS = ["route", "monitor"]
+
+# The operations centre runs on Canberra time. "Today", diurnal load and warning validity are
+# local-time concepts, so every step that touches clock time sets the Spark session time zone.
+# Without it serverless runs in UTC and evening peaks would appear in the morning.
+LOCAL_TIMEZONE = "Australia/Sydney"
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 def get_params(defaults: dict, dbutils) -> dict:
-    """Register widgets with defaults, then read job-parameter overrides.
-
-    Job tasks pass parameters through base_parameters, which arrive as widget
-    values; interactive runs fall back to the defaults registered here.
-    """
+    """Register widgets with defaults, then read job-parameter overrides."""
     for name, default in defaults.items():
         dbutils.widgets.text(name, str(default))
     return {name: dbutils.widgets.get(name) for name in defaults}
-
-
-# The synthetic world runs on local Australian time. Hour-of-day semantics (night
-# movement, rest window) and "today" are local-time concepts for a regulator, so every
-# step that touches clock time sets the Spark session time zone to this value. Without
-# it serverless runs in UTC and a "night movement" alert would show daytime sightings.
-LOCAL_TIMEZONE = "Australia/Sydney"
 
 
 def use_local_time(spark) -> None:
@@ -306,12 +311,7 @@ def volume_dir(catalog: str, schema: str, volume: str, *parts: str) -> str:
 
 @contextmanager
 def ansi_sql_off(spark):
-    """Temporarily disable ANSI SQL mode around dbldatagen builds.
-
-    dbldatagen emits integer modulo arithmetic that can divide by zero under
-    ANSI mode (the serverless default). The classic parser tolerates it, so we
-    switch it off for the build and restore the prior value afterwards.
-    """
+    """Temporarily disable ANSI SQL mode (kept for generators that need non-ANSI arithmetic)."""
     prior = spark.conf.get("spark.sql.ansi.enabled")
     spark.conf.set("spark.sql.ansi.enabled", "false")
     try:

@@ -1,33 +1,36 @@
 # Infrastructure Operations Centre (Databricks App)
 
-AppKit (Node + React) operations console for the critical infrastructure monitoring use case. A
-compliance officer prioritises risk alerts, reviews the evidence behind an identified vehicle and
-operator, and records a human-in-the-loop decision: route to the field queue or keep monitoring.
+AppKit (Node + React) operations app for the critical infrastructure monitoring use case: a
+national, cross-sector view across roads, rail, water and energy. A duty officer sees which
+incidents need action, why each asset is at risk, which hazards are active, and what else fails if
+an asset fails, then records a human-in-the-loop decision: dispatch a crew, notify the responsible
+operator, or keep monitoring.
 
-Layout, copy and interactions follow `../../design/critical-infrastructure-operations.html`. The
-visual identity is the Databricks brand (Oat surfaces, Navy text, Lava accent, DM Sans / DM Mono);
-see `.databricks-impeccable.md` for the design context.
+The product and design specification is `../../design/IOC-DESIGN-SPEC.md`. The visual identity is
+the Databricks brand (Oat surfaces, Navy text, Lava accent, DM Sans / DM Mono, vendored under SIL
+OFL); see `.databricks-impeccable.md`. The network map's state outlines come from Natural Earth
+(public domain), built by `scripts/build-map.py`.
 
 ## What runs as whom
 
 | Surface | Runs as | Why |
 | --- | --- | --- |
 | Every read (`config/queries/*.obo.sql`) | The signed-in officer | Unity Catalog grants, row filters and column masks on operator-level risk data apply per officer |
-| Decision write (`POST /api/reviews`) | The signed-in officer | The audit row's `officer_name` is `current_user()`, never a client-supplied name |
+| Decision write (`POST /api/reviews`) | The signed-in officer | The audit row's `officer_name` is `current_user()`, never a client-supplied name; the evidence panels viewed are recorded too |
 | Build-time type generation | App service principal | Has no `SELECT` by design; falls back to the committed types (`scripts/typegen.mjs`) |
 
 The decision write uses bound statement parameters, validates input with Zod
-(`server/contracts.ts`), and only inserts when the alert is still in the current queue
-(`INSERT ... SELECT ... WHERE alert_id = :alert_id`), so a stale decision returns 409.
+(`server/contracts.ts`), and only inserts when the incident is still open
+(`INSERT ... SELECT ... WHERE incident_id = :incident_id`), so a stale decision returns 409.
 
 ## Prerequisites
 
 1. Run the pipeline job in `../../` (`databricks bundle run critical_infrastructure_monitoring_pipeline`).
-   It writes the gold tables this app reads: `gold_alert`, `gold_asset_risk_score`,
-   `gold_ops_metrics`, `gold_risk_signal_trend`, `gold_alert_review_audit`, plus
-   `bronze_sightings` and `silver_sighting`.
+   It writes the tables this app reads: `gold_incident`, `gold_incident_impact`, `gold_asset_risk`,
+   `gold_sector_status`, `gold_hazard_status`, `gold_ops_metrics`, `gold_incident_review_audit` and
+   `silver_reading` (for the evidence chart).
 2. Each officer who uses the app needs `USE CATALOG`, `USE SCHEMA`, `SELECT` on those tables, and
-   `MODIFY` on `gold_alert_review_audit`, plus `CAN_USE` on the app.
+   `MODIFY` on `gold_incident_review_audit`, plus `CAN_USE` on the app.
 
 ## Configure
 
@@ -70,24 +73,36 @@ databricks apps get nba-critical-infra --profile <profile> -o json   # app_statu
 databricks apps logs nba-critical-infra --profile <profile> --tail-lines 100
 ```
 
-## Demo script (about 6 minutes)
+## Demo script (about 7 minutes)
 
-Run the pipeline job 15-30 minutes before the demo so "last seen" ages read in minutes and the
-status panel shows "All feeds current" (it flips to "Data as of HH:MM" after 90 minutes).
+Run the pipeline job 15-30 minutes before the demo, so "raised" ages read in minutes and the feed
+pill shows "All feeds current" (it flips to "Data as of HH:MM" after 90 minutes). Scores follow the
+daily load cycle, so an afternoon demo shows more energy stress than a morning one.
 
-1. **Overview.** The greeting and count come from the live queue. Point at the operational status
-   (latest sighting, processing lag, risk engine run) and the KPI comparisons with the previous run.
-2. **Alert queue.** Ranked by priority band, then by most recent sighting: the vehicles a field
-   team can still reach. Filter to *Over-mass*, search a plate.
-3. **Review an alert.** Show why it was flagged: each factor's normalised value, its weight and
-   its points. The score is fully explainable, because this is a transparent rules engine, not a
-   black box. Show the recent movement; camera misreads resolved back to the vehicle are labelled where present.
-4. **Record a decision.** Add a note, then *Route to field queue*. The queue count drops, the
-   register marks the vehicle *Routed*, and the decision appears in the record with your Unity
-   Catalog identity.
-5. **Governance.** Open the identity menu: every query and decision runs as you. Show the audit
-   row in Catalog Explorer (`gold_alert_review_audit`) and the table's lineage back to bronze.
+1. **One picture across sectors.** Read the headline, then the four sector tiles: open incidents,
+   assets in alarm, assets not reporting, and dependants at risk. Point out the feed line: readings
+   today, sensors reporting, median detection time against the previous run, and the share of
+   readings quarantined. Bad data is held back, never scored.
+2. **Shared hazards.** Open the network map. Five warnings are active: a heatwave over Greater
+   Western Sydney and the Hunter, a Northern Rivers flood, a Gippsland bushfire, a South East
+   Queensland storm, and an Adelaide heatwave. Select the heatwave to zoom to it. The panel shows how
+   many roads, rail, water and energy assets sit inside it: one warning, four sectors.
+3. **The cascade.** Select the Penrith Zone Substation marker. The map frames it and draws its supply
+   links: rail signalling and overhead wiring, treatment plants, road tunnels. This is the
+   cross-operator view no single operator has.
+4. **Why it is extreme.** Open the review. Risk is likelihood × consequence: the transformer is past
+   its alarm limit, inside a severe heatwave, and well above its own baseline, and about 1.6 million
+   people rely on it and its dependants. Show the 24-hour chart crossing the warning and alarm
+   lines, then "If this fails".
+5. **Decide.** Add a note and choose *Dispatch crew*. The queue count drops, the marker dims, and the
+   decision appears in the shift handover with your Unity Catalog identity and the evidence you
+   viewed.
+6. **Not every incident is a hazard.** Filter the queue to Water and open the Sunshine trunk main:
+   a pressure drop with no warning nearby, caught by limit exceedance and anomaly alone.
+7. **Governance.** Open the identity menu: every query and decision runs as you. Show
+   `gold_incident_review_audit` and the lineage from the app's tables back to bronze in Catalog
+   Explorer.
 
-Talking points: all data is synthetic; scores are decision support only (see the use case
-README's assurance notes); a "normal" vehicle can occasionally reach the threshold, which is why an
-officer's judgement is required.
+Talking points: all assets, operators, readings and warnings are synthetic (only place names and
+map outlines are real); scores are decision support, never automatic action; people counts are an
+upper bound because services overlap, which is why they are never summed by sector.

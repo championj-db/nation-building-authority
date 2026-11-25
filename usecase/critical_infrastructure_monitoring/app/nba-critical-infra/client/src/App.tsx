@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertQueue } from './components/AlertQueue';
+import { AssetRegister } from './components/AssetRegister';
 import { Handover } from './components/Handover';
-import { Hero, Metrics } from './components/Overview';
+import { IncidentQueue } from './components/IncidentQueue';
+import { NetworkMap } from './components/NetworkMap';
+import { Hero, SectorTiles } from './components/Overview';
 import { EmptyState, ErrorState, Icon, Skeleton, Toast } from './components/primitives';
 import { ReviewDialog } from './components/ReviewDialog';
-import { RiskRegister, TrendPanel } from './components/RiskRegister';
 import { identity, ScopeContext, useAnalyticsQuery, useScopeParams, useSession, useSticky, type QueryScope, type Session } from './lib/data';
-import { fromAlert, fromRegister, type ReviewTarget } from './lib/rows';
+import type { Sector } from './lib/model';
+import { impactsByIncident, type IncidentRow } from './lib/rows';
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
 const NAV = [
   { id: 'overview', label: 'Overview' },
-  { id: 'queue', label: 'Alert queue' },
-  { id: 'entities', label: 'Entities' },
+  { id: 'queue', label: 'Incidents' },
+  { id: 'map', label: 'Network map' },
+  { id: 'assets', label: 'Assets' },
   { id: 'assurance', label: 'Shift handover' },
 ] as const;
 
@@ -76,29 +79,30 @@ function useNow(intervalMs = 30_000) {
   return now;
 }
 
-/** Highlights the nav item for the section in view (the design only set it on click). */
+/** Highlights the nav item for the section in view: the last section whose top has passed the
+ * sticky nav (the design only set it on click). At the page bottom, the final section. */
 function useActiveSection(ids: readonly string[]) {
   const [active, setActive] = useState<string>(ids[0] ?? '');
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: '-80px 0px -55% 0px', threshold: 0 },
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    // The last section can never scroll high enough to cross the band; at the page bottom, select it.
-    const onScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) setActive(ids[ids.length - 1] ?? '');
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      let current = ids[0] ?? '';
+      for (const id of ids) {
+        const top = document.getElementById(id)?.getBoundingClientRect().top;
+        if (top != null && top <= 140) current = id;
+      }
+      setActive(atBottom ? (ids[ids.length - 1] ?? current) : current);
     };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      observer.disconnect();
       window.removeEventListener('scroll', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, [ids]);
   return [active, setActive] as const;
@@ -112,19 +116,31 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
   const [active, setActive] = useActiveSection(ids);
 
   const ops = useSticky(useAnalyticsQuery('ops_status', params));
-  const alerts = useSticky(useAnalyticsQuery('alert_queue', params));
-  const register = useSticky(useAnalyticsQuery('risk_register', params));
-  const trend = useSticky(useAnalyticsQuery('signal_trend', params));
+  const sectors = useSticky(useAnalyticsQuery('sector_status', params));
+  const incidents = useSticky(useAnalyticsQuery('incident_queue', params));
+  const impact = useSticky(useAnalyticsQuery('incident_impact', params));
+  const network = useSticky(useAnalyticsQuery('network_assets', params));
+  const hazards = useSticky(useAnalyticsQuery('hazards', params));
+  const register = useSticky(useAnalyticsQuery('asset_register', params));
   const decisions = useSticky(useAnalyticsQuery('recent_decisions', params));
 
   const opsRow = ops.data?.[0] ?? null;
-  const statusByAsset = useMemo(() => new Map((alerts.data ?? []).map((a) => [String(a.asset_id), String(a.status)])), [alerts.data]);
-  const openCount = alerts.data ? alerts.data.filter((a) => a.status === 'open').length : null;
-  const alertThreshold = Number(register.data?.[0]?.alert_threshold ?? 70);
-  const refreshing = ops.refreshing || alerts.refreshing || register.refreshing || decisions.refreshing;
-  const schemaMissing = [ops.error, alerts.error].some((e) => e && /TABLE_OR_VIEW_NOT_FOUND|SCHEMA_NOT_FOUND/i.test(e));
+  const openIncidents = useMemo(() => (incidents.data ?? []).filter((i) => i.status === 'open'), [incidents.data]);
+  const openCount = incidents.data ? openIncidents.length : null;
+  const openBySector = useMemo(() => {
+    if (!incidents.data) return null;
+    const counts: Record<string, number> = { roads: 0, rail: 0, water: 0, energy: 0 };
+    for (const i of openIncidents) counts[String(i.sector)] = (counts[String(i.sector)] ?? 0) + 1;
+    return counts;
+  }, [incidents.data, openIncidents]);
+  const sectorsAffected = openBySector ? Object.values(openBySector).filter(Boolean).length : 0;
+  const impacts = useMemo(() => impactsByIncident(impact.data), [impact.data]);
+  const incidentsByAsset = useMemo(() => new Map((incidents.data ?? []).map((i) => [String(i.asset_id), i])), [incidents.data]);
+  const refreshing = ops.refreshing || incidents.refreshing || sectors.refreshing || decisions.refreshing;
+  const schemaMissing = [ops.error, incidents.error].some((e) => e && /TABLE_OR_VIEW_NOT_FOUND|SCHEMA_NOT_FOUND/i.test(e));
 
-  const [target, setTarget] = useState<ReviewTarget | null>(null);
+  const [target, setTarget] = useState<IncidentRow | null>(null);
+  const [sectorFilter, setSectorFilter] = useState<string>('all');
   const [toast, setToast] = useState<{ message: string; tone: 'info' | 'error' } | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const showToast = useCallback((message: string, tone: 'info' | 'error' = 'info') => {
@@ -151,7 +167,7 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
   return (
     <>
       <a href="#queue" className="sr-only">
-        Skip to alert queue
+        Skip to incidents
       </a>
       <header className="topnav">
         <div className="container topnav-inner">
@@ -192,31 +208,48 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
           </section>
         ) : null}
 
-        <Hero now={now} firstName={who.firstName} openCount={openCount} ops={opsRow} opsLoading={ops.loading} opsError={ops.error && !ops.data ? ops.error : null} />
-        <Metrics ops={opsRow} openCount={openCount} loading={ops.loading || alerts.loading} />
-        <AlertQueue
-          now={now}
-          alerts={alerts.data}
-          loading={alerts.loading}
-          refreshing={refreshing}
-          error={alerts.error}
-          onRefresh={doRefresh}
-          onReview={(row) => setTarget(fromAlert(row))}
+        <Hero now={now} firstName={who.firstName} openCount={openCount} sectorsAffected={sectorsAffected} ops={opsRow} opsLoading={ops.loading} opsError={ops.error && !ops.data ? ops.error : null} />
+        <SectorTiles
+          sectors={sectors.data}
+          ops={opsRow}
+          loading={sectors.loading || incidents.loading}
+          error={sectors.error}
+          openBySector={openBySector}
+          onSelect={(sector: Sector) => {
+            setSectorFilter(sector);
+            scrollTo('queue');
+          }}
         />
-        <section className="section" id="entities" aria-labelledby="entities-heading">
-          <div className="container grid-2-1">
-            <RiskRegister
-              now={now}
-              rows={register.data}
-              loading={register.loading}
-              error={register.error}
-              statusByAsset={statusByAsset}
-              onSelect={(row) => setTarget(fromRegister(row, alerts.data?.find((a) => String(a.asset_id) === String(row.asset_id) && a.risk_type === row.risk_type)))}
-            />
-            <TrendPanel rows={trend.data} loading={trend.loading} error={trend.error} />
-          </div>
-        </section>
-        <Handover now={now} alerts={alerts.data} ops={opsRow} decisions={decisions.data} decisionsLoading={decisions.loading} decisionsError={decisions.error} />
+        <IncidentQueue
+          now={now}
+          incidents={incidents.data}
+          loading={incidents.loading}
+          refreshing={refreshing}
+          error={incidents.error}
+          sector={sectorFilter}
+          onSectorChange={setSectorFilter}
+          onRefresh={doRefresh}
+          onReview={setTarget}
+        />
+        <NetworkMap
+          assets={network.data}
+          hazards={hazards.data}
+          incidents={incidents.data}
+          impacts={impacts}
+          loading={network.loading}
+          error={network.error}
+          onReview={setTarget}
+        />
+        <AssetRegister rows={register.data} incidentsByAsset={incidentsByAsset} loading={register.loading} error={register.error} onReview={setTarget} />
+        <Handover
+          now={now}
+          incidents={incidents.data}
+          hazards={hazards.data}
+          ops={opsRow}
+          decisions={decisions.data}
+          decisionsLoading={decisions.loading}
+          decisionsError={decisions.error}
+        />
       </main>
 
       <footer className="pagefoot">
@@ -233,8 +266,8 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
       </footer>
 
       <ReviewDialog
-        target={target}
-        alertThreshold={alertThreshold}
+        incident={target}
+        impacts={target ? (impacts.get(String(target.incident_id)) ?? []) : []}
         now={now}
         onClose={() => setTarget(null)}
         onDecided={(message) => {

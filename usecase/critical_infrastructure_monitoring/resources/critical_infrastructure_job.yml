@@ -1,12 +1,13 @@
-# Job resource for the critical infrastructure monitoring use case.
+# Job resource for the critical infrastructure monitoring use case: a national, cross-sector
+# Infrastructure Operations Centre over roads, rail, water and energy.
 #
 # Runs the synthetic-data generation and analytics pipeline end to end:
-# setup -> reference data -> telemetry -> bronze (Auto Loader drain) ->
-# silver (identity resolution) -> gold features -> risk scoring and alerts.
+# setup -> reference data (assets, sensors, dependencies) -> telemetry + hazard warnings ->
+# bronze (Auto Loader drain of both feeds) -> silver (conformance and quarantine) ->
+# gold features -> risk, incidents and the operating picture.
 #
-# Every environment-specific value is a ${var.*} reference - nothing here is
-# a literal. Serverless compute: no job_clusters block, no node types, no
-# runtime versions to go stale.
+# Every environment-specific value is a ${var.*} reference - nothing here is a literal.
+# Serverless compute: no job_clusters block, no node types, no runtime versions to go stale.
 
 resources:
   jobs:
@@ -41,9 +42,10 @@ resources:
               catalog: ${var.catalog}
               schema: ${var.schema}
               src_dir: ${workspace.file_path}
-              # Seed pins the whole synthetic dataset so every deployment
-              # produces the same regulators/operators/assets.
+              # Seed pins the whole synthetic network so every deployment produces the same
+              # assets, operators and dependencies.
               seed: "42"
+              asset_scale: "6.25"
 
         - task_key: generate_telemetry
           depends_on:
@@ -56,7 +58,7 @@ resources:
               volume: ${var.volume}
               src_dir: ${workspace.file_path}
               seed: "42"
-              history_days: "14"
+              history_days: "7"
 
         - task_key: bronze_ingest
           depends_on:
@@ -69,37 +71,35 @@ resources:
               volume: ${var.volume}
               src_dir: ${workspace.file_path}
 
-        - task_key: silver_resolution
+        - task_key: silver_conformance
           depends_on:
             - task_key: bronze_ingest
           notebook_task:
-            notebook_path: ../src/04_silver_resolution.py
+            notebook_path: ../src/04_silver_conformance.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               src_dir: ${workspace.file_path}
-              max_levenshtein: "1"
 
         - task_key: gold_features
           depends_on:
-            - task_key: silver_resolution
+            - task_key: silver_conformance
           notebook_task:
             notebook_path: ../src/05_gold_features.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               src_dir: ${workspace.file_path}
-              feature_window_days: "14"
-              recent_days: "3"
-              inspection_lookback_days: "365"
+              recent_hours: "2"
+              baseline_days: "7"
 
-        - task_key: risk_scoring_alerts
+        - task_key: risk_incidents
           depends_on:
             - task_key: gold_features
           notebook_task:
-            notebook_path: ../src/06_risk_scoring_alerts.py
+            notebook_path: ../src/06_risk_incidents.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               src_dir: ${workspace.file_path}
-              alert_threshold: "70"
+              incident_threshold: "48"

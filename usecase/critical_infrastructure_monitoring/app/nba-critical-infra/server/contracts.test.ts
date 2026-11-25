@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { resolveSchema, reviewDecisionSchema } from './contracts.js';
 
-const valid = { alertId: '1042:fatigue', disposition: 'route', evidenceViewed: ['risk_score', 'contributing_factors'] };
+const valid = { incidentId: '1042:transformer_temp_c', disposition: 'dispatch', evidenceViewed: ['risk_score', 'contributing_factors'] };
 
 describe('reviewDecisionSchema', () => {
   test('accepts a well-formed decision and defaults notes', () => {
@@ -9,9 +9,10 @@ describe('reviewDecisionSchema', () => {
   });
 
   test.each([
-    ['unknown risk type', { ...valid, alertId: '1042:speeding' }],
-    ['SQL in the alert id', { ...valid, alertId: "1'; DROP TABLE x;--" }],
-    ['unknown disposition', { ...valid, disposition: 'dismiss' }],
+    ['non-numeric asset', { ...valid, incidentId: 'abc:hazard' }],
+    ['SQL in the incident id', { ...valid, incidentId: "1'; DROP TABLE x;--" }],
+    ['upper-case trigger', { ...valid, incidentId: '1042:HAZARD' }],
+    ['unknown disposition', { ...valid, disposition: 'route' }],
     ['no evidence viewed', { ...valid, evidenceViewed: [] }],
     ['unknown evidence', { ...valid, evidenceViewed: ['gut_feel'] }],
     ['oversized notes', { ...valid, notes: 'x'.repeat(501) }],

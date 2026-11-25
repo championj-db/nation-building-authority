@@ -131,25 +131,30 @@ export function countPhrase(count: number, noun: string, capitalise = true): str
   return capitalise ? text : text.charAt(0).toLowerCase() + text.slice(1);
 }
 
-/** Factor names as officers read them. Keys match the gold_* score columns. */
-export const FACTOR_LABELS: Record<string, string> = {
-  rest_window_anomaly: 'Rest-window anomaly',
-  night_movement: 'Night movement',
-  recent_pattern: 'Recent pattern',
-  route_variance: 'Route variance',
-  mass_variance: 'Mass variance',
-  defect_history: 'Defect history',
-};
+/** Compact people counts: 940, 48k, 1.6M. */
+export function formatPeople(value: number | string | null | undefined): string {
+  const n = Number(value);
+  if (value == null || Number.isNaN(n)) return '—';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+  if (n >= 1_000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n));
+}
 
-export const RISK_TYPE_LABELS: Record<string, string> = {
-  fatigue: 'Fatigue',
-  roadworthiness: 'Roadworthiness',
-  mass: 'Over-mass',
-  route: 'Route variance',
-};
+/** A metric value with sensible precision for its scale. */
+export function formatMetric(value: number | string | null | undefined, unit?: string | null): string {
+  const n = Number(value);
+  if (value == null || Number.isNaN(n)) return '—';
+  const digits = Math.abs(n) < 10 ? 2 : Math.abs(n) < 100 ? 1 : 0;
+  const text = n.toLocaleString('en-AU', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  if (!unit) return text;
+  return unit.startsWith('%') || unit === '°C' ? `${text}${unit === '°C' ? ' °C' : unit}` : `${text} ${unit}`;
+}
 
-export const SOURCE_LABELS: Record<string, string> = {
-  anpr_camera: 'ANPR camera',
-  weigh_in_motion: 'Weigh-in-motion',
-  gps_gateway: 'GPS gateway',
-};
+/** Hours to "36h" / "2d 4h". */
+export function formatHours(value: number | string | null | undefined): string {
+  const n = Number(value);
+  if (value == null || Number.isNaN(n)) return '—';
+  if (n < 48) return `${Math.max(0, Math.round(n))}h`;
+  return `${Math.floor(n / 24)}d ${Math.round(n % 24)}h`;
+}

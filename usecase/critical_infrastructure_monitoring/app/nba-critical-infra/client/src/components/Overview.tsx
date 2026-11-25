@@ -1,37 +1,40 @@
 import { countPhrase, formatEyebrowNow, formatInt, formatMinutes, formatPct, formatSeconds, formatTime, formatTimeSeconds, greeting, zoneLabel } from '../lib/format';
-import type { OpsStatusRow } from '../lib/rows';
+import { SECTORS, SECTOR_LABELS, type Sector } from '../lib/model';
+import type { OpsStatusRow, SectorRow } from '../lib/rows';
 import { feedHealth } from '../lib/status';
-import { Skeleton } from './primitives';
+import { SectorIcon } from './icons';
+import { ErrorState, Skeleton } from './primitives';
 
 interface HeroProps {
   now: Date;
   firstName: string;
   openCount: number | null;
+  sectorsAffected: number;
   ops: OpsStatusRow | null;
   opsLoading: boolean;
   opsError: string | null;
 }
 
-export function Hero({ now, firstName, openCount, ops, opsLoading, opsError }: HeroProps) {
+export function Hero({ now, firstName, openCount, sectorsAffected, ops, opsLoading, opsError }: HeroProps) {
   const health = feedHealth(ops);
   const headline =
     openCount == null
       ? `${greeting(now)}, ${firstName}.`
       : openCount === 0
-        ? `${greeting(now)}, ${firstName}. The queue is clear.`
-        : `${greeting(now)}, ${firstName}. ${countPhrase(openCount, 'alert')} ${openCount === 1 ? 'needs' : 'need'} review.`;
+        ? `${greeting(now)}, ${firstName}. No incidents need action.`
+        : `${greeting(now)}, ${firstName}. ${countPhrase(openCount, 'incident')} ${openCount === 1 ? 'needs' : 'need'} action across ${countPhrase(sectorsAffected, 'sector', false)}.`;
 
   return (
     <section className="section hero" id="overview" aria-labelledby="overview-heading">
       <div className="container hero-split">
         <div>
-          <p className="eyebrow">{formatEyebrowNow(now)}</p>
+          <p className="eyebrow">National operating picture · {formatEyebrowNow(now)}</p>
           <h1 id="overview-heading">{headline}</h1>
-          <p className="lead">Prioritise alerts, review contributing signals and route field actions from one operational queue.</p>
+          <p className="lead">One view across roads, rail, water and energy: active hazards, assets under stress, and the services that depend on them.</p>
         </div>
         <div className="system-status" aria-live="polite">
           <div className="row-between">
-            <strong>Operational status</strong>
+            <strong>Feed status</strong>
             {opsError ? (
               <span className="pill danger">
                 <span className="status-dot danger" />
@@ -44,7 +47,8 @@ export function Hero({ now, firstName, openCount, ops, opsLoading, opsError }: H
               </span>
             )}
           </div>
-          <StatusLine label="Latest sighting" loading={opsLoading} value={ops ? formatTimeSeconds(ops.latest_sighting_ts) : '—'} />
+          <StatusLine label="Latest reading" loading={opsLoading} value={ops ? formatTimeSeconds(ops.latest_reading_ts) : '—'} />
+          <StatusLine label="Sensors reporting" loading={opsLoading} value={ops ? `${formatInt(ops.sensors_reporting)} of ${formatInt(ops.sensors_total)}` : '—'} />
           <StatusLine label="Processing lag" loading={opsLoading} value={ops ? formatSeconds(ops.processing_lag_seconds) : '—'} />
           <StatusLine label="Risk engine run" loading={opsLoading} value={ops ? `${formatTime(ops.run_ts)} ${zoneLabel(now)}` : '—'} />
         </div>
@@ -62,65 +66,87 @@ function StatusLine({ label, value, loading }: { label: string; value: string; l
   );
 }
 
-interface MetricsProps {
+interface SectorTilesProps {
+  sectors: SectorRow[] | null;
   ops: OpsStatusRow | null;
-  openCount: number | null;
   loading: boolean;
+  error: string | null;
+  /** Open incident counts per sector after officer decisions (the gold table counts the run). */
+  openBySector: Record<string, number> | null;
+  onSelect: (sector: Sector) => void;
 }
 
-export function Metrics({ ops, openCount, loading }: MetricsProps) {
-  const prevOpen = ops?.prev_open_alerts == null ? null : Number(ops.prev_open_alerts);
-  const prevQueue = ops?.prev_median_queue_time_minutes == null ? null : Number(ops.prev_median_queue_time_minutes);
-  const decided = ops && openCount != null ? Math.max(0, Number(ops.run_open_alerts) - openCount) : null;
-  const metrics = [
-    {
-      label: 'Open alerts',
-      tag: 'Now',
-      value: openCount == null ? null : formatInt(openCount),
-      copy: 'Awaiting an officer decision',
-      compare: ops ? `${formatInt(ops.run_open_alerts)} raised this run${decided ? ` · ${decided} decided` : ''}${prevOpen != null ? ` · ${formatInt(prevOpen)} previous run` : ''}` : null,
-    },
-    {
-      label: 'Sightings today',
-      tag: 'Today',
-      value: ops ? formatInt(ops.sightings_today) : null,
-      copy: 'Resolved against known assets',
-      compare: ops ? `Latest at ${formatTime(ops.latest_sighting_ts)}` : null,
-    },
-    {
-      label: 'Identity resolution',
-      tag: 'Window',
-      value: ops ? formatPct(ops.identity_resolution_rate) : null,
-      copy: 'Matched to asset and operator',
-      compare: ops ? `${formatPct(1 - Number(ops.identity_resolution_rate))} held in quarantine` : null,
-    },
-    {
-      label: 'Median queue time',
-      tag: 'Run',
-      value: ops ? formatMinutes(ops.median_queue_time_minutes) : null,
-      copy: 'From last sighting to the queue',
-      compare: prevQueue != null ? `${formatMinutes(prevQueue)} previous run` : ops ? 'First run - no comparison yet' : null,
-    },
-  ];
+export function SectorTiles({ sectors, ops, loading, error, openBySector, onSelect }: SectorTilesProps) {
+  const bySector = new Map((sectors ?? []).map((s) => [String(s.sector), s]));
+  const prevSensors = ops?.prev_sensors_reporting == null ? null : Number(ops.prev_sensors_reporting);
+  const prevDetect = ops?.prev_median_detection_minutes == null ? null : Number(ops.prev_median_detection_minutes);
   return (
-    <section className="section" aria-label="Operational metrics">
+    <section className="section" aria-label="Sector health">
       <div className="container">
-        <div className="grid-4">
-          {metrics.map((m) => (
-            <article className="card stat" key={m.label}>
-              <div className="row-between">
-                <span className="meta">{m.label}</span>
-                <span className="tag">{m.tag}</span>
-              </div>
-              {loading || m.value == null ? <Skeleton width="55%" height={32} style={{ marginTop: 16 }} /> : <div className="stat-num num">{m.value}</div>}
-              <p className="stat-label">{m.copy}</p>
-              {m.compare ? <p className="stat-compare">{m.compare}</p> : null}
-            </article>
-          ))}
-        </div>
+        {error && !sectors ? (
+          <ErrorState title="Sector status could not load" message={error} />
+        ) : (
+          <div className="grid-4 sector-grid">
+            {SECTORS.map((sector) => {
+              const s = bySector.get(sector);
+              const open = openBySector?.[sector] ?? (s ? Number(s.open_incidents) : null);
+              const extreme = s ? Number(s.extreme_incidents) : 0;
+              return (
+                <button
+                  type="button"
+                  className={`card sector-tile sector-${sector}`}
+                  key={sector}
+                  onClick={() => onSelect(sector)}
+                  aria-label={`${SECTOR_LABELS[sector]}: ${open ?? 'loading'} open incidents. Show ${SECTOR_LABELS[sector].toLowerCase()} incidents`}
+                >
+                  <div className="row-between">
+                    <span className="sector-name">
+                      <span className="sector-glyph">
+                        <SectorIcon sector={sector} size={16} />
+                      </span>
+                      {SECTOR_LABELS[sector]}
+                    </span>
+                    {extreme ? <span className="sev critical">{extreme} extreme</span> : <span className="tag">No extreme</span>}
+                  </div>
+                  {loading || open == null ? (
+                    <Skeleton width="40%" height={32} style={{ marginTop: 16 }} />
+                  ) : (
+                    <div className="stat-num num">{formatInt(open)}</div>
+                  )}
+                  <p className="stat-label">Open incidents</p>
+                  <dl className="sector-facts">
+                    <div>
+                      <dt>Assets</dt>
+                      <dd className="num">{s ? formatInt(s.assets) : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>In alarm</dt>
+                      <dd className="num">{s ? formatInt(s.assets_in_alarm) : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Not reporting</dt>
+                      <dd className="num">{s ? formatInt(s.assets_not_reporting) : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Dependants at risk</dt>
+                      <dd className="num">{s ? formatInt(s.dependants_at_risk) : '—'}</dd>
+                    </div>
+                  </dl>
+                </button>
+              );
+            })}
+          </div>
+        )}
         {ops ? (
-          <p className="meta" style={{ margin: '12px 0 0' }}>
-            Source: governed gold layer · risk engine run {formatTime(ops.run_ts)} · identity resolution over the full sighting window
+          <p className="meta feed-line">
+            <span>
+              {formatInt(ops.readings_today)} readings today · {formatInt(ops.sensors_reporting)} of {formatInt(ops.sensors_total)} sensors reporting
+              {prevSensors != null ? ` (${formatInt(prevSensors)} previous run)` : ''}
+            </span>
+            <span>
+              Median detection {formatMinutes(ops.median_detection_minutes)}
+              {prevDetect != null ? ` (${formatMinutes(prevDetect)} previous run)` : ''} · {formatPct(ops.quarantine_rate, 2)} of readings quarantined · {formatInt(ops.late_readings)} arrived late
+            </span>
           </p>
         ) : null}
       </div>

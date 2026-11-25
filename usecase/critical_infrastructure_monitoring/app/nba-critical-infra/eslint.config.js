@@ -20,6 +20,8 @@ export default tseslint.config(
       'shared/appkit-types/**',
       // Playwright smoke test and config run via npx, outside the TS project
       'tests/**',
+      // node build helpers (typegen wrapper), outside the TS project
+      'scripts/**',
     ],
   },
 

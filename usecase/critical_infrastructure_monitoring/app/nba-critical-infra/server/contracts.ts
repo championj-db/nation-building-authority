@@ -1,19 +1,20 @@
 import { z } from 'zod';
 
 /** Dispositions an officer can record, mirroring common.DISPOSITIONS in the pipeline. */
-export const DISPOSITIONS = ['route', 'monitor'] as const;
+export const DISPOSITIONS = ['dispatch', 'notify', 'monitor'] as const;
 
 /** Evidence panels the review dialog can show; recorded so the audit says what was seen. */
-export const EVIDENCE = ['risk_score', 'contributing_factors', 'recent_movement', 'operator_context'] as const;
+export const EVIDENCE = ['risk_score', 'contributing_factors', 'telemetry_trend', 'downstream_impact', 'hazard_context'] as const;
 
 export const reviewDecisionSchema = z.object({
-  alertId: z
+  incidentId: z
     .string()
     .trim()
     .min(1)
     .max(64)
-    // alert ids are "<asset_id>:<risk_type>" - reject anything else before it reaches SQL
-    .regex(/^\d+:(fatigue|roadworthiness|mass|route)$/, 'Unknown alert id'),
+    // incident ids are "<asset_id>:<trigger>" (a metric key, "hazard" or "condition") - reject
+    // anything else before it reaches SQL
+    .regex(/^\d+:[a-z_]{3,40}$/, 'Unknown incident id'),
   disposition: z.enum(DISPOSITIONS),
   evidenceViewed: z.array(z.enum(EVIDENCE)).min(1).max(EVIDENCE.length),
   notes: z.string().trim().max(500).optional().default(''),

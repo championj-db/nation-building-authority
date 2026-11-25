@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { resolveSchema, reviewDecisionSchema } from './contracts.js';
 
 const { catalog, schema } = resolveSchema(process.env);
-const auditTable = `${catalog}.${schema}.gold_alert_review_audit`;
-const alertTable = `${catalog}.${schema}.gold_alert`;
+const auditTable = `${catalog}.${schema}.gold_incident_review_audit`;
+const incidentTable = `${catalog}.${schema}.gold_incident`;
 
 function signedInUser(request: Request) {
   const email = request.header('x-forwarded-email') ?? request.header('x-forwarded-user') ?? null;
@@ -40,14 +40,14 @@ await createApp({
               warehouse_id: await getWarehouseId(),
               wait_timeout: '30s',
               on_wait_timeout: 'CANCEL',
-              // INSERT ... SELECT only writes when the alert is still in the current queue.
+              // INSERT ... SELECT only writes when the incident is still in the current queue.
               statement: `INSERT INTO ${auditTable}
-                  (review_id, alert_id, reviewed_ts, officer_name, disposition, evidence_viewed, notes)
-                SELECT uuid(), alert_id, current_timestamp(), current_user(), :disposition, :evidence, :notes
-                FROM ${alertTable}
-                WHERE alert_id = :alert_id`,
+                  (review_id, incident_id, reviewed_ts, officer_name, disposition, evidence_viewed, notes)
+                SELECT uuid(), incident_id, current_timestamp(), current_user(), :disposition, :evidence, :notes
+                FROM ${incidentTable}
+                WHERE incident_id = :incident_id`,
               parameters: [
-                { name: 'alert_id', value: input.alertId },
+                { name: 'incident_id', value: input.incidentId },
                 { name: 'disposition', value: input.disposition },
                 { name: 'evidence', value: input.evidenceViewed.join(',') },
                 { name: 'notes', value: input.notes },
@@ -59,7 +59,7 @@ await createApp({
           }
           const inserted = Number(result.result?.data_array?.[0]?.[0] ?? 0);
           if (inserted < 1) {
-            response.status(409).json({ error: 'This alert is no longer in the open queue - refresh and try again.' });
+            response.status(409).json({ error: 'This incident is no longer open - refresh and try again.' });
             return;
           }
           response.status(201).json({ status: 'recorded', disposition: input.disposition });

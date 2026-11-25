@@ -41,22 +41,23 @@ Functions were ranked within each category on:
 | 5 | Cybersecurity | Augment SIEM | `siem_augmentation` | SIEM retention and licensing cost |
 | 6 | Physical Security | Geospatial Analysis | `geospatial_analysis` | Time to spatial insight |
 | 7 | Personalized Engagement | Citizen & Constituent 360 | `constituent_360` | Time per constituent interaction |
-| 8 | Smart Infrastructure | Critical Infrastructure Monitoring | `critical_infrastructure_monitoring` | [4% uplift in high-risk infringements yielded](https://www.databricks.com/customers/national-heavy-vehicle-regulator) |
+| 8 | Smart Infrastructure | Critical Infrastructure Monitoring | `critical_infrastructure_monitoring` | Time from signal to decision |
 | 9 | Open Data Sharing | Secure cross-agency sharing | `cross_agency_data_sharing` | Time to deliver cross-agency insight |
 | 10 | Resource Allocation | Budget Planning & Financial Projections | `budget_planning_and_projections` | Planning cycle productivity |
 | 11 | Autonomous Systems | IoT Sensor Data Management | `iot_sensor_data_management` | Time to insight from sensor data |
 | 12 | Regulatory Compliance | Automated Compliance Reporting | `automated_compliance_reporting` | Review accuracy and coverage |
 
 The KPI column names the measure each use case is built to move — not a result reproduced here. A
-**figure** appears only where a public Databricks source supports it, which is the case for exactly
-one row: the NHVR fatigue-engine uplift. Every other measure is deliberately left without a number
-rather than carrying one this repository cannot substantiate from a public source.
+**figure** appears only where a public Databricks source supports that specific measure. No row
+currently has one: published outcomes behind a selection (for example AusNet's platform savings
+behind Critical Infrastructure Monitoring) are cited in the entry itself, not presented as the KPI
+the use case is built to move.
 
 ## Build priority
 
 | Priority | Use case | Why |
 | --- | --- | --- |
-| 1 | `critical_infrastructure_monitoring` | The only selection anchored to a live ANZ customer with published hard numbers. Exercises the widest platform surface: streaming ingest, medallion pipeline, ML risk scoring, real-time alerting, AI/BI and Genie. |
+| 1 | `critical_infrastructure_monitoring` | Anchored to published references in every sector it covers, three of them ANZ. Exercises the widest platform surface: multi-feed streaming ingest, medallion pipeline, explainable risk scoring, cross-sector dependency analysis, alerting, an operational app, AI/BI and Genie. |
 | 2 | `intelligent_document_processing` | Broadest reuse across the other 11, and the most current product story (`ai_parse_document`, Agent Bricks IDP). |
 | 3 | `improper_payments_detection` | Shares the entity resolution core with the two 360 use cases, so builds on work already done. |
 
@@ -232,38 +233,53 @@ derivation · consent and purpose-of-use enforcement · 360 view serving.
 
 **Folder:** `usecase/critical_infrastructure_monitoring`
 
-**Why this function — and why it is the flagship.** The strongest reference in the catalogue: a
-live ANZ government regulator with published, specific outcomes. It exercises the full platform
-surface end to end, which makes it the best first build.
+**Why this function — and why it is the flagship.** Critical infrastructure is run by many
+operators across many sectors, and the failures that hurt most cross between them: a heatwave that
+loads the grid, heats rail and draws down reservoirs at once, or a substation fault that takes out
+the signalling and pumping it powers. Each operator monitors its own assets; nobody sees the
+operating picture across them. A national, cross-sector **Infrastructure Operations Centre** is
+the function that closes that gap, and it exercises the full platform surface end to end, which
+makes it the best first build.
 
-**Anchor.** The [National Heavy Vehicle Regulator case study](https://www.databricks.com/customers/national-heavy-vehicle-regulator).
-NHVR regulates nearly 1 million heavy vehicles across Australia and analyses more than 4.5 million
-monthly vehicle sightings. Published outcomes:
+**Anchors.** Every sector modelled has a published Databricks reference:
 
-* Real-time, sub-second reporting, dashboards and alerts, letting compliance officers intercept
-  vehicles posing imminent danger.
-* A **fatigue engine** targeting drivers and operators most at risk of fatigue-related accidents,
-  which produced a **4% increase in yielding high-risk fatigue infringements**.
-* A **crash prediction model** that identified a cohort of vehicles and operators with a **1-in-38
-  chance of a fatal or serious incident on any given day** — actionable enough to direct officers
-  to specific vehicles.
-* Further engines targeting roadworthiness and over-mass vehicles.
+* **Energy** — [AusNet Services](https://www.databricks.com/customers/ausnet-services), an
+  Australian electricity and gas network, assesses the condition, criticality and risk of its
+  assets to predict failures and schedule maintenance, starting with three asset classes and
+  extending across its fleet. Published outcomes: **50% cost savings on the data platform**, **3×
+  faster data processing** and a **20–30% reduction in platform operational overhead**.
+* **Water** — [Sydney Water](https://www.databricks.com/blog/social-impact-using-data-and-ai-revealing-2024-finalists-data-good-award)
+  (2024 Data for Good finalist) manages 22,600 km of pipes and 247 reservoirs, and uses Databricks
+  for AI pipe-inspection to cut maintenance backlogs and for real-time water-quality monitoring.
+  No outcome figures are published.
+* **Rail** — [Dutch Railways (NS)](https://www.databricks.com/customers/dutch-railways) runs real-time
+  operational intelligence and predictive maintenance on train telemetry, flagging risks such as
+  ice on overhead lines. Published outcomes: **100B+ telemetry points processed daily** across about
+  420 trains and a **70% reduction in analytical compute costs**. International; no ANZ rail
+  reference is public.
+* **Roads and transport telemetry** — the
+  [National Heavy Vehicle Regulator](https://www.databricks.com/customers/national-heavy-vehicle-regulator)
+  shows real-time telemetry, alerting and targetable risk engines at national ANZ scale (4.5 million
+  monthly sightings, a 4% uplift in high-risk fatigue infringements). The use case borrows the
+  pattern, not the heavy-vehicle domain.
 
-**Learnings to carry across.** Three things stand out from how NHVR built this. Their warehouse
-could not ingest the data they had deliberately gone and acquired — the data strategy outran the
-platform, which is the usual sequence. The value landed when prediction became *targetable*: a
-1-in-38 cohort is only useful because an officer can be sent to a specific vehicle, so the
-intervention pathway matters as much as model quality. And they integrated with their existing
-Azure estate rather than replacing it, preserving prior investment. The repository models all
-three: streaming ingest sized well above the sighting volume, risk scores that resolve to a
-specific actionable entity, and no assumption of greenfield.
+**Learnings to carry across.** From the anchors: the value is in *asset risk that drives
+maintenance and intervention* (AusNet, NS), it starts with a few asset classes and extends (AusNet),
+real-time and analytical workloads belong on one platform (NS), and a risk score only matters once
+it resolves to a specific asset and a specific action (NHVR). The repository models all four:
+per-asset likelihood × consequence scoring with a recommended first action, fourteen asset classes
+on one platform, streaming ingest feeding the same governed tables the analysts query, and every
+incident resolved to an asset, an operator and a decision.
 
-**Scope.** Stream sensor and sighting telemetry; build a medallion pipeline to asset and operator
-level; score entities for safety risk; alert in near real time on high-risk events; serve
-compliance dashboards and natural-language analysis.
+**Scope.** Ingest operator telemetry and weather warnings; conform and quarantine readings; model
+cross-sector supply dependencies; score every asset for likelihood of failure and consequence,
+including downstream cascades; raise incidents with a recommended action; serve an operations app
+with a network map, human-in-the-loop decisions and an audit trail; dashboards and natural-language
+analysis over the same gold tables.
 
-**Functions.** Streaming telemetry ingest · asset and operator resolution · medallion
-transformation · risk scoring engine · real-time alerting · compliance dashboard · Genie space.
+**Functions.** Multi-feed streaming ingest · telemetry conformance and quarantine · dependency
+graph · hazard exposure · risk engine · incident queue and network map · decision audit ·
+dashboard · Genie space.
 
 ## 9. Open Data Sharing — Secure cross-agency sharing
 
@@ -354,6 +370,9 @@ unless a published Databricks page names them.
 
 **Published Databricks customer stories and material.**
 [National Heavy Vehicle Regulator](https://www.databricks.com/customers/national-heavy-vehicle-regulator) ·
+[AusNet Services](https://www.databricks.com/customers/ausnet-services) ·
+[Dutch Railways](https://www.databricks.com/customers/dutch-railways) ·
+[2024 Data for Good finalists (Sydney Water)](https://www.databricks.com/blog/social-impact-using-data-and-ai-revealing-2024-finalists-data-good-award) ·
 [GovTech Singapore](https://www.databricks.com/customers/govtech) ·
 [Public Sector Solutions](https://www.databricks.com/solutions/industries/public-sector) ·
 [A smarter state: AI outlook in the public sector](https://www.databricks.com/sites/default/files/2025-02/public-sector-report-jan-30.pdf) ·
