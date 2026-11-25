@@ -62,6 +62,16 @@ export function NetworkMap({ assets, hazards, incidents, impacts, roads, rail, r
   const riverPaths = useMemo(() => (rivers ?? []).map((r) => ({ id: String(r.river_id), name: r.name, intermittent: isTrue(r.intermittent), d: multiLinePath(r.display_coords) })), [rivers]);
   const sectionPath = useMemo(() => linePath(disruption?.section_coords), [disruption]);
   const detourPath = useMemo(() => linePath(disruption?.detour_coords), [disruption]);
+  // every open road or rail incident's affected section, always visible (not only when selected)
+  const openIds = useMemo(() => new Set((incidents ?? []).filter((i) => i.status === 'open').map((i) => String(i.incident_id))), [incidents]);
+  const allSections = useMemo(
+    () =>
+      [...disruptions.values()]
+        .filter((d) => openIds.has(String(d.incident_id)))
+        .map((d) => ({ d, path: linePath(d.section_coords) }))
+        .filter((x) => x.path),
+    [disruptions, openIds],
+  );
 
   const vb = useMemo(() => {
     if (frameSelection && selected) {
@@ -207,6 +217,27 @@ export function NetworkMap({ assets, hazards, incidents, impacts, roads, rail, r
                     </g>
                   ) : null}
 
+                  {allSections
+                    .filter(({ d }) => !hidden.has(d.network_mode === 'rail' ? 'rail' : 'roads') && d.incident_id !== selectedId)
+                    .map(({ d, path }) => {
+                      const incident = incidents?.find((i) => i.incident_id === d.incident_id);
+                      return (
+                        <path
+                          key={`sec-${d.incident_id}`}
+                          d={path}
+                          className={`affected-section${d.network_effect === 'restriction' ? ' restriction' : ''}`}
+                          style={{ strokeWidth: 3 * zoom }}
+                          onMouseMove={(e) =>
+                            showTip(e, String(d.route_name), `${incident?.asset_name ?? 'Network incident'} · ${incident?.network_summary?.replace(/^[^:]+: /, '') ?? ''}`)
+                          }
+                          onClick={() => {
+                            setSelectedId(String(d.incident_id));
+                            setFrameSelection(true);
+                          }}
+                        />
+                      );
+                    })}
+
                   {disruption && detourPath ? (
                     <path d={detourPath} className="detour" style={{ strokeWidth: 3 * zoom, strokeDasharray: `${6 * zoom} ${4 * zoom}` }}>
                       <title>Detour{disruption.detour_via ? ` via ${disruption.detour_via}` : ''}</title>
@@ -286,8 +317,8 @@ export function NetworkMap({ assets, hazards, incidents, impacts, roads, rail, r
               <span><i className="lg-rail" /> Key freight rail</span>
               <span><i className="lg-river" /> River</span>
               <span><i className="lg-line" /> Supply link (selected)</span>
-              <span><i className="lg-closed" /> Affected section (between junctions)</span>
-              <span><i className="lg-detour" /> Detour</span>
+              <span><i className="lg-closed" /> Affected section of a road or rail incident</span>
+              <span><i className="lg-detour" /> Detour (selected incident)</span>
             </div>
           </div>
 
