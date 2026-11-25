@@ -12,6 +12,7 @@ names arrive as job parameters, never as literals.
 
 import datetime as dt
 from contextlib import contextmanager
+from zoneinfo import ZoneInfo
 
 # ---------------------------------------------------------------------------
 # Registration plates
@@ -23,16 +24,25 @@ from contextlib import contextmanager
 PLATE_REGEX = r"^[A-Z]{2}[0-9]{2}[A-Z]{2}$"
 
 
+PLATE_SPACE = 26 * 26 * 10 * 10 * 26 * 26  # every XX99XX plate
+# Affine scramble seed -> seed * A + B (mod PLATE_SPACE). A (~space / golden ratio) is coprime with it
+# (no factor of 2, 5 or 13), so the map is a bijection: plates stay unique, but sequential
+# ids no longer all start with "AA0", which reads as test data in a demo.
+PLATE_SCRAMBLE_A = 28243009  # ~PLATE_SPACE / golden ratio, coprime with it
+PLATE_SCRAMBLE_B = 1234567
+
+
 def plate_expr(seed_col: str = "id") -> str:
     """SQL expression mapping a numeric seed column to a unique XX99XX plate."""
+    s = f"pmod(cast({seed_col} as bigint) * {PLATE_SCRAMBLE_A} + {PLATE_SCRAMBLE_B}, {PLATE_SPACE})"
     return (
         "concat("
-        f"char(65 + floor({seed_col} / 1757600) % 26), "
-        f"char(65 + floor({seed_col} / 67600) % 26), "
-        f"cast(floor({seed_col} / 2600) % 10 as string), "
-        f"cast(floor({seed_col} / 260) % 10 as string), "
-        f"char(65 + floor({seed_col} / 10) % 26), "
-        f"char(65 + {seed_col} % 26))"
+        f"char(65 + floor({s} / 1757600) % 26), "
+        f"char(65 + floor({s} / 67600) % 26), "
+        f"cast(floor({s} / 2600) % 10 as string), "
+        f"cast(floor({s} / 260) % 10 as string), "
+        f"char(65 + floor({s} / 10) % 26), "
+        f"char(65 + {s} % 26))"
     )
 
 
@@ -127,6 +137,31 @@ OVERLOAD_MASS_MULTIPLIERS = (1.06, 1.24)
 
 SIGHTING_SOURCES = ["anpr_camera", "weigh_in_motion", "gps_gateway"]
 
+# Per-asset intensity: real fleets have a spread of offenders, not a cohort of identical
+# ones. Each risk asset draws a propensity in [lo, hi] percent, skewed so most offenders
+# are moderate and a few are severe. Without this every cohort member scores the same.
+COHORT_INTENSITY_PCT = {
+    "fatigue": (25, 85),          # share of movements pushed into night hours
+    "route": (30, 90),            # share of movements on the unusual corridor
+    "mass": (20, 85),             # share of movements loaded over registered mass
+    "roadworthiness": (30, 90),   # chance an inspection records a defect
+}
+INTENSITY_SKEW = 1.6
+
+# Escalation storyline: a share of risk assets intensify activity in the last few days,
+# which the recent_pattern factor detects. ESCALATION_DAYS matches the feature step's
+# recent_days default.
+ESCALATING_ASSET_PCT = 35
+ESCALATION_SHARE_PCT = (25, 60)
+ESCALATION_DAYS = 3
+
+
+def intensity_pct_expr(cohort: str, key_col: str) -> str:
+    """SQL expression: the asset's deterministic propensity (percent) for its cohort."""
+    lo, hi = COHORT_INTENSITY_PCT[cohort]
+    u = f"(pmod(hash('intensity_{cohort}', {key_col}), 1000) / 1000.0)"
+    return f"({lo} + ({hi} - {lo}) * pow({u}, {INTENSITY_SKEW}))"
+
 # ---------------------------------------------------------------------------
 # Risk scoring engine (illustrative, transparent, human-in-the-loop)
 # ---------------------------------------------------------------------------
@@ -137,6 +172,9 @@ SIGHTING_SOURCES = ["anpr_camera", "weigh_in_motion", "gps_gateway"]
 RISK_TYPES = ["fatigue", "roadworthiness", "mass", "route"]
 
 FACTOR_WEIGHTS = {
+    # Each risk type: ~70% primary evidence, 15-20% escalation (recent_pattern), the rest
+    # corroborating. A fully evidenced offender scores ~70 (alerts); escalation lifts it
+    # into the critical band, so priority 1 means "strong evidence and getting worse".
     "fatigue": {
         "rest_window_anomaly": 0.40,
         "night_movement": 0.30,
@@ -144,30 +182,60 @@ FACTOR_WEIGHTS = {
         "route_variance": 0.10,
     },
     "roadworthiness": {
-        "defect_history": 0.50,
+        "defect_history": 0.70,
         "recent_pattern": 0.15,
-        "night_movement": 0.15,
-        "rest_window_anomaly": 0.10,
-        "route_variance": 0.10,
+        "night_movement": 0.05,
+        "rest_window_anomaly": 0.05,
+        "route_variance": 0.05,
     },
     "mass": {
-        "mass_variance": 0.55,
-        "route_variance": 0.15,
+        "mass_variance": 0.70,
         "recent_pattern": 0.15,
-        "night_movement": 0.15,
+        "route_variance": 0.10,
+        "night_movement": 0.05,
     },
     "route": {
-        "route_variance": 0.50,
-        "recent_pattern": 0.20,
-        "night_movement": 0.15,
-        "rest_window_anomaly": 0.15,
+        "route_variance": 0.70,
+        "recent_pattern": 0.15,
+        "night_movement": 0.10,
+        "rest_window_anomaly": 0.05,
     },
 }
+
+# Factor normalisation bands: score = clip((raw - baseline) / (full - baseline), 0, 1).
+# baseline is what a normal vehicle shows; full is unambiguous evidence. Stating both ends
+# keeps every factor value readable as "share of the way from normal to clear evidence".
+FACTOR_BANDS = {
+    "rest_window_anomaly": ("rest_window_ratio", 0.05, 0.40),     # share of sightings 00:00-05:59
+    "night_movement": ("night_sightings_ratio", 0.10, 0.65),      # share of sightings 20:00-05:59
+    "recent_pattern": ("recent_surge_ratio", 1.30, 3.30),         # recent vs prior daily rate
+    "route_variance": ("max_site_share", 0.08, 0.30),             # share at the single busiest site
+    "mass_variance": ("over_mass_ratio", 0.03, 0.58),             # share of sightings over mass
+    "defect_history": ("defect_points", 1.0, 8.0),                # defects + 2 x critical, 365 days
+}
+
+
+def factor_score_expr(factor: str) -> str:
+    """SQL expression normalising a raw feature column into its 0-1 factor score."""
+    column, baseline, full = FACTOR_BANDS[factor]
+    return f"least(1.0, greatest(0.0, ({column} - {baseline}) / {full - baseline}))"
+
 
 # Severity bands for the alert queue. Priority 1 rows are the design
 # mock-up's "Open - priority 1" critical alerts.
 SEVERITY_BANDS = {"critical": 85, "high": 75}
-MODEL_VERSION = "transparent-rules-v1"
+MODEL_VERSION = "transparent-rules-v2"
+
+# Synthetic data generation. Each generation (data version + as-of date) lands in its own
+# folder and silver resolves only the current one, so a rerun on a later day - or after a
+# generator change - produces a clean world instead of stacking backfills. Bump this
+# when the generator's behaviour changes.
+DATA_VERSION = "synthetic-v3"
+
+
+def generation_tag(as_of: str) -> str:
+    """Landing sub-folder name for one synthetic generation."""
+    return f"generation={DATA_VERSION}_{as_of}"
 
 # Alert copy mirrors the operations-centre design mock-up so the dashboard
 # reads exactly like the mock-up: title, machine-readable summary pattern and
@@ -195,9 +263,35 @@ def get_params(defaults: dict, dbutils) -> dict:
     return {name: dbutils.widgets.get(name) for name in defaults}
 
 
+# The synthetic world runs on local Australian time. Hour-of-day semantics (night
+# movement, rest window) and "today" are local-time concepts for a regulator, so every
+# step that touches clock time sets the Spark session time zone to this value. Without
+# it serverless runs in UTC and a "night movement" alert would show daytime sightings.
+LOCAL_TIMEZONE = "Australia/Sydney"
+
+
+def use_local_time(spark) -> None:
+    """Interpret and render timestamps in the model's local time zone for this session."""
+    spark.conf.set("spark.sql.session.timeZone", LOCAL_TIMEZONE)
+
+
+def local_now() -> dt.datetime:
+    """Current local wall-clock time, second precision (Spark can parse it as a literal)."""
+    return dt.datetime.now(ZoneInfo(LOCAL_TIMEZONE)).replace(microsecond=0, tzinfo=None)
+
+
+def timestamp_sql(ts: dt.datetime) -> str:
+    """SQL timestamp literal for a local wall-clock time.
+
+    Use this instead of F.lit(datetime): Spark Connect converts naive Python datetimes
+    using the client's zone, not the session zone, which would shift run timestamps.
+    """
+    return f"timestamp '{ts.strftime('%Y-%m-%d %H:%M:%S')}'"
+
+
 def resolve_as_of(raw: str) -> str:
-    """Normalise the as-of date: blank means today."""
-    return raw.strip() if raw and raw.strip() else dt.date.today().isoformat()
+    """Normalise the as-of date: blank means today in the model's local time zone."""
+    return raw.strip() if raw and raw.strip() else local_now().date().isoformat()
 
 
 def fq_table(catalog: str, schema: str, name: str) -> str:

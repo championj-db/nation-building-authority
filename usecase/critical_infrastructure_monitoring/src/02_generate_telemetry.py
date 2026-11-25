@@ -51,7 +51,9 @@ from common import (
     DAY_HOURS, NIGHT_HOURS, NORMAL_MASS_MULTIPLIERS,
     OCR_CONFUSION_DST, OCR_CONFUSION_SRC, OVERLOAD_MASS_MULTIPLIERS,
     SITE_CATALOGUE, SIGHTING_SOURCES, ansi_sql_off, get_params, plate_expr,
-    resolve_as_of, volume_dir
+    resolve_as_of, use_local_time, volume_dir,
+    ESCALATING_ASSET_PCT, ESCALATION_DAYS, ESCALATION_SHARE_PCT, generation_tag,
+    intensity_pct_expr,
 )
 
 params = get_params(
@@ -80,6 +82,7 @@ CATALOG = params["catalog"]
 SCHEMA = params["schema"]
 VOLUME = params["volume"]
 SEED = int(params["seed"])
+use_local_time(spark)  # hour_of_day and as_of are local Australian time
 AS_OF = resolve_as_of(params["as_of"])
 NUM_ASSETS = int(params["num_assets"])
 NUM_SITES = min(int(params["num_sites"]), len(SITE_CATALOGUE))
@@ -91,7 +94,8 @@ RANDOM_SUB_PCT = int(params["random_sub_pct"])
 UNRESOLVED_PCT = int(params["unresolved_pct"])
 PARTITIONS = int(params["partitions"])
 TOTAL_ROWS = EVENTS_PER_DAY * HISTORY_DAYS
-LANDING_DIR = volume_dir(CATALOG, SCHEMA, VOLUME, "telemetry")
+# one folder per synthetic generation; bronze ingests them all, silver reads the current one
+LANDING_DIR = volume_dir(CATALOG, SCHEMA, VOLUME, "telemetry", generation_tag(AS_OF))
 
 print(f"Telemetry: {TOTAL_ROWS} rows over {HISTORY_DAYS} days to {LANDING_DIR}")
 
@@ -141,7 +145,7 @@ with ansi_sql_off(spark):
 night_arr = "array(" + ", ".join(str(h) for h in NIGHT_HOURS) + ")"
 day_arr = "array(" + ", ".join(str(h) for h in DAY_HOURS) + ")"
 hour_expr = f"""CASE
-  WHEN risk_cohort = 'fatigue' AND pmod(hash('hourbias', sighting_seed), 100) < 65
+  WHEN risk_cohort = 'fatigue' AND pmod(hash('hourbias', sighting_seed), 100) < {intensity_pct_expr('fatigue', 'asset_ref')}
     THEN element_at({night_arr}, 1 + pmod(hash('nighthour', sighting_seed), {len(NIGHT_HOURS)}))
   WHEN pmod(hash('hourbias', sighting_seed), 100) < 8
     THEN element_at({night_arr}, 1 + pmod(hash('nighthour', sighting_seed), {len(NIGHT_HOURS)}))
@@ -152,13 +156,21 @@ END"""
 # (an unusual minority corridor), which is what route-variance detection finds.
 route_corridor_last = NUM_SITES - 1
 site_ref_expr = f"""CASE
-  WHEN risk_cohort = 'route' AND pmod(hash('routeconcentration', sighting_seed), 100) < 80
+  WHEN risk_cohort = 'route' AND pmod(hash('routeconcentration', sighting_seed), 100) < {intensity_pct_expr('route', 'asset_ref')}
     THEN {route_corridor_last} - pmod(hash('corridor', sighting_seed), 3)
   ELSE site_ref
 END"""
 
-# Late stragglers: events from 1-3 days before their nominal window.
+# Escalating risk assets move a share of their activity into the last few days (the
+# recent_pattern signal); everyone else keeps a uniform spread. Then late stragglers:
+# events from 1-3 days before their nominal window.
+esc_lo, esc_hi = ESCALATION_SHARE_PCT
 day_offset_expr = f"""CASE
+  WHEN risk_cohort <> 'none'
+       AND pmod(hash('escalating', asset_ref), 100) < {ESCALATING_ASSET_PCT}
+       AND pmod(hash('escalate', sighting_seed), 100)
+           < {esc_lo} + pmod(hash('escalationshare', asset_ref), {esc_hi - esc_lo + 1})
+    THEN pmod(hash('recentday', sighting_seed), {ESCALATION_DAYS})
   WHEN pmod(hash('straggler', sighting_seed), 100) < {STRAGGLER_PCT}
     THEN nominal_day_offset + 1 + pmod(hash('stragglerlag', sighting_seed), 3)
   ELSE nominal_day_offset
@@ -182,7 +194,7 @@ END"""
 n_lo, n_hi = NORMAL_MASS_MULTIPLIERS
 o_lo, o_hi = OVERLOAD_MASS_MULTIPLIERS
 mass_expr = f"""CASE
-  WHEN risk_cohort = 'mass' AND pmod(hash('massbias', sighting_seed), 100) < 70
+  WHEN risk_cohort = 'mass' AND pmod(hash('massbias', sighting_seed), 100) < {intensity_pct_expr('mass', 'asset_ref')}
     THEN cast(round(registered_mass_kg * ({o_lo} + pmod(hash('massover', sighting_seed), 1000) / 1000.0 * ({o_hi} - {o_lo}))) as long)
   ELSE cast(round(registered_mass_kg * ({n_lo} + pmod(hash('massnormal', sighting_seed), 1000) / 1000.0 * ({n_hi} - {n_lo}))) as long)
 END"""
@@ -218,6 +230,8 @@ events = (
         date_sub(date '{AS_OF}', day_offset), 'T',
         lpad(cast(hour_of_day as string), 2, '0'), ':',
         lpad(cast(minute_of_hour as string), 2, '0'), ':00'))"""))
+    # A sensor cannot report from the future: today's sightings stop at the run time.
+    .filter(F.col("event_ts") <= F.current_timestamp())
     .withColumn("event_ts_epoch_ms", (F.col("event_ts").cast("long") * 1000))
     .withColumn("sighted_plate_raw", F.expr(plate_noise_expr))
     .withColumn("mass_estimate_kg", F.expr(mass_expr))

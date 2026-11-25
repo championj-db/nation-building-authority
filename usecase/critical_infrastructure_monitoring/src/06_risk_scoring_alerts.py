@@ -40,8 +40,11 @@ sys.path.insert(0, _src_dir)
 
 from common import (
     ALERT_COPY, FACTOR_WEIGHTS, MODEL_VERSION, RISK_TYPES,
-    SEVERITY_BANDS, get_params, resolve_as_of,
+    SEVERITY_BANDS, get_params, local_now, resolve_as_of, timestamp_sql,
+    use_local_time,
 )
+
+use_local_time(spark)
 
 params = get_params(
     {
@@ -59,7 +62,8 @@ CATALOG = params["catalog"]
 SCHEMA = params["schema"]
 AS_OF = resolve_as_of(params["as_of"])
 ALERT_THRESHOLD = int(params["alert_threshold"])
-RUN_TS = dt.datetime.now()
+RUN_TS = local_now()
+RUN_TS_SQL = timestamp_sql(RUN_TS)
 
 # COMMAND ----------
 
@@ -127,7 +131,7 @@ scored = (
         F.col("operator_id") == F.col("op_operator_id"),
     )
     .select(
-        F.lit(RUN_TS).alias("run_ts"),
+        F.expr(RUN_TS_SQL).alias("run_ts"),
         F.lit(AS_OF).alias("as_of_date"),
         F.lit(MODEL_VERSION).alias("model_version"),
         "asset_id", "registration_plate", "operator_id", "operator_name",
@@ -186,7 +190,7 @@ run_alerts = (
         ) + " END"
     ))
     .select(
-        "alert_id", F.lit(RUN_TS).alias("run_ts"), "asset_id", "registration_plate",
+        "alert_id", F.expr(RUN_TS_SQL).alias("run_ts"), "asset_id", "registration_plate",
         "operator_id", "operator_name", "risk_type", "primary_factor",
         "risk_score", "severity", "priority", "alert_title", "alert_summary",
         "recommended_action", "last_seen_ts", "last_seen_location",
@@ -202,7 +206,7 @@ first_seen = (
     .agg(F.min("run_ts").alias("created_ts"))
 )
 
-run_ts_lit = RUN_TS.isoformat(sep=" ")
+run_ts_lit = RUN_TS.strftime("%Y-%m-%d %H:%M:%S")
 current_alerts = (
     run_alerts
     .join(first_seen, "alert_id")
@@ -236,15 +240,14 @@ current_alerts.select("registration_plate", "operator_name", "alert_title",
 # COMMAND ----------
 
 AUDIT_TABLE = f"{CATALOG}.{SCHEMA}.gold_alert_review_audit"
-try:
-    spark.table(AUDIT_TABLE)
-except Exception:
-    spark.sql(
-        f"CREATE TABLE IF NOT EXISTS {AUDIT_TABLE} ("
-        "review_id string, alert_id string, reviewed_ts timestamp, "
-        "officer_name string, disposition string, evidence_viewed string, notes string"
-        ") USING DELTA"
-    )
+# CREATE ... IF NOT EXISTS is idempotent and never truncates recorded decisions. (A
+# try/spark.table() probe does not work here: under Spark Connect spark.table is lazy.)
+spark.sql(
+    f"CREATE TABLE IF NOT EXISTS {AUDIT_TABLE} ("
+    "review_id string, alert_id string, reviewed_ts timestamp, "
+    "officer_name string, disposition string, evidence_viewed string, notes string"
+    ") USING DELTA"
+)
 spark.sql(
     f"COMMENT ON TABLE {AUDIT_TABLE} IS '"
     "Human-in-the-loop decision record for alert reviews: officer, time, evidence "
@@ -290,7 +293,7 @@ metrics_row = (
         F.count("*").alias("open_alerts"),
         F.expr(queue_minutes_expr).alias("median_queue_time_minutes"),
     )
-    .withColumn("run_ts", F.lit(RUN_TS))
+    .withColumn("run_ts", F.expr(RUN_TS_SQL))
     .withColumn("as_of_date", F.lit(AS_OF).cast("date"))
     .withColumn("sightings_today", F.lit(sightings_today).cast("long"))
     .withColumn("identity_resolution_rate", F.lit(

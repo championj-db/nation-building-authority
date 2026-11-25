@@ -99,9 +99,8 @@ bronze_schema = source_schema.add(T.StructField("_ingest_ts", T.TimestampType(),
 
 # COMMAND ----------
 
-try:
-    spark.table(BRONZE_TABLE)
-except Exception:
+# tableExists is eager; a try/spark.table() probe is lazy under Spark Connect and never fires.
+if not spark.catalog.tableExists(BRONZE_TABLE):
     (spark.createDataFrame([], bronze_schema)
         .write
         .mode("overwrite")
@@ -121,6 +120,8 @@ raw = (
     spark.readStream
     .format("cloudFiles")
     .option("cloudFiles.format", "json")
+    # landing is split into generation=<tag> folders; keep them out of the pinned schema
+    .option("cloudFiles.partitionColumns", "")
     .schema(source_schema)
     .load(LANDING_DIR)
     .withColumn("_ingest_ts", F.current_timestamp())

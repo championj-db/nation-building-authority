@@ -91,6 +91,7 @@ resources:
               src_dir: ${workspace.file_path}
               feature_window_days: "14"
               recent_days: "3"
+              inspection_lookback_days: "365"
 
         - task_key: risk_scoring_alerts
           depends_on:

@@ -48,12 +48,18 @@ if _src_dir is None:
     )
 sys.path.insert(0, _src_dir)
 
-from common import REST_WINDOW_END_HOUR, canonical_plate_expr, get_params
+from common import (
+    REST_WINDOW_END_HOUR, canonical_plate_expr, generation_tag, get_params, resolve_as_of,
+    use_local_time,
+)
+
+use_local_time(spark)
 
 params = get_params(
     {
         "catalog": "",
         "schema": "",
+        "as_of": "",
         "max_levenshtein": 1,
     },
     dbutils,
@@ -64,6 +70,8 @@ if not params["catalog"] or not params["schema"]:
 CATALOG = params["catalog"]
 SCHEMA = params["schema"]
 MAX_LEVENSHTEIN = int(params["max_levenshtein"])
+AS_OF = resolve_as_of(params["as_of"])
+GENERATION = generation_tag(AS_OF)
 
 # COMMAND ----------
 
@@ -74,6 +82,8 @@ MAX_LEVENSHTEIN = int(params["max_levenshtein"])
 
 raw_events = (
     spark.table(f"{CATALOG}.{SCHEMA}.bronze_sightings")
+    # only the current synthetic generation (see common.generation_tag)
+    .filter(F.col("_source_file").contains(f"/{GENERATION}/"))
     .dropDuplicates(["sighting_id"])
     .select("sighting_id", "event_ts_epoch_ms", "hour_of_day", "sighted_plate_raw",
             "site_id", "road_name", "locality", "state", "latitude", "longitude",
@@ -247,6 +257,8 @@ unresolved.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable
 # COMMAND ----------
 
 total = raw_events.count()
+if total == 0:
+    raise ValueError(f"No bronze sightings for {GENERATION}; run generate_telemetry for this as_of first")
 resolved = resolution_map.count()
 print(f"silver_sighting: {resolved}/{total} events resolved "
       f"({resolved / total:.1%}) - the identity-resolution KPI on the operations dashboard")

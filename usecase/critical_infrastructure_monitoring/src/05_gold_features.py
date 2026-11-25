@@ -40,7 +40,12 @@ if _src_dir is None:
     )
 sys.path.insert(0, _src_dir)
 
-from common import OVER_MASS_RATIO_THRESHOLD, get_params, resolve_as_of
+from common import (
+    OVER_MASS_RATIO_THRESHOLD, factor_score_expr, get_params, local_now,
+    resolve_as_of, timestamp_sql, use_local_time,
+)
+
+use_local_time(spark)
 
 params = get_params(
     {
@@ -49,6 +54,9 @@ params = get_params(
         "as_of": "",
         "feature_window_days": 14,
         "recent_days": 3,
+        # Inspections are annual events, so defect history needs a far longer lookback
+        # than the 14-day movement window or the signal all but disappears.
+        "inspection_lookback_days": 365,
     },
     dbutils,
 )
@@ -60,10 +68,13 @@ SCHEMA = params["schema"]
 AS_OF = resolve_as_of(params["as_of"])
 FEATURE_WINDOW_DAYS = int(params["feature_window_days"])
 RECENT_DAYS = min(int(params["recent_days"]), FEATURE_WINDOW_DAYS - 1)
-RUN_TS = dt.datetime.now()  # one run timestamp for every row written this run
+INSPECTION_LOOKBACK_DAYS = int(params["inspection_lookback_days"])
+RUN_TS = local_now()  # one run timestamp for every row written this run
+RUN_TS_SQL = timestamp_sql(RUN_TS)
 
 window_start = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=FEATURE_WINDOW_DAYS)).isoformat()
 recent_start = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=RECENT_DAYS)).isoformat()
+inspection_start = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=INSPECTION_LOOKBACK_DAYS)).isoformat()
 
 # COMMAND ----------
 
@@ -119,7 +130,7 @@ routes = (
 
 inspections = (
     spark.table(f"{CATALOG}.{SCHEMA}.dim_inspection")
-    .filter(F.col("inspection_date") >= F.lit(window_start))
+    .filter(F.col("inspection_date") >= F.lit(inspection_start))
     .groupBy("asset_id")
     .agg(
         F.sum(F.when(F.col("outcome") == "defect", 1).otherwise(0)).alias("defect_count"),
@@ -159,23 +170,24 @@ features = (
     .withColumn("hours_since_last_seen", F.expr(
         f"round((unix_timestamp(date '{AS_OF}' + INTERVAL 1 DAY) - unix_timestamp(last_seen.event_ts)) / 3600.0, 1)"
     ))
-    .withColumn("rest_window_anomaly_score", F.least(F.lit(1.0), F.col("rest_window_ratio") * 3))
-    .withColumn("night_movement_score", F.least(F.lit(1.0), F.col("night_sightings_ratio") * 2))
-    .withColumn("recent_pattern_score",
-                F.least(F.lit(1.0), F.greatest(F.lit(0.0), F.col("recent_surge_ratio") - 1.0)))
-    .withColumn("route_variance_score",
-                F.least(F.lit(1.0), F.greatest(F.lit(0.0), (F.col("max_site_share") - 0.2) / 0.6)))
-    .withColumn("mass_variance_score", F.least(F.lit(1.0), F.col("over_mass_ratio") * 2))
-    .withColumn("defect_history_score",
-                F.least(F.lit(1.0), (F.col("defect_count") + 2 * F.col("critical_defect_count")) / 8.0))
+    .withColumn("defect_points", F.col("defect_count") + 2 * F.col("critical_defect_count"))
+    # Every factor is normalised by its band in common.FACTOR_BANDS: 0 = what a normal
+    # vehicle shows, 1 = unambiguous evidence.
+    .withColumn("rest_window_anomaly_score", F.expr(factor_score_expr("rest_window_anomaly")))
+    .withColumn("night_movement_score", F.expr(factor_score_expr("night_movement")))
+    .withColumn("recent_pattern_score", F.expr(factor_score_expr("recent_pattern")))
+    .withColumn("route_variance_score", F.expr(factor_score_expr("route_variance")))
+    .withColumn("mass_variance_score", F.expr(factor_score_expr("mass_variance")))
+    .withColumn("defect_history_score", F.expr(factor_score_expr("defect_history")))
     .select(
-        F.lit(RUN_TS).alias("run_ts"),
+        F.expr(RUN_TS_SQL).alias("run_ts"),
         F.lit(AS_OF).alias("as_of_date"),
         F.lit(FEATURE_WINDOW_DAYS).alias("window_days"),
         "asset_id", "registration_plate", "operator_id", "risk_cohort",
         "sightings_count", "night_sightings_ratio", "rest_window_ratio",
         "distinct_sites", "max_site_share", "over_mass_ratio", "max_mass_ratio",
         "mass_violation_count", "max_speed_kph", "recent_surge_ratio",
+        "defect_count", "critical_defect_count", "defect_points",
         "hours_since_last_seen",
         F.col("last_seen.event_ts").alias("last_seen_ts"),
         F.col("last_seen.road_name").alias("last_seen_road"),

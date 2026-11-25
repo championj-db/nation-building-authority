@@ -53,7 +53,7 @@ sys.path.insert(0, _src_dir)
 from common import (
     ASSET_TYPES, DEFECT_CODES, INSPECTION_TYPES, OPERATOR_NAME_DOMAINS,
     OPERATOR_NAME_REGIONS, OPERATOR_NAME_SUFFIXES, OPERATOR_STATES,
-    OPERATOR_TYPES, PLATE_REGEX, SITE_CATALOGUE, ansi_sql_off,
+    OPERATOR_TYPES, PLATE_REGEX, SITE_CATALOGUE, ansi_sql_off, intensity_pct_expr,
     get_params, plate_expr, resolve_as_of,
 )
 
@@ -236,8 +236,9 @@ print(f"dim_site: {sites.count()} rows")
 
 cohort_expr = (
     "CASE "
-    "WHEN risk_cohort = 'roadworthiness' AND pmod(hash('outcome', inspection_id), 100) < 60 THEN 'defect' "
-    "WHEN pmod(hash('outcome', inspection_id), 100) < 20 THEN 'defect' "
+    "WHEN risk_cohort = 'roadworthiness' AND pmod(hash('outcome', inspection_id), 100) < "
+    f"{intensity_pct_expr('roadworthiness', 'asset_id')} THEN 'defect' "
+    "WHEN pmod(hash('outcome', inspection_id), 100) < 12 THEN 'defect' "
     "ELSE 'pass' END"
 )
 
@@ -266,7 +267,7 @@ inspections = (
     )
     .withColumn("outcome", F.expr(cohort_expr))
     .withColumn("defect_code", F.expr(
-        "CASE WHEN outcome = 'defect' THEN element_at(array({}, 1 + pmod(hash('code', inspection_id), {})) "
+        "CASE WHEN outcome = 'defect' THEN element_at(array({}), 1 + pmod(hash('code', inspection_id), {})) "
         "ELSE NULL END".format(", ".join(repr(c) for c in DEFECT_CODES), len(DEFECT_CODES))
     ))
     .withColumn("defect_severity", F.expr(
@@ -282,7 +283,7 @@ inspections.write.mode("overwrite").option("overwriteSchema", "true").saveAsTabl
     f"{CATALOG}.{SCHEMA}.dim_inspection"
 )
 print(f"dim_inspection: {inspections.count()} rows, "
-      f"{inspections.filter("outcome = 'defect'").count()} defects")
+      f"{inspections.filter(F.col('outcome') == 'defect').count()} defects")
 
 # COMMAND ----------
 
