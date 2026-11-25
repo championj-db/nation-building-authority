@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Badge, Button, useAnalyticsQuery } from '@databricks/appkit-ui/react';
 import { Download, ExternalLink } from 'lucide-react';
 import { useConfig, useDocumentTitle, useUrlState } from '../lib/api';
-import { bool, downloadCsv, formatDate, formatDateTime, formatNumber, num, plural, relativeDays } from '../lib/format';
+import { bool, downloadCsv, formatDate, formatDateTime, formatNumber, num, plural } from '../lib/format';
 import type { QueryRow } from '../lib/types';
 import {
   DataTable,
@@ -273,7 +273,6 @@ function ObligationDetail({
         >
           <ul className="requirement-list">
             {requirements.map((req) => {
-              const days = num(req.days_to_expiry);
               return (
                 <li key={req.requirement_id}>
                   <div className="requirement-head">
@@ -292,7 +291,6 @@ function ObligationDetail({
                       </Link>{' '}
                       <span className="muted">
                         v{req.best_artefact_version} · expires {formatDate(req.expires_on)}
-                        {days !== null ? ` (${relativeDays(days)})` : ''}
                       </span>
                     </p>
                   ) : (
