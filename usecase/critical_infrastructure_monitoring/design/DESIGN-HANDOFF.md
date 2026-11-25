@@ -1,3 +1,9 @@
+> **Superseded (v1).** This handoff and `critical-infrastructure-operations.html` describe the
+> original single-sector heavy-vehicle console. The use case now models a national, cross-sector
+> Infrastructure Operations Centre: see [IOC-DESIGN-SPEC.md](IOC-DESIGN-SPEC.md), which keeps this
+> handoff's layout grammar, voice and interaction patterns and adopts the Databricks brand. The
+> built app (`../app/nba-critical-infra`) is the reference implementation.
+
 # f3cb32cb-c43b-4c2c-a026-9282325a1c46 implementation handoff
 
 This archive is the source of truth for turning the design into production code. Start from `critical-infrastructure-operations.html`, then preserve the visual system, responsive behavior, and interactions found in the exported files.

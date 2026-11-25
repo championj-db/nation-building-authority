@@ -40,6 +40,11 @@ variables:
 include:
   - resources/*.yml
 
+# The Databricks App is its own bundle (app/nba-critical-infra); keep it out of the job's sync.
+sync:
+  exclude:
+    - app/**
+
 targets:
   dev:
     mode: development

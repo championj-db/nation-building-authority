@@ -1,103 +1,54 @@
 # Databricks notebook source
-# Step 1 of the critical infrastructure monitoring pipeline: generate the
-# synthetic reference data (operators, assets, sighting sites, inspection
-# history) with dbldatagen. Every table is fully rebuilt from the seed, so the
-# dataset is reproducible for anyone who runs the bundle.
+# Step 1 of the critical infrastructure monitoring pipeline: synthetic reference data for a
+# national, cross-sector infrastructure network.
 #
-# Parameters arrive from the job (base_parameters) or from widgets when run
-# interactively. Nothing environment-specific is written in this file.
+# Writes the asset registry the operations centre monitors:
+#   dim_operator    fictional operators per sector
+#   dim_asset       ~600 roads, rail, water and energy assets at real Australian localities
+#   dim_sensor      one sensor per asset metric, with its engineering limits
+#   dim_dependency  cross-sector supply links (a substation powers signalling, pumps, tunnels...)
+#   dim_inspection  two years of condition inspections
+#
+# Reference data is small, so it is built in seeded Python (deterministic for a given seed),
+# where nearest-neighbour dependency wiring is simplest to read.
 
 # COMMAND ----------
 
-# MAGIC %pip install dbldatagen==0.4.0.post1
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Setup
-# MAGIC The `src_dir` parameter locates the use case's `src/` folder (the job
-# MAGIC passes `${workspace.file_path}`); the shared model contract lives in
-# MAGIC `common.py` there.
-
-# COMMAND ----------
-
-import datetime as dt
+import math
+import os
+import random
 import sys
 
-import dbldatagen as dg
-from pyspark.sql import functions as F, types as T
-
-import os
+from pyspark.sql import types as T
 
 # The shared model contract (common.py) lives in this use case's src/ folder.
-# The job passes src_dir=${workspace.file_path} (a file path, which is
-# normalised to its folder); interactive runs probe well-known locations.
 dbutils.widgets.text("src_dir", "")
 _src = dbutils.widgets.get("src_dir")
-_candidates = [_src]
-if _src.endswith(".py"):
-    _candidates.append(os.path.dirname(_src))
-if _src.endswith(".yml"):
-    _candidates.append(os.path.join(os.path.dirname(_src), "..", "src"))
-_candidates += ["src", "."]
-_src_dir = next(
-    (c for c in _candidates if c and os.path.isfile(os.path.join(c, "common.py"))),
-    None,
-)
+_candidates = [_src, os.path.dirname(_src) if _src.endswith(".py") else None, "src", "."]
+_src_dir = next((c for c in _candidates if c and os.path.isfile(os.path.join(c, "common.py"))), None)
 if _src_dir is None:
-    raise FileNotFoundError(
-        "common.py not found - pass src_dir pointing at the use case's src folder"
-    )
+    raise FileNotFoundError("common.py not found - pass src_dir pointing at the use case's src folder")
 sys.path.insert(0, _src_dir)
 
 from common import (
-    ASSET_TYPES, DEFECT_CODES, INSPECTION_TYPES, OPERATOR_NAME_DOMAINS,
-    OPERATOR_NAME_REGIONS, OPERATOR_NAME_SUFFIXES, OPERATOR_STATES,
-    OPERATOR_TYPES, PLATE_REGEX, SITE_CATALOGUE, ansi_sql_off,
-    get_params, plate_expr, resolve_as_of,
+    ASSET_CLASSES, LOCALITIES, METRICS, OPERATORS, SECTORS, STORYLINE_LINKS, STORYLINES,
+    get_params, haversine_km, local_now, resolve_as_of,
 )
 
-params = get_params(
-    {
-        "catalog": "",
-        "schema": "",
-        "src_dir": "",
-        "seed": 42,
-        "as_of": "",
-        "num_operators": 60,
-        "num_assets": 800,
-        "num_sites": len(SITE_CATALOGUE),
-        "inspections_per_asset": 6,
-        "partitions": 8,
-    },
-    dbutils,
-)
+params = get_params({"catalog": "", "schema": "", "seed": 42, "asset_scale": 6.25, "as_of": ""}, dbutils)
 if not params["catalog"] or not params["schema"]:
     raise ValueError("catalog and schema parameters are required")
 
-CATALOG = params["catalog"]
-SCHEMA = params["schema"]
+CATALOG, SCHEMA = params["catalog"], params["schema"]
 SEED = int(params["seed"])
+ASSET_SCALE = float(params["asset_scale"])  # assets per unit of class weight (6.25 -> ~600)
 AS_OF = resolve_as_of(params["as_of"])
-NUM_OPERATORS = int(params["num_operators"])
-NUM_ASSETS = int(params["num_assets"])
-NUM_SITES = min(int(params["num_sites"]), len(SITE_CATALOGUE))
-INSPECTIONS_PER_ASSET = int(params["inspections_per_asset"])
-PARTITIONS = int(params["partitions"])
+rng = random.Random(SEED)
 
-print(f"Reference data: {NUM_OPERATORS} operators, {NUM_ASSETS} assets, "
-      f"{NUM_SITES} sites, {NUM_ASSETS * INSPECTIONS_PER_ASSET} inspections, "
-      f"seed={SEED}, as_of={AS_OF}")
 
-# COMMAND ----------
+def table(name: str) -> str:
+    return f"{CATALOG}.{SCHEMA}.{name}"
 
-# MAGIC %md
-# MAGIC ## Schema
-# MAGIC Recreated idempotently so interactive runs work without a prior deploy.
-
-# COMMAND ----------
-
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
 
 # COMMAND ----------
 
@@ -106,184 +57,184 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
 
 # COMMAND ----------
 
-inspections_begin = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=365)).isoformat()
+operators = []
+for sector in SECTORS:
+    for i, name in enumerate(OPERATORS[sector]):
+        operators.append((f"OP-{sector[:2].upper()}{i + 1}", name, sector))
+operator_ids = {sector: [o for o in operators if o[2] == sector] for sector in SECTORS}
 
-operator_name_expr = "concat({})".format(
-    ", ' ', ".join(
-        f"element_at(array({', '.join(repr(p) for p in parts)}), "
-        f"1 + pmod(hash('{tag}', operator_id), {len(parts)}))"
-        for parts, tag in (
-            (OPERATOR_NAME_REGIONS, "region"),
-            (OPERATOR_NAME_DOMAINS, "domain"),
-            (OPERATOR_NAME_SUFFIXES, "suffix"),
-        )
-    )
-)
-
-with ansi_sql_off(spark):
-    operators = (
-        dg.DataGenerator(
-            spark, name="operators", rows=NUM_OPERATORS,
-            partitions=PARTITIONS, randomSeed=SEED, seedColumnName="operator_id",
-        )
-        .withIdOutput()
-        .withColumn("operator_name", expr=operator_name_expr)
-        .withColumn("operator_type", "string", values=OPERATOR_TYPES, random=True,
-                    weights=[35, 30, 15, 10, 10])
-        .withColumn("state", "string", values=OPERATOR_STATES, random=True,
-                    weights=[32, 26, 20, 8, 7, 4, 2, 1])
-        .withColumn("safety_rating", T.IntegerType(), minValue=1, maxValue=5, random=True)
-        .withColumn("accreditation_expiry", T.DateType(),
-                    begin="2026-06-30", end="2029-06-30", interval="1 day", random=True)
-        .withColumn("accreditation_status", "string",
-                    values=["active", "under_review", "suspended"], random=True,
-                    weights=[88, 9, 3])
-        .build()
-    )
-
-operators.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
-    f"{CATALOG}.{SCHEMA}.dim_operator"
-)
-print(f"dim_operator: {operators.count()} rows")
+spark.createDataFrame(operators, "operator_id string, operator_name string, sector string") \
+    .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_operator"))
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Assets
-# MAGIC Assets carry a synthetic risk cohort so the telemetry can be generated with
-# MAGIC realistic risk patterns (night movement, over-mass loading, route
-# MAGIC concentration, defect history). The cohort shapes the data only; the risk
-# MAGIC engine later rediscovers risk from telemetry alone.
+# MAGIC Assets are placed at real localities, weighted by locality density, and jittered a few
+# MAGIC kilometres so co-located assets do not overlap on the map. Each state's assets in a sector
+# MAGIC belong to one operator, as real networks are typically run state by state.
 
 # COMMAND ----------
 
-with ansi_sql_off(spark):
-    assets = (
-        dg.DataGenerator(
-            spark, name="assets", rows=NUM_ASSETS,
-            partitions=PARTITIONS, randomSeed=SEED, seedColumnName="asset_id",
-        )
-        .withIdOutput()
-        .withColumn("registration_plate", expr=plate_expr("asset_id"))
-        .withColumn("operator_id", T.LongType(),
-                   expr=f"pmod(hash('operator', asset_id), {NUM_OPERATORS})")
-        .withColumn("asset_type", "string", values=ASSET_TYPES, random=True,
-                    weights=[30, 25, 15, 20, 10])
-        .withColumn("registered_mass_kg", T.LongType(),
-                    minValue=19500, maxValue=42500, random=True, step=500)
-        .withColumn("axle_count", T.IntegerType(),
-                    values=[3, 4, 5, 6, 7, 8, 9], random=True,
-                    weights=[10, 25, 25, 20, 10, 7, 3])
-        .withColumn("manufacture_year", T.IntegerType(),
-                    minValue=2006, maxValue=2026, random=True)
-        .withColumn("risk_cohort", "string",
-                    values=["none", "fatigue", "roadworthiness", "mass", "route"],
-                    random=True, weights=[70, 10, 8, 7, 5])
-        .build()
-    )
+STATE_ORDER = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]
 
-bad_plates = assets.filter(~F.col("registration_plate").rlike(PLATE_REGEX)).count()
-if bad_plates or assets.select("registration_plate").distinct().count() != NUM_ASSETS:
-    raise AssertionError("registration plates are not unique and well-formed")
 
-assets.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
-    f"{CATALOG}.{SCHEMA}.dim_asset"
-)
-print(f"dim_asset: {assets.count()} rows, all plates unique")
+def operator_for(sector: str, state: str) -> str:
+    ops = operator_ids[sector]
+    return ops[STATE_ORDER.index(state) % len(ops)][0]
+
+
+assets = []
+asset_id = 1000
+for cls, (sector, label, prefix, weight, metrics, (p_lo, p_hi), needs_power, states) in ASSET_CLASSES.items():
+    pool = [loc for loc in LOCALITIES if states is None or loc[1] in states]
+    weights = [loc[4] for loc in pool]
+    count = max(3, round(weight * ASSET_SCALE))
+    for n in range(count):
+        name, state, lat, lon, _w = rng.choices(pool, weights=weights, k=1)[0]
+        asset_id += 1
+        jlat, jlon = lat + rng.uniform(-0.06, 0.06), lon + rng.uniform(-0.07, 0.07)
+        install_year = rng.randint(1955, 2022)
+        # people served: log-uniform within the class range, rounded to the nearest hundred
+        people = int(round(math.exp(rng.uniform(math.log(p_lo), math.log(p_hi))), -2))
+        people = max(p_lo, min(p_hi, people))
+        criticality = 1 + min(4, int((people - p_lo) / max(1, (p_hi - p_lo)) * 5))
+        assets.append(dict(
+            asset_id=asset_id,
+            asset_code=f"{prefix}-{state}-{n + 1:03d}",
+            asset_name=f"{name} {label.title()}",
+            asset_class=cls, asset_class_label=label, sector=sector,
+            operator_id=operator_for(sector, state),
+            locality=name, state=state, latitude=round(jlat, 5), longitude=round(jlon, 5),
+            install_year=install_year, people_served=people, criticality=criticality,
+            needs_power=needs_power,
+        ))
+
+# Anchor each storyline asset at its locality: move the nearest asset of that class there, so
+# "the Gippsland transmission line" really is in Gippsland whatever the random placement did.
+loc_by_name = {loc[0]: loc for loc in LOCALITIES}
+anchored = {}
+for cls, locality, *_ in STORYLINES:
+    name, state, lat, lon, _w = loc_by_name[locality]
+    a = min((x for x in assets if x["asset_class"] == cls and x["asset_id"] not in anchored.values()),
+            key=lambda x: haversine_km(lat, lon, x["latitude"], x["longitude"]))
+    label = ASSET_CLASSES[cls][1]
+    a.update(locality=name, state=state, latitude=round(lat + 0.02, 5), longitude=round(lon + 0.02, 5),
+             operator_id=operator_for(a["sector"], state),
+             asset_name=f"{name} {label.title()}")
+    anchored[(cls, locality)] = a["asset_id"]
+
+# Make names unique within a locality ("Penrith zone substation 2").
+# Anchored storyline assets keep the plain name; any namesake gets a numeric suffix.
+seen = {}
+anchored_ids = set(anchored.values())
+for a in sorted(assets, key=lambda x: x["asset_id"] not in anchored_ids):
+    key = a["asset_name"]
+    seen[key] = seen.get(key, 0) + 1
+    if seen[key] > 1:
+        a["asset_name"] = f"{key} {seen[key]}"
+
+asset_schema = T.StructType([
+    T.StructField("asset_id", T.LongType()), T.StructField("asset_code", T.StringType()),
+    T.StructField("asset_name", T.StringType()), T.StructField("asset_class", T.StringType()),
+    T.StructField("asset_class_label", T.StringType()), T.StructField("sector", T.StringType()),
+    T.StructField("operator_id", T.StringType()), T.StructField("locality", T.StringType()),
+    T.StructField("state", T.StringType()), T.StructField("latitude", T.DoubleType()),
+    T.StructField("longitude", T.DoubleType()), T.StructField("install_year", T.IntegerType()),
+    T.StructField("people_served", T.LongType()), T.StructField("criticality", T.IntegerType()),
+    T.StructField("needs_power", T.BooleanType()),
+])
+spark.createDataFrame([tuple(a[f.name] for f in asset_schema.fields) for a in assets], asset_schema) \
+    .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_asset"))
+print(f"dim_asset: {len(assets)} assets across {len(ASSET_CLASSES)} classes")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Sighting sites
-# MAGIC A small static catalogue of public road locations (the design mock-up's
-# MAGIC alert locations appear in it), enriched with site type and direction.
+# MAGIC ## Sensors
+# MAGIC One sensor per asset metric, carrying its engineering limits so silver and gold read the
+# MAGIC thresholds from the registry, as an operator's asset system would provide them.
 
 # COMMAND ----------
 
-from pyspark.sql.window import Window
-
-sites = (
-    spark.createDataFrame(
-        SITE_CATALOGUE[:NUM_SITES],
-        "road_name string, locality string, state string, latitude double, longitude double",
-    )
-    # dense, deterministic 0-based site id so telemetry can hash into the range
-    .withColumn("site_id", (F.row_number().over(Window.orderBy("road_name", "locality")) - 1).cast("int"))
-    .withColumn("site_code", F.concat(F.lit("SITE-"), F.lpad(F.col("site_id").cast("string"), 3, "0")))
-    .withColumn("site_type", F.expr(
-        "element_at(array('anpr_camera', 'weigh_in_motion', 'gps_gateway'), "
-        "1 + pmod(hash('stype', site_id), 3))"
-    ))
-    .withColumn("heading", F.expr(
-        "element_at(array('northbound', 'southbound', 'eastbound', 'westbound'), "
-        "1 + pmod(hash('dir', site_id), 4))"
-    ))
-)
-
-sites.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
-    f"{CATALOG}.{SCHEMA}.dim_site"
-)
-print(f"dim_site: {sites.count()} rows")
+sensors = []
+for a in assets:
+    for metric in ASSET_CLASSES[a["asset_class"]][4]:
+        label, unit, base, _sd, _d, warn, alarm, direction, kind = METRICS[metric]
+        sensors.append((f"{a['asset_code']}-{metric}", a["asset_id"], metric, label, unit,
+                        float(base), float(warn), float(alarm), direction, kind))
+spark.createDataFrame(
+    sensors,
+    "sensor_id string, asset_id long, metric string, metric_label string, unit string, "
+    "baseline double, warn_limit double, alarm_limit double, direction string, kind string",
+).write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_sensor"))
+print(f"dim_sensor: {len(sensors)} sensors")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Inspection history
-# MAGIC Defects are weighted toward the roadworthiness cohort so the risk engine
-# MAGIC has a discoverable signal.
+# MAGIC ## Cross-sector dependencies
+# MAGIC The links that make this an operations centre rather than four monitoring screens:
+# MAGIC * every asset that needs power is supplied by its nearest zone substation
+# MAGIC * every zone substation is supplied by its nearest transmission line
+# MAGIC * every reservoir is supplied by its nearest treatment plant (water supply)
 
 # COMMAND ----------
 
-cohort_expr = (
-    "CASE "
-    "WHEN risk_cohort = 'roadworthiness' AND pmod(hash('outcome', inspection_id), 100) < 60 THEN 'defect' "
-    "WHEN pmod(hash('outcome', inspection_id), 100) < 20 THEN 'defect' "
-    "ELSE 'pass' END"
-)
+def nearest(asset, candidates):
+    return min(candidates, key=lambda c: haversine_km(asset["latitude"], asset["longitude"], c["latitude"], c["longitude"]))
 
-with ansi_sql_off(spark):
-    inspections_base = (
-        dg.DataGenerator(
-            spark, name="inspections", rows=NUM_ASSETS * INSPECTIONS_PER_ASSET,
-            partitions=PARTITIONS, randomSeed=SEED, seedColumnName="inspection_id",
-        )
-        .withIdOutput()
-        .withColumn("asset_id", T.LongType(),
-                   expr=f"pmod(hash('asset', inspection_id), {NUM_ASSETS})")
-        .withColumn("inspection_date", T.DateType(),
-                    begin=inspections_begin, end=AS_OF, interval="1 day", random=True)
-        .withColumn("inspection_type", "string", values=INSPECTION_TYPES, random=True,
-                    weights=[50, 30, 20])
-        .build()
-    )
 
-inspections = (
-    inspections_base
-    .join(
-        spark.table(f"{CATALOG}.{SCHEMA}.dim_asset").select("asset_id", "risk_cohort")
-            .withColumnRenamed("asset_id", "reg_asset_id"),
-        F.col("asset_id") == F.col("reg_asset_id"),
-    )
-    .withColumn("outcome", F.expr(cohort_expr))
-    .withColumn("defect_code", F.expr(
-        "CASE WHEN outcome = 'defect' THEN element_at(array({}, 1 + pmod(hash('code', inspection_id), {})) "
-        "ELSE NULL END".format(", ".join(repr(c) for c in DEFECT_CODES), len(DEFECT_CODES))
-    ))
-    .withColumn("defect_severity", F.expr(
-        "CASE WHEN outcome = 'defect' THEN "
-        "element_at(array('minor', 'major', 'critical'), 1 + pmod(hash('sev', inspection_id), 3)) "
-        "ELSE NULL END"
-    ))
-    .select("inspection_id", "asset_id", "inspection_date", "inspection_type",
-            "outcome", "defect_code", "defect_severity")
-)
+by_class = {cls: [a for a in assets if a["asset_class"] == cls] for cls in ASSET_CLASSES}
+deps = []
+for a in assets:
+    if a["needs_power"] and by_class["zone_substation"]:
+        s = nearest(a, by_class["zone_substation"])
+        deps.append((s["asset_id"], a["asset_id"], "power supply"))
+# Storyline wiring: the hero substation also supplies the nearest dependants of these classes.
+for (cls, locality), dependent_classes in STORYLINE_LINKS.items():
+    hero = next(x for x in assets if x["asset_id"] == anchored[(cls, locality)])
+    for dep_cls in dependent_classes:
+        target = nearest(hero, by_class[dep_cls])
+        deps = [d for d in deps if d[1] != target["asset_id"] or d[2] != "power supply"]
+        deps.append((hero["asset_id"], target["asset_id"], "power supply"))
+for s in by_class["zone_substation"]:
+    t = nearest(s, by_class["transmission_line"])
+    deps.append((t["asset_id"], s["asset_id"], "bulk power supply"))
+for r in by_class["reservoir"]:
+    p = nearest(r, by_class["treatment_plant"])
+    deps.append((p["asset_id"], r["asset_id"], "water supply"))
 
-inspections.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
-    f"{CATALOG}.{SCHEMA}.dim_inspection"
-)
-print(f"dim_inspection: {inspections.count()} rows, "
-      f"{inspections.filter("outcome = 'defect'").count()} defects")
+spark.createDataFrame(deps, "upstream_asset_id long, downstream_asset_id long, dependency_type string") \
+    .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_dependency"))
+print(f"dim_dependency: {len(deps)} supply links")
 
 # COMMAND ----------
 
-print("Reference data complete. Tables: dim_operator, dim_asset, dim_site, dim_inspection")
+# MAGIC %md
+# MAGIC ## Condition inspections
+# MAGIC Older assets trend to worse condition grades (1 = as new, 5 = very poor). Some assets are
+# MAGIC overdue: their last inspection is older than the 12-month interval.
+
+# COMMAND ----------
+
+import datetime as dt
+
+today = dt.date.fromisoformat(AS_OF)
+inspections = []
+insp_id = 0
+for a in assets:
+    age = today.year - a["install_year"]
+    base_grade = 1 + min(3.6, age / 18.0)
+    overdue = rng.random() < 0.08
+    last = today - dt.timedelta(days=rng.randint(400, 700) if overdue else rng.randint(10, 330))
+    for k in range(rng.randint(2, 3)):
+        insp_id += 1
+        when = last - dt.timedelta(days=365 * k + rng.randint(0, 30))
+        grade = max(1, min(5, round(base_grade + rng.uniform(-0.8, 0.9) - 0.3 * k)))
+        defects = max(0, round((grade - 2) * rng.uniform(0.5, 1.6)))
+        inspections.append((insp_id, a["asset_id"], when, int(grade), int(defects)))
+spark.createDataFrame(
+    inspections, "inspection_id long, asset_id long, inspection_date date, condition_grade int, defect_count int"
+).write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_inspection"))
+print(f"dim_inspection: {len(inspections)} inspections; generated at {local_now()}")

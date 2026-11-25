@@ -1,0 +1,53 @@
+# Infrastructure Operations Centre - Databricks App for the critical infrastructure monitoring use case.
+#
+# Reads the governed gold layer produced by ../../resources/critical_infrastructure_job.yml and
+# records officer decisions to gold_alert_review_audit. Every query and the decision write run
+# on behalf of the signed-in user (user_api_scopes: sql), so Unity Catalog grants, row filters
+# and column masks on operator-level risk data apply per officer.
+#
+# No environment-specific value is committed here (see ../../../../CONTRIBUTING.md). Supply
+# catalog, schema and sql_warehouse_id with --var, or in the git-ignored
+# .databricks/bundle/<target>/variable-overrides.json, and select the workspace with --profile.
+
+bundle:
+  name: nba-critical-infra-app
+
+variables:
+  app_name:
+    description: Databricks App resource name (26 characters max, lowercase and hyphens).
+    default: nba-critical-infra
+  catalog:
+    description: Unity Catalog catalog holding the use case's gold layer.
+  schema:
+    description: Schema written by the critical infrastructure monitoring pipeline.
+  sql_warehouse_id:
+    description: SQL warehouse used for on-behalf-of-user analytics and the decision write.
+
+resources:
+  apps:
+    app:
+      name: ${var.app_name}
+      description: Infrastructure Operations Centre - prioritise heavy-vehicle risk alerts and record officer decisions
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+      config:
+        command: ['npm', 'run', 'start']
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+
+targets:
+  default:
+    default: true

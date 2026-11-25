@@ -1,199 +1,213 @@
 # Databricks notebook source
-# Step 5 of the critical infrastructure monitoring pipeline: gold risk
-# features.
+# Step 5 of the critical infrastructure monitoring pipeline: gold risk features.
 #
-# One row per asset that was sighted in the feature window, holding every
-# normalised factor the risk engine consumes: night movement, rest-window
-# anomalies, route concentration, over-mass loading, inspection defect
-# history and recent activity surge. Every factor is computed from resolved
-# telemetry only - the generator's synthetic risk_cohort is carried along as
-# ground truth for evaluation, never as a scoring input.
+# One row per asset holding every normalised factor (0-1) the risk engine consumes, and the
+# evidence behind each one, so a score is always explainable:
+#   limit_exceedance  worst metric's movement from normal toward its engineering alarm limit
+#   anomaly           deviation of the last two hours from the asset's own seven-day baseline
+#   hazard_exposure   inside an active warning, by severity, sector relevance and proximity
+#   condition         poor inspection grade (3-5), plus a penalty when the inspection is overdue
+#   consequence       people relying on the asset and on everything downstream of it
+# Also writes gold_asset_dependency_impact: the downstream assets (up to CASCADE_DEPTH hops) each
+# asset supports, which the incident view uses to show what fails if this asset fails.
 
 # COMMAND ----------
 
-import datetime as dt
+import os
 import sys
 
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-import os
-
-# The shared model contract (common.py) lives in this use case's src/ folder.
-# The job passes src_dir=${workspace.file_path} (a file path, which is
-# normalised to its folder); interactive runs probe well-known locations.
 dbutils.widgets.text("src_dir", "")
 _src = dbutils.widgets.get("src_dir")
-_candidates = [_src]
-if _src.endswith(".py"):
-    _candidates.append(os.path.dirname(_src))
-if _src.endswith(".yml"):
-    _candidates.append(os.path.join(os.path.dirname(_src), "..", "src"))
-_candidates += ["src", "."]
-_src_dir = next(
-    (c for c in _candidates if c and os.path.isfile(os.path.join(c, "common.py"))),
-    None,
-)
+_candidates = [_src, os.path.dirname(_src) if _src.endswith(".py") else None, "src", "."]
+_src_dir = next((c for c in _candidates if c and os.path.isfile(os.path.join(c, "common.py"))), None)
 if _src_dir is None:
-    raise FileNotFoundError(
-        "common.py not found - pass src_dir pointing at the use case's src folder"
-    )
+    raise FileNotFoundError("common.py not found - pass src_dir pointing at the use case's src folder")
 sys.path.insert(0, _src_dir)
 
-from common import OVER_MASS_RATIO_THRESHOLD, get_params, resolve_as_of
-
-params = get_params(
-    {
-        "catalog": "",
-        "schema": "",
-        "as_of": "",
-        "feature_window_days": 14,
-        "recent_days": 3,
-    },
-    dbutils,
+from common import (
+    CASCADE_DEPTH, CONSEQUENCE_LOG_RANGE, HAZARD_RELEVANCE, SEVERITY_WEIGHT, get_params,
+    haversine_km_expr, local_now, timestamp_sql, use_local_time,
 )
+
+params = get_params({"catalog": "", "schema": "", "recent_hours": 2, "baseline_days": 7}, dbutils)
 if not params["catalog"] or not params["schema"]:
     raise ValueError("catalog and schema parameters are required")
 
-CATALOG = params["catalog"]
-SCHEMA = params["schema"]
-AS_OF = resolve_as_of(params["as_of"])
-FEATURE_WINDOW_DAYS = int(params["feature_window_days"])
-RECENT_DAYS = min(int(params["recent_days"]), FEATURE_WINDOW_DAYS - 1)
-RUN_TS = dt.datetime.now()  # one run timestamp for every row written this run
+use_local_time(spark)
+CATALOG, SCHEMA = params["catalog"], params["schema"]
+RECENT_HOURS = int(params["recent_hours"])
+BASELINE_DAYS = int(params["baseline_days"])
+RUN_TS = local_now()
+RUN_SQL = timestamp_sql(RUN_TS)
 
-window_start = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=FEATURE_WINDOW_DAYS)).isoformat()
-recent_start = (dt.date.fromisoformat(AS_OF) - dt.timedelta(days=RECENT_DAYS)).isoformat()
+
+def table(name: str) -> str:
+    return f"{CATALOG}.{SCHEMA}.{name}"
+
+
+readings = spark.table(table("silver_reading"))
+assets = spark.table(table("dim_asset"))
+sensors = spark.table(table("dim_sensor"))
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Movement aggregates
+# MAGIC ## Sensor evidence: recent window vs the asset's own baseline
 
 # COMMAND ----------
 
-silver = spark.table(f"{CATALOG}.{SCHEMA}.silver_sighting").filter(
-    (F.col("asset_id").isNotNull())
-    & (F.col("event_ts") >= F.lit(window_start))
-    & (F.col("event_ts") <= F.lit(AS_OF).cast("date") + F.expr("INTERVAL 1 DAY"))
-)
-
-movement = (
-    silver.groupBy("asset_id")
+recent_start = f"{RUN_SQL} - INTERVAL {RECENT_HOURS} HOURS"
+per_sensor = (
+    readings.filter(F.col("event_ts") >= F.expr(f"{RUN_SQL} - INTERVAL {BASELINE_DAYS} DAYS"))
+    .withColumn("is_recent", F.expr(f"event_ts >= {recent_start}"))
+    .groupBy("asset_id", "sensor_id", "metric", "metric_label", "unit", "direction", "warn_limit", "alarm_limit")
     .agg(
-        F.count("*").alias("sightings_count"),
-        F.sum(F.when(F.col("is_night"), 1).otherwise(0)).alias("night_sightings"),
-        F.sum(F.when(F.col("is_rest_window"), 1).otherwise(0)).alias("rest_window_sightings"),
-        F.approx_count_distinct("site_id").alias("distinct_sites"),
-        F.sum(F.when(F.col("mass_ratio") > OVER_MASS_RATIO_THRESHOLD, 1).otherwise(0)).alias("mass_violation_count"),
-        F.max("mass_ratio").alias("max_mass_ratio"),
-        F.max("speed_kph").alias("max_speed_kph"),
-        # struct max keeps the whole last-seen context together
-        F.max(F.struct(
-            F.col("event_ts").alias("event_ts"),
-            F.col("road_name").alias("road_name"),
-            F.col("locality").alias("locality"),
-            F.col("site_id").alias("site_id"),
-        )).alias("last_seen"),
-        # activity split for the recent-pattern factor
-        F.sum(F.when(F.col("event_ts") >= F.lit(recent_start), 1).otherwise(0)).alias("recent_sightings"),
+        F.avg(F.when(~F.col("is_recent"), F.col("value"))).alias("baseline_mean"),
+        F.stddev(F.when(~F.col("is_recent"), F.col("value"))).alias("baseline_sd"),
+        F.avg(F.when(F.col("is_recent"), F.col("value"))).alias("recent_mean"),
+        F.max(F.when(F.col("is_recent"), F.col("exceedance"))).alias("recent_exceedance"),
+        F.max(F.struct("event_ts", "value")).alias("latest"),
+        F.max("arrival_ts").alias("last_arrival_ts"),
     )
+    .withColumn("z", F.expr(
+        "CASE WHEN direction = 'high' THEN 1 ELSE -1 END * (recent_mean - baseline_mean) / greatest(baseline_sd, 1e-6)"))
+    .withColumn("anomaly", F.expr("least(1.0, greatest(0.0, (z - 2) / 4))"))
+    .fillna(0.0, subset=["recent_exceedance", "anomaly"])
 )
 
-# route concentration: the largest share of an asset's sightings at one site
-site_counts = silver.groupBy("asset_id", "site_id").count()
-site_window = Window.partitionBy("asset_id")
-routes = (
-    site_counts
-    .withColumn("site_share", F.col("count") / F.sum("count").over(site_window))
-    .groupBy("asset_id")
-    .agg(F.max("site_share").alias("max_site_share"))
-)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Inspection history
-
-# COMMAND ----------
-
-inspections = (
-    spark.table(f"{CATALOG}.{SCHEMA}.dim_inspection")
-    .filter(F.col("inspection_date") >= F.lit(window_start))
-    .groupBy("asset_id")
-    .agg(
-        F.sum(F.when(F.col("outcome") == "defect", 1).otherwise(0)).alias("defect_count"),
-        F.sum(F.when(
-            (F.col("outcome") == "defect") & (F.col("defect_severity") == "critical"), 1
-        ).otherwise(0)).alias("critical_defect_count"),
-    )
-)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Normalised risk factors
-# MAGIC Each factor is capped to the 0-1 range so the transparent weighted sum
-# MAGIC in the scoring step stays interpretable: a factor value is the share of
-# MAGIC the evidence band, never an unbounded raw number.
-
-# COMMAND ----------
-
-features = (
-    movement
-    .join(routes, "asset_id")
-    .join(
-        spark.table(f"{CATALOG}.{SCHEMA}.dim_asset")
-            .select("asset_id", "registration_plate", "operator_id", "risk_cohort"),
-        "asset_id",
-    )
-    .join(inspections, "asset_id", "left")
-    .fillna(0, subset=["defect_count", "critical_defect_count"])
-    .withColumn("night_sightings_ratio", F.col("night_sightings") / F.col("sightings_count"))
-    .withColumn("rest_window_ratio", F.col("rest_window_sightings") / F.col("sightings_count"))
-    .withColumn("over_mass_ratio", F.col("mass_violation_count") / F.col("sightings_count"))
-    .withColumn("recent_rate", F.col("recent_sightings") / F.lit(RECENT_DAYS))
-    .withColumn("prior_rate", (F.col("sightings_count") - F.col("recent_sightings"))
-               / F.lit(FEATURE_WINDOW_DAYS - RECENT_DAYS))
-    .withColumn("recent_surge_ratio", F.col("recent_rate") / (F.col("prior_rate") + 0.05))
-    .withColumn("hours_since_last_seen", F.expr(
-        f"round((unix_timestamp(date '{AS_OF}' + INTERVAL 1 DAY) - unix_timestamp(last_seen.event_ts)) / 3600.0, 1)"
-    ))
-    .withColumn("rest_window_anomaly_score", F.least(F.lit(1.0), F.col("rest_window_ratio") * 3))
-    .withColumn("night_movement_score", F.least(F.lit(1.0), F.col("night_sightings_ratio") * 2))
-    .withColumn("recent_pattern_score",
-                F.least(F.lit(1.0), F.greatest(F.lit(0.0), F.col("recent_surge_ratio") - 1.0)))
-    .withColumn("route_variance_score",
-                F.least(F.lit(1.0), F.greatest(F.lit(0.0), (F.col("max_site_share") - 0.2) / 0.6)))
-    .withColumn("mass_variance_score", F.least(F.lit(1.0), F.col("over_mass_ratio") * 2))
-    .withColumn("defect_history_score",
-                F.least(F.lit(1.0), (F.col("defect_count") + 2 * F.col("critical_defect_count")) / 8.0))
+# the metric that drives the asset: highest exceedance, ties broken by anomaly
+pick = Window.partitionBy("asset_id").orderBy(F.desc("recent_exceedance"), F.desc("anomaly"))
+evidence = (
+    per_sensor.withColumn("rn", F.row_number().over(pick)).filter("rn = 1")
     .select(
-        F.lit(RUN_TS).alias("run_ts"),
-        F.lit(AS_OF).alias("as_of_date"),
-        F.lit(FEATURE_WINDOW_DAYS).alias("window_days"),
-        "asset_id", "registration_plate", "operator_id", "risk_cohort",
-        "sightings_count", "night_sightings_ratio", "rest_window_ratio",
-        "distinct_sites", "max_site_share", "over_mass_ratio", "max_mass_ratio",
-        "mass_violation_count", "max_speed_kph", "recent_surge_ratio",
-        "hours_since_last_seen",
-        F.col("last_seen.event_ts").alias("last_seen_ts"),
-        F.col("last_seen.road_name").alias("last_seen_road"),
-        F.col("last_seen.locality").alias("last_seen_locality"),
-        F.col("last_seen.site_id").alias("last_seen_site_id"),
-        "rest_window_anomaly_score", "night_movement_score", "recent_pattern_score",
-        "route_variance_score", "mass_variance_score", "defect_history_score",
+        "asset_id",
+        F.col("recent_exceedance").alias("limit_exceedance_score"),
+        F.col("metric").alias("trigger_metric"), F.col("metric_label").alias("trigger_metric_label"),
+        F.col("unit").alias("trigger_unit"), F.col("latest.value").alias("trigger_value"),
+        F.col("latest.event_ts").alias("trigger_value_ts"),
+        F.col("warn_limit").alias("trigger_warn_limit"), F.col("alarm_limit").alias("trigger_alarm_limit"),
+        F.col("direction").alias("trigger_direction"),
     )
-)
-
-features.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
-    f"{CATALOG}.{SCHEMA}.gold_asset_risk_features"
+    .join(per_sensor.groupBy("asset_id").agg(
+        F.max("anomaly").alias("anomaly_score"),
+        F.max("last_arrival_ts").alias("last_reading_ts"),
+    ), "asset_id")
 )
 
 # COMMAND ----------
 
-print(f"gold_asset_risk_features: {features.count()} sighted assets "
-      f"over a {FEATURE_WINDOW_DAYS}-day window ending {AS_OF}")
-features.select("registration_plate", "risk_cohort", "sightings_count",
-                "night_sightings_ratio", "max_site_share", "over_mass_ratio") \
-    .orderBy(F.desc("night_sightings_ratio")).show(10, truncate=False)
+# MAGIC %md
+# MAGIC ## Hazard exposure (active warnings only)
+# MAGIC Full exposure at the warning centre, half at its edge, zero outside it - scaled by severity
+# MAGIC and by how strongly that hazard type bears on the asset's sector.
+
+# COMMAND ----------
+
+relevance = spark.createDataFrame(
+    [(h, s, float(w)) for h, by_sector in HAZARD_RELEVANCE.items() for s, w in by_sector.items()],
+    "hazard_type string, sector string, relevance double",
+)
+sev = spark.createDataFrame([(k, float(v)) for k, v in SEVERITY_WEIGHT.items()], "severity string, sev_w double")
+active = spark.table(table("silver_hazard_warning")).filter(
+    F.expr(f"valid_from <= {RUN_SQL} AND valid_to >= {RUN_SQL}"))
+
+exposure_all = (
+    assets.select("asset_id", "sector", "latitude", "longitude")
+    .crossJoin(F.broadcast(active))
+    .withColumn("dist_km", F.expr(haversine_km_expr("latitude", "longitude", "centre_lat", "centre_lon")))
+    .filter("dist_km <= radius_km")
+    .join(relevance, ["hazard_type", "sector"])
+    .join(sev, "severity")
+    .withColumn("exposure", F.expr("sev_w * relevance * (1 - 0.5 * dist_km / radius_km)"))
+)
+best_hazard = Window.partitionBy("asset_id").orderBy(F.desc("exposure"))
+exposure = (
+    exposure_all.withColumn("rn", F.row_number().over(best_hazard)).filter("rn = 1")
+    .select("asset_id", F.col("exposure").alias("hazard_exposure_score"),
+            F.col("warning_id").alias("hazard_warning_id"), F.col("title").alias("hazard_title"),
+            "hazard_type", F.col("severity").alias("hazard_severity"),
+            F.round("dist_km", 1).alias("hazard_distance_km"))
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Condition from inspections
+
+# COMMAND ----------
+
+latest_insp = Window.partitionBy("asset_id").orderBy(F.desc("inspection_date"))
+condition = (
+    spark.table(table("dim_inspection"))
+    .withColumn("rn", F.row_number().over(latest_insp)).filter("rn = 1")
+    .withColumn("days_since_inspection", F.expr(f"datediff(to_date({RUN_SQL}), inspection_date)"))
+    .withColumn("inspection_overdue", F.expr("days_since_inspection > 365"))
+    # grades 1-2 are serviceable (0); 3-5 rise to 1, so condition flags poor assets rather than
+    # adding a little risk to everything
+    .withColumn("condition_score", F.expr(
+        "least(1.0, greatest(0.0, (condition_grade - 2) / 3.0) + CASE WHEN inspection_overdue THEN 0.2 ELSE 0.0 END)"))
+    .select("asset_id", "condition_grade", "defect_count", F.col("inspection_date").alias("last_inspection_date"),
+            "days_since_inspection", "inspection_overdue", "condition_score")
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Consequence: who relies on this asset, including downstream
+# MAGIC Walk the dependency graph up to CASCADE_DEPTH hops. People counts can overlap between
+# MAGIC services (one household relies on power and water), so the total is "people relying on
+# MAGIC dependent services", an upper bound used for prioritisation, not a census.
+
+# COMMAND ----------
+
+deps = spark.table(table("dim_dependency"))
+hop = deps.select(F.col("upstream_asset_id").alias("root_asset_id"), F.col("downstream_asset_id").alias("asset_id"),
+                  "dependency_type", F.lit(1).alias("hop"))
+frontier, paths = hop, hop
+for depth in range(2, CASCADE_DEPTH + 1):
+    frontier = (
+        frontier.alias("f").join(deps.alias("d"), F.col("f.asset_id") == F.col("d.upstream_asset_id"))
+        .select(F.col("f.root_asset_id"), F.col("d.downstream_asset_id").alias("asset_id"),
+                F.col("d.dependency_type"), F.lit(depth).alias("hop"))
+    )
+    paths = paths.unionByName(frontier)
+
+first_hop = Window.partitionBy("root_asset_id", "asset_id").orderBy("hop")
+impact = (
+    paths.withColumn("rn", F.row_number().over(first_hop)).filter("rn = 1").drop("rn")
+    .join(assets.select("asset_id", "asset_code", "asset_name", "asset_class_label", "sector", "locality",
+                        "state", "latitude", "longitude", "people_served"), "asset_id")
+    .withColumnRenamed("asset_id", "downstream_asset_id")
+    .withColumnRenamed("root_asset_id", "asset_id")
+)
+impact.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_asset_dependency_impact"))
+
+downstream = impact.groupBy("asset_id").agg(
+    F.count("*").alias("downstream_assets"),
+    F.sum("people_served").alias("downstream_people"),
+    F.countDistinct("sector").alias("downstream_sectors"),
+    F.concat_ws(", ", F.array_sort(F.collect_set("sector"))).alias("downstream_sector_list"),
+)
+
+lo, hi = CONSEQUENCE_LOG_RANGE
+features = (
+    assets.join(evidence, "asset_id", "left")
+    .join(exposure, "asset_id", "left")
+    .join(condition, "asset_id", "left")
+    .join(downstream, "asset_id", "left")
+    .fillna(0.0, subset=["limit_exceedance_score", "anomaly_score", "hazard_exposure_score", "condition_score"])
+    .fillna(0, subset=["downstream_assets", "downstream_people", "downstream_sectors"])
+    .withColumn("people_affected", F.col("people_served") + F.col("downstream_people"))
+    .withColumn("consequence_score", F.expr(
+        f"least(1.0, greatest(0.0, (log10(greatest(people_affected, 1)) - {lo}) / {hi - lo}))"))
+    .withColumn("minutes_since_reading", F.expr(
+        f"round((unix_timestamp({RUN_SQL}) - unix_timestamp(last_reading_ts)) / 60.0, 0)"))
+    .withColumn("run_ts", F.expr(RUN_SQL))
+)
+features.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_asset_features"))
+
+print(f"gold_asset_features: {spark.table(table('gold_asset_features')).count()} assets; "
+      f"{active.count()} active warnings; {impact.count()} downstream dependency paths")
