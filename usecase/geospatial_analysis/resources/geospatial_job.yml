@@ -1,0 +1,119 @@
+# Job resource for the geospatial analysis use case: access to essential services.
+#
+# setup -> [boundaries, population] -> services -> synthetic households -> containment ->
+# proximity -> gold aggregates
+#
+# Boundaries, population and service sites are real public data fetched at run time; only the
+# households are synthetic (seeded). Every environment-specific value is a ${var.*} reference.
+# Serverless compute: no job_clusters block, no node types, no runtime versions to go stale.
+
+resources:
+  jobs:
+    geospatial_analysis_pipeline:
+      name: nba-geospatial-analysis-${var.environment}
+      description: >-
+        Spatial ingest, H3 indexing, containment, nearest-service proximity and governed spatial
+        aggregates behind the Spatial Service Planner app.
+
+      tags:
+        usecase: geospatial_analysis
+        environment: ${var.environment}
+
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+
+      max_concurrent_runs: 1
+      timeout_seconds: 7200
+
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+
+        - task_key: fetch_boundaries
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_fetch_boundaries.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: fetch_population
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/02_fetch_population.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: fetch_services
+          depends_on:
+            - task_key: fetch_boundaries
+          notebook_task:
+            notebook_path: ../src/03_fetch_services.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              h3_resolution: ${var.h3_resolution}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: generate_households
+          depends_on:
+            - task_key: fetch_boundaries
+            - task_key: fetch_population
+          notebook_task:
+            notebook_path: ../src/04_generate_households.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              h3_resolution: ${var.h3_resolution}
+              # The seed pins every synthetic household, so each deployment reproduces the same
+              # dataset and the same analysis results.
+              seed: "42"
+              household_scale: ${var.household_scale}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: containment
+          depends_on:
+            - task_key: generate_households
+          notebook_task:
+            notebook_path: ../src/05_containment.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              seed: "42"
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: proximity
+          depends_on:
+            - task_key: containment
+            - task_key: fetch_services
+          notebook_task:
+            notebook_path: ../src/06_proximity.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: gold_aggregates
+          depends_on:
+            - task_key: proximity
+          notebook_task:
+            notebook_path: ../src/07_gold_aggregates.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              h3_resolution: ${var.h3_resolution}
+              src_dir: ${workspace.file_path}/src

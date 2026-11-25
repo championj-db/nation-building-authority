@@ -1,8 +1,8 @@
 # Geospatial Analysis - Physical Security
 # Pattern-based selection: Databricks SQL spatial functions and H3 indexing. See README.md.
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# The pipeline job is defined in resources/geospatial_job.yml. The Spatial Service Planner app is
+# its own bundle (app/nba-spatial-planner) and is excluded from this bundle's sync.
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -38,12 +38,23 @@ variables:
       right resolution depends on the analysis and on privacy constraints, not on the code.
     default: "8"
 
+  household_scale:
+    description: >-
+      Fraction of real households to synthesise (0-1]. 1.0 generates one synthetic household per
+      household implied by the ABS population (about 11 million); lower values make dev runs faster.
+    default: "1.0"
+
   environment:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
+
+sync:
+  exclude:
+    - app/**
+    - tests/**
 
 targets:
   dev:

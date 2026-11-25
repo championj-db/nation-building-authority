@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spatial Service Planner</title>
+  <style>
+    @font-face {
+      font-family: "DM Sans";
+      src: url("./fonts/dmsans-variable.woff2") format("woff2");
+      font-weight: 100 1000;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #EEEDE9;
+      --surface: #F9F7F4;
+      --surface-warm: color-mix(in oklab, var(--accent), transparent 92%);
+      --fg: #0B2026;
+      --fg-2: var(--fg);
+      --muted: color-mix(in oklab, var(--fg), transparent 38%);
+      --meta: var(--muted);
+      --border: color-mix(in oklab, var(--fg), transparent 76%);
+      --border-soft: color-mix(in oklab, var(--fg), transparent 88%);
+      --accent: #FF3621;
+      --accent-on: #F9F7F4;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #00875C;
+      --warn: #FFAB00;
+      --danger: #BD2B26;
+      --viz-1: #FF3621;
+      --viz-2: #143D4A;
+      --viz-3: #0B2026;
+      --viz-4: #FFAB00;
+      --viz-5: #00875C;
+      --viz-6: #00A972;
+      --viz-7: #BD2B26;
+      --viz-8: #1B5162;
+      --viz-9: #AB4057;
+      --viz-10: #618794;
+      --font-display: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: -0.02em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #303F47;
+      --surface: #0B2026;
+      --fg: #E8ECF0;
+      --accent: #BD2B26;
+      --accent-on: #E8ECF0;
+      --success: #00A972;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 400 var(--text-base)/var(--leading-body) var(--font-body); }
+    button, select, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline: var(--focus-ring) solid var(--accent); outline-offset: 2px; }
+    .shell { max-width: 1600px; margin: 0 auto; padding: 0 var(--space-6) var(--space-8); }
+    .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 650; letter-spacing: -0.01em; }
+    .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--fg); border-radius: var(--radius-sm); }
+    .top-actions, .row { display: flex; align-items: center; gap: var(--space-3); }
+    .button { min-height: 44px; padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-weight: 600; letter-spacing: .02em; }
+    .button:hover { border-color: var(--fg); background: var(--bg); }
+    .button.primary { border-color: var(--accent); background: var(--accent); color: var(--accent-on); }
+    .button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .icon-button { min-width: 44px; padding: 0; }
+    .banner { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); display: flex; justify-content: space-between; gap: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-size: var(--text-sm); }
+    .banner strong { color: var(--danger); }
+    .workspace-head { padding: var(--space-8) 0 var(--space-6); display: flex; justify-content: space-between; align-items: end; gap: var(--space-6); }
+    .workspace-head h1 { font-size: clamp(2rem, 4vw, var(--text-4xl)); max-width: 14ch; }
+    .workspace-head p { color: var(--muted); max-width: 60ch; margin-top: var(--space-3); }
+    .status { display: inline-flex; align-items: center; gap: var(--space-2); font: 550 var(--text-xs) var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+    .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+    .tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .tab { min-height: 44px; padding: 0 var(--space-4); border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); white-space: nowrap; }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: 650; }
+    .view { display: none; padding-top: var(--space-6); }
+    .view.active { display: block; }
+    .grid { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 340px); gap: var(--space-4); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elev-raised); overflow: hidden; }
+    .panel-head { min-height: 64px; padding: var(--space-4); display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); border-bottom: 1px solid var(--border-soft); }
+    .panel-head h2 { font-size: var(--text-lg); }
+    .panel-body { padding: var(--space-4); }
+    .field { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+    .field label { font-size: var(--text-sm); font-weight: 600; }
+    .field small { color: var(--muted); }
+    select, input[type="range"] { width: 100%; }
+    select { min-height: 44px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+    .range-line { display: flex; justify-content: space-between; font: var(--text-xs) var(--font-mono); color: var(--muted); }
+    .check { display: flex; gap: var(--space-3); align-items: start; padding: var(--space-3) 0; border-top: 1px solid var(--border-soft); }
+    .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .map { min-height: 620px; position: relative; background: var(--bg); }
+    .map svg { width: 100%; height: 620px; display: block; }
+    .map-label { font: 600 12px var(--font-body); fill: var(--fg); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+    .map-meta { position: absolute; left: var(--space-4); bottom: var(--space-4); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: color-mix(in oklab, var(--surface), transparent 8%); border: 1px solid var(--border); font: var(--text-xs) var(--font-mono); }
+    .legend { position: absolute; right: var(--space-4); bottom: var(--space-4); width: 190px; padding: var(--space-3); border-radius: var(--radius-md); background: color-mix(in oklab, var(--surface), transparent 5%); border: 1px solid var(--border); font-size: var(--text-xs); }
+    .legend div { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+    .swatch { width: 18px; height: 8px; border-radius: var(--radius-pill); background: var(--viz-2); }
+    .swatch.mid { background: var(--viz-4); }
+    .swatch.high { background: var(--viz-1); }
+    .metric { padding: var(--space-4) 0; border-bottom: 1px solid var(--border-soft); }
+    .metric:first-child { padding-top: 0; }
+    .metric:last-child { border-bottom: 0; }
+    .metric-label { color: var(--muted); font-size: var(--text-sm); }
+    .metric-value { margin-top: var(--space-1); font: 650 var(--text-2xl)/1.2 var(--font-mono); letter-spacing: -0.03em; }
+    .metric-note { margin-top: var(--space-1); color: var(--muted); font-size: var(--text-xs); }
+    .priority { padding: var(--space-3); margin-top: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .priority-top { display: flex; justify-content: space-between; gap: var(--space-2); }
+    .priority p { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-sm); }
+    .tag { padding: 3px 8px; border-radius: var(--radius-pill); background: var(--surface-warm); font: 600 var(--text-xs) var(--font-mono); }
+    .table-panel { margin-top: var(--space-4); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { padding: var(--space-3) var(--space-4); text-align: left; border-bottom: 1px solid var(--border-soft); }
+    th { color: var(--muted); font: 600 var(--text-xs) var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+    tbody tr:hover { background: var(--bg); }
+    .number { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .empty-view { display: grid; grid-template-columns: 1.2fr .8fr; gap: var(--space-4); }
+    .process { list-style: none; padding: 0; margin: 0; }
+    .process li { display: grid; grid-template-columns: 32px 1fr; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px solid var(--border-soft); }
+    .step { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--fg); color: var(--surface); font: var(--text-xs) var(--font-mono); }
+    .process p { color: var(--muted); font-size: var(--text-sm); margin-top: var(--space-1); }
+    .footer { margin-top: var(--space-6); display: flex; justify-content: space-between; gap: var(--space-4); color: var(--muted); font-size: var(--text-xs); }
+    .toast { position: fixed; right: var(--space-6); bottom: var(--space-6); max-width: 360px; padding: var(--space-4); border-radius: var(--radius-md); background: var(--fg); color: var(--surface); box-shadow: var(--elev-raised); transform: translateY(140%); transition: transform var(--motion-base) var(--ease-standard); z-index: 20; }
+    .toast.show { transform: translateY(0); }
+    @media (max-width: 1120px) { .grid { grid-template-columns: 280px minmax(0, 1fr); } .results { grid-column: 1 / -1; } }
+    @media (max-width: 760px) { .shell { padding-inline: var(--space-4); } .topbar, .workspace-head { align-items: flex-start; } .topbar { padding: var(--space-3) 0; } .workspace-head, .footer { flex-direction: column; } .top-actions .button:not(.icon-button) { display: none; } .grid, .empty-view { grid-template-columns: 1fr; } .map, .map svg { min-height: 440px; height: 440px; } .legend { width: 160px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar" data-od-id="application-header">
+      <div class="brand" data-od-id="product-brand"><span class="brand-mark" aria-hidden="true">⌖</span><span>Spatial Service Planner</span></div>
+      <div class="top-actions">
+        <button class="button" data-od-id="saved-views-button">Saved views</button>
+        <button class="button icon-button" id="themeButton" data-od-id="theme-toggle" aria-label="Toggle dark theme">◐</button>
+        <button class="button primary" id="exportButton" data-od-id="export-brief-button">Export brief</button>
+      </div>
+    </header>
+
+    <div class="banner" data-od-id="synthetic-data-notice">
+      <span><strong>Demonstration environment.</strong> Household locations and service results are wholly synthetic.</span>
+      <span class="status">Governance checks active</span>
+    </div>
+
+    <section class="workspace-head" data-od-id="workspace-introduction">
+      <div>
+        <h1 data-od-id="workspace-title">Plan equitable access to essential services.</h1>
+        <p>Identify communities outside a reasonable service radius, test policy settings, and prepare evidence for a decision brief.</p>
+      </div>
+      <div><span class="status">Data refreshed 08:15</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="Workspace views" data-od-id="workspace-tabs">
+      <button class="tab active" data-view="analysis" data-od-id="analysis-tab">Analysis</button>
+      <button class="tab" data-view="pipeline" data-od-id="pipeline-tab">Data pipeline</button>
+      <button class="tab" data-view="assurance" data-od-id="assurance-tab">Assurance</button>
+    </nav>
+
+    <main>
+      <section class="view active" id="analysis" data-od-id="analysis-workspace">
+        <div class="grid">
+          <aside class="panel" data-od-id="analysis-settings">
+            <div class="panel-head"><h2>Policy settings</h2><span class="tag">Draft</span></div>
+            <div class="panel-body">
+              <div class="field">
+                <label for="serviceType">Essential service</label>
+                <select id="serviceType" data-od-id="service-type-select"><option>Public hospitals</option><option>Community health centres</option><option>Emergency relief hubs</option></select>
+              </div>
+              <div class="field">
+                <label for="geography">Analysis geography</label>
+                <select id="geography" data-od-id="geography-select"><option>Sample planning regions</option><option>Local service areas</option><option>Statistical areas</option></select>
+              </div>
+              <div class="field">
+                <label for="distance">Reasonable access threshold</label>
+                <input id="distance" type="range" min="10" max="100" value="45" step="5" data-od-id="distance-threshold" />
+                <div class="range-line"><span>10 km</span><strong id="distanceValue">45 km</strong><span>100 km</span></div>
+              </div>
+              <label class="check"><input type="checkbox" checked id="suppress" /><span><strong>Suppress small counts</strong><br><small>Hide aggregates below the disclosure threshold.</small></span></label>
+              <label class="check"><input type="checkbox" checked id="boundaries" /><span><strong>Show boundaries</strong><br><small>Compare results by standard geography.</small></span></label>
+              <button class="button primary" id="runButton" style="width:100%;margin-top:16px" data-od-id="run-analysis-button">Run analysis</button>
+            </div>
+          </aside>
+
+          <section class="panel" data-od-id="interactive-map-panel">
+            <div class="panel-head"><div><h2>Access overview</h2><span class="metric-note">Synthetic sample · not for operational use</span></div><button class="button icon-button" id="resetButton" aria-label="Reset map view">↺</button></div>
+            <div class="map" data-od-id="access-map">
+              <svg viewBox="0 0 760 620" role="img" aria-labelledby="mapTitle mapDesc">
+                <title id="mapTitle">Synthetic service access map</title><desc id="mapDesc">Sample planning regions coloured by modelled distance to public hospitals.</desc>
+                <path d="M0 0h760v620H0z" fill="var(--bg)"/>
+                <g id="boundaryLayer" fill="none" stroke="var(--border)" stroke-width="1">
+                  <path d="M0 88H760M0 176H760M0 264H760M0 352H760M0 440H760M0 528H760"/>
+                  <path d="M108 0V620M216 0V620M324 0V620M432 0V620M540 0V620M648 0V620"/>
+                </g>
+                <g stroke="var(--surface)" stroke-width="5" stroke-linejoin="round">
+                  <path d="M80 128 214 66 302 118 286 246 172 270 88 220Z" fill="var(--viz-2)"/>
+                  <path d="M302 118 458 82 542 168 494 274 286 246Z" fill="var(--viz-4)"/>
+                  <path d="M542 168 674 138 714 252 620 326 494 274Z" fill="var(--viz-1)"/>
+                  <path d="M172 270 286 246 356 360 292 484 122 438 94 334Z" fill="var(--viz-2)"/>
+                  <path d="M286 246 494 274 520 430 422 524 292 484 356 360Z" fill="var(--viz-4)"/>
+                  <path d="M494 274 620 326 674 474 558 548 422 524 520 430Z" fill="var(--viz-1)"/>
+                </g>
+                <g class="map-label" text-anchor="middle"><text x="184" y="170">North West</text><text x="414" y="177">Central</text><text x="610" y="232">North East</text><text x="216" y="374">West</text><text x="420" y="399">Metro Fringe</text><text x="566" y="440">South East</text></g>
+                <g fill="var(--surface)" stroke="var(--fg)" stroke-width="3"><circle cx="226" cy="196" r="8"/><circle cx="416" cy="218" r="8"/><circle cx="478" cy="392" r="8"/><circle cx="582" cy="366" r="8"/></g>
+                <g fill="none" stroke="var(--surface)" stroke-width="2" opacity=".8"><circle cx="226" cy="196" r="36"/><circle cx="416" cy="218" r="36"/><circle cx="478" cy="392" r="36"/><circle cx="582" cy="366" r="36"/></g>
+              </svg>
+              <div class="map-meta">H3 indexed · aggregate view</div>
+              <div class="legend"><strong>Modelled nearest-service distance</strong><div><span class="swatch"></span>Within threshold</div><div><span class="swatch mid"></span>Near threshold</div><div><span class="swatch high"></span>Beyond threshold</div></div>
+            </div>
+          </section>
+
+          <aside class="panel results" data-od-id="analysis-results">
+            <div class="panel-head"><h2>Decision signals</h2><span class="tag" id="resultStatus">Ready</span></div>
+            <div class="panel-body">
+              <div class="metric"><div class="metric-label">Regions beyond threshold</div><div class="metric-value" id="regionMetric">2 of 6</div><div class="metric-note">Based on synthetic sample regions</div></div>
+              <div class="metric"><div class="metric-label">Threshold tested</div><div class="metric-value" id="thresholdMetric">45 km</div><div class="metric-note">Straight-line proximity, not road travel</div></div>
+              <h3 style="font-size:var(--text-base);margin-top:20px">Review priorities</h3>
+              <article class="priority" data-od-id="priority-north-east"><div class="priority-top"><strong>North East</strong><span class="tag">Review</span></div><p>Modelled access remains outside the selected threshold. Test a relief-hub scenario.</p></article>
+              <article class="priority" data-od-id="priority-south-east"><div class="priority-top"><strong>South East</strong><span class="tag">Review</span></div><p>Examine service capacity and population change before recommending investment.</p></article>
+            </div>
+          </aside>
+        </div>
+
+        <section class="panel table-panel" data-od-id="evidence-table">
+          <div class="panel-head"><div><h2>Evidence queue</h2><span class="metric-note">Prepared for briefing, subject to officer review</span></div><button class="button" id="addNoteButton">Add review note</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Planning region</th><th>Access class</th><th class="number">Nearest service</th><th>Evidence status</th><th>Recommended next step</th></tr></thead><tbody><tr><td>North East</td><td>Beyond threshold</td><td class="number">68 km</td><td>Needs validation</td><td>Test relief-hub scenario</td></tr><tr><td>South East</td><td>Beyond threshold</td><td class="number">59 km</td><td>Needs validation</td><td>Review demand and capacity</td></tr><tr><td>Central</td><td>Near threshold</td><td class="number">41 km</td><td>Ready for review</td><td>Monitor quarterly</td></tr><tr><td>West</td><td>Within threshold</td><td class="number">27 km</td><td>Ready for review</td><td>No immediate action</td></tr></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="view" id="pipeline" data-od-id="pipeline-workspace">
+        <div class="empty-view">
+          <div class="panel"><div class="panel-head"><h2>From source to map-ready evidence</h2><span class="status">Serverless pattern</span></div><div class="panel-body"><ol class="process"><li><span class="step">1</span><div><strong>Spatial ingest</strong><p>Conform geometries and projections from approved source systems.</p></div></li><li><span class="step">2</span><div><strong>Spatial index</strong><p>Apply H3 indexing so large-scale joins remain tractable.</p></div></li><li><span class="step">3</span><div><strong>Proximity and containment</strong><p>Calculate nearest service and point-in-boundary relationships.</p></div></li><li><span class="step">4</span><div><strong>Governed aggregates</strong><p>Aggregate to standard geographies with suppression controls.</p></div></li><li><span class="step">5</span><div><strong>Map-ready serving</strong><p>Publish reviewable outputs for analysis and briefing.</p></div></li></ol></div></div>
+          <aside class="panel"><div class="panel-head"><h2>Platform pattern</h2></div><div class="panel-body"><div class="metric"><div class="metric-label">Ingest</div><div class="metric-value" style="font-size:var(--text-xl)">Lakeflow</div></div><div class="metric"><div class="metric-label">Analysis</div><div class="metric-value" style="font-size:var(--text-xl)">SQL + H3</div></div><div class="metric"><div class="metric-label">Governance</div><div class="metric-value" style="font-size:var(--text-xl)">Unity Catalog</div></div><div class="metric"><div class="metric-label">Presentation</div><div class="metric-value" style="font-size:var(--text-xl)">AI/BI</div></div></div></aside>
+        </div>
+      </section>
+
+      <section class="view" id="assurance" data-od-id="assurance-workspace">
+        <div class="empty-view">
+          <div class="panel"><div class="panel-head"><h2>Privacy by aggregation</h2><span class="tag">Required</span></div><div class="panel-body"><p style="max-width:65ch;color:var(--muted)">Precise location can identify a person even when other fields are masked. This workspace keeps household locations out of the interface and presents spatial aggregates for policy review.</p><ol class="process"><li><span class="step">1</span><div><strong>Minimise precision</strong><p>Use the least precise geography necessary for the decision.</p></div></li><li><span class="step">2</span><div><strong>Suppress small counts</strong><p>Prevent disclosure through fine-grained aggregates.</p></div></li><li><span class="step">3</span><div><strong>Record purpose</strong><p>Capture the policy question, access basis, and intended audience.</p></div></li></ol></div></div>
+          <aside class="panel"><div class="panel-head"><h2>Before publication</h2></div><div class="panel-body"><label class="check"><input type="checkbox" checked disabled><span><strong>Synthetic data label</strong><br><small>Visible in analysis and export.</small></span></label><label class="check"><input type="checkbox" checked disabled><span><strong>Small-count suppression</strong><br><small>Enabled for this view.</small></span></label><label class="check"><input type="checkbox"><span><strong>Officer sign-off</strong><br><small>Required before external circulation.</small></span></label><label class="check"><input type="checkbox"><span><strong>Purpose recorded</strong><br><small>Add to the final decision brief.</small></span></label></div></aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" data-od-id="application-footer"><span>Spatial Service Planner · concept prototype</span><span>Built from a pattern-based use case · no public outcome claim</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const root = document.documentElement;
+    const toast = document.getElementById('toast');
+    const showToast = message => { toast.textContent = message; toast.classList.add('show'); window.setTimeout(() => toast.classList.remove('show'), 2600); };
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item === tab));
+      document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === tab.dataset.view));
+    }));
+    const distance = document.getElementById('distance');
+    distance.addEventListener('input', () => document.getElementById('distanceValue').textContent = `${distance.value} km`);
+    document.getElementById('runButton').addEventListener('click', () => {
+      const value = Number(distance.value);
+      const regions = value < 35 ? 4 : value < 60 ? 2 : 1;
+      document.getElementById('regionMetric').textContent = `${regions} of 6`;
+      document.getElementById('thresholdMetric').textContent = `${value} km`;
+      document.getElementById('resultStatus').textContent = 'Updated';
+      showToast(`Analysis updated for a ${value} km access threshold.`);
+    });
+    document.getElementById('boundaries').addEventListener('change', event => document.getElementById('boundaryLayer').style.display = event.target.checked ? '' : 'none');
+    document.getElementById('themeButton').addEventListener('click', () => { const dark = root.dataset.theme === 'dark'; root.dataset.theme = dark ? '' : 'dark'; localStorage.setItem('spatial-theme', dark ? 'light' : 'dark'); });
+    if (localStorage.getItem('spatial-theme') === 'dark') root.dataset.theme = 'dark';
+    document.getElementById('exportButton').addEventListener('click', () => showToast('Decision brief prepared with synthetic-data and assurance notices.'));
+    document.getElementById('addNoteButton').addEventListener('click', () => showToast('Review note added to the evidence queue.'));
+    document.getElementById('resetButton').addEventListener('click', () => showToast('Map view reset.'));
+  </script>
+</body>
+</html>
