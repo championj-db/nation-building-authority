@@ -223,3 +223,27 @@ resources:
               schema: ${var.schema}
               volume: ${var.volume}
               requested_by: "{{job.parameters.requested_by}}"
+
+    compliance_verify:
+      name: nba-compliance-verify-${var.environment}
+      description: >-
+        On demand from the app's Audit trail screen: re-verify the audit hash chain, append-only
+        properties and table history, and record the result in audit_chain_verifications.
+      tags:
+        usecase: automated_compliance_reporting
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      parameters:
+        - name: requested_by
+          default: audit.verifier
+      tasks:
+        - task_key: verify_audit_chain
+          notebook_task:
+            notebook_path: ../src/06_verify_audit_chain.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              requested_by: "{{job.parameters.requested_by}}"

@@ -1,75 +1,42 @@
-import React, { Component } from 'react';
-import type { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@databricks/appkit-ui/react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
 }
 
 interface State {
-  hasError: boolean;
   error: Error | null;
-  errorInfo: React.ErrorInfo | null;
 }
 
+/** Last-resort boundary: a plain message and a way out, with technical detail tucked away. */
 export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    };
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error);
-    console.error('Error details:', errorInfo);
-    this.setState({
-      error,
-      errorInfo,
-    });
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Unhandled UI error', error, info.componentStack);
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-background p-4">
-          <Card className="max-w-2xl mx-auto mt-8">
-            <CardHeader>
-              <CardTitle className="text-destructive">Application Error</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Error Message:</h3>
-                  <pre className="bg-muted p-3 rounded text-sm overflow-auto">{this.state.error?.toString()}</pre>
-                </div>
-                {this.state.errorInfo && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Component Stack:</h3>
-                    <pre className="bg-muted p-3 rounded text-sm overflow-auto">
-                      {this.state.errorInfo.componentStack}
-                    </pre>
-                  </div>
-                )}
-                {this.state.error?.stack && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Stack Trace:</h3>
-                    <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-96">{this.state.error.stack}</pre>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="fatal-error" role="alert">
+        <h1>Something went wrong on this screen</h1>
+        <p>No decisions were lost: anything you recorded before this is already saved. Reload to continue.</p>
+        <div className="inline-actions">
+          <button type="button" className="fatal-button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+          <a href="/">Go to the overview</a>
         </div>
-      );
-    }
-
-    return this.props.children;
+        <details>
+          <summary>Technical detail</summary>
+          <pre>{this.state.error.stack ?? String(this.state.error)}</pre>
+        </details>
+      </div>
+    );
   }
 }

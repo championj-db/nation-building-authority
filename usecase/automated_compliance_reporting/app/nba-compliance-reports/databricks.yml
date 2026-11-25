@@ -4,8 +4,10 @@ bundle:
 variables:
   sql_warehouse_id:
     description: SQL Warehouse ID
-  job_id:
-    description: Numeric Databricks job ID. Find it in the Jobs UI or via `databricks jobs list`.
+  report_job_id:
+    description: Numeric ID of the compliance_report job (generate / reproduce reports).
+  verify_job_id:
+    description: Numeric ID of the compliance_verify job (re-verify the audit chain).
   postgres_branch:
     description: Full Lakebase Postgres branch resource name. Obtain by running `databricks postgres list-branches {project-name}`, select the desired item from the output array and use its .name value. Requires the project resource name.
   postgres_database:
@@ -31,9 +33,13 @@ resources:
           sql_warehouse:
             id: ${var.sql_warehouse_id}
             permission: CAN_USE
-        - name: job
+        - name: report-job
           job:
-            id: ${var.job_id}
+            id: ${var.report_job_id}
+            permission: CAN_MANAGE_RUN
+        - name: verify-job
+          job:
+            id: ${var.verify_job_id}
             permission: CAN_MANAGE_RUN
         - name: postgres
           postgres:
