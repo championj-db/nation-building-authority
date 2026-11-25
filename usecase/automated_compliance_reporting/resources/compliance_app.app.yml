@@ -6,8 +6,10 @@ resources:
       source_code_path: ../app/nba-compliance-reports
       lifecycle:
         started: true
-      # Mapping decisions and report approvals are written on behalf of the signed-in user, so the
-      # user's own MODIFY grant on mapping_reviews / report_status_events applies and UC records them.
+      # Workflow tables (mapping_reviews, report_status_events, report_findings, report_reproductions)
+      # are read and written on behalf of the signed-in user, so their own grants apply and UC records
+      # the real actor. Users need SELECT on those four tables; reviewers and approvers also MODIFY on
+      # mapping_reviews and report_status_events. (Apps allow at most 20 resources.)
       user_api_scopes:
         - sql
       resources:
@@ -56,14 +58,6 @@ resources:
           uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.obligation_register", permission: SELECT}
         - name: requirement-coverage-table
           uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.requirement_coverage", permission: SELECT}
-        - name: report-findings-table
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_findings", permission: SELECT}
-        - name: report-status-table
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_status_events", permission: SELECT}
-        - name: report-reproductions-table
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_reproductions", permission: SELECT}
-        - name: mapping-reviews-table
-          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.mapping_reviews", permission: SELECT}
         - name: mapping-evaluation-table
           uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.mapping_evaluation", permission: SELECT}
       config:

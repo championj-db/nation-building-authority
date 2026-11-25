@@ -161,8 +161,11 @@ audit events.
 
 Decisions (confirm or reject a mapping; submit, approve, issue or return a report) are written
 **on behalf of the signed-in user** (`user_api_scopes: [sql]`), so Unity Catalog records the real
-actor and the user's own grants apply. Grant reviewers and approvers `MODIFY` on `mapping_reviews`
-and `report_status_events`. Everyone else can read the workspace but cannot record decisions. The
+actor and the user's own grants apply. The workflow tables (`mapping_reviews`,
+`report_status_events`, `report_findings`, `report_reproductions`) are also *read* as the user, which
+keeps the app within the 20-resource limit. Grant app users `SELECT` on those four tables, and
+reviewers and approvers `MODIFY` on `mapping_reviews` and `report_status_events`. Users without
+MODIFY can browse but cannot record decisions. The
 server also enforces the report lifecycle (Draft → Ready for approval → Issued, or back to Draft
 with a reason) and separation of duties: the person who submits a report cannot issue it.
 

@@ -96,7 +96,9 @@ function handle(fn: (req: Request, res: Response) => Promise<void>) {
         res.status(status).json({
           error:
             status === 403
-              ? `You do not have permission to record this decision. Ask the data owner for MODIFY on the target table. (${message})`
+              ? req.method === 'GET'
+                ? `You do not have access to this compliance record. Ask the data owner for SELECT on it. (${message})`
+                : `You do not have permission to record this decision. Ask the data owner for MODIFY on the target table. (${message})`
               : status >= 500
                 ? `The request could not be completed: ${message}`
                 : message,
@@ -104,6 +106,15 @@ function handle(fn: (req: Request, res: Response) => Promise<void>) {
       }
     }
   };
+}
+
+/**
+ * Workflow tables (mapping_reviews, report_status_events, report_findings, report_reproductions)
+ * are read as the signed-in user, the same identity that records decisions in them. This keeps the
+ * app under the 20-resource limit and means the record is only visible to people granted it.
+ */
+function asReader<T>(appkit: WorkflowAppKit, req: Request, fn: () => Promise<T>): Promise<T> {
+  return appkit.asUser(req).run(fn);
 }
 
 function jobOrThrow(appkit: WorkflowAppKit, key: 'report' | 'verify') {
@@ -197,17 +208,23 @@ export function setupWorkflowRoutes(appkit: WorkflowAppKit) {
 
     app.get(
       '/api/evidence/decisions',
-      handle(async (_req, res) => {
-        const rows = await runSql(
-          `SELECT r.review_id, r.evidence_id, r.decision, r.artefact_type, r.reviewer, r.reviewed_at, r.comment,
-                  r.reviewed_at > coalesce(o.refreshed_at, TIMESTAMP '1970-01-01') AS pending
-           FROM ${fqn('mapping_reviews')} r
-           CROSS JOIN (SELECT max(refreshed_at) AS refreshed_at FROM ${fqn('compliance_overview')}) o
-           WHERE r.channel = 'app' AND r.reviewed_at > current_timestamp() - INTERVAL 90 DAYS
-           ORDER BY r.reviewed_at DESC
-           LIMIT 200`
-        );
-        res.json({ decisions: rows.map((row) => ({ ...row, pending: row.pending === 'true' })) });
+      handle(async (req, res) => {
+        const [[overview], rows] = await Promise.all([
+          runSql(`SELECT max(refreshed_at) AS refreshed_at FROM ${fqn('compliance_overview')}`),
+          asReader(appkit, req, () =>
+            runSql(
+              `SELECT review_id, evidence_id, decision, artefact_type, reviewer, reviewed_at, comment
+               FROM ${fqn('mapping_reviews')}
+               WHERE channel = 'app' AND reviewed_at > current_timestamp() - INTERVAL 90 DAYS
+               ORDER BY reviewed_at DESC
+               LIMIT 200`
+            )
+          ),
+        ]);
+        const refreshed = overview?.refreshed_at ? Date.parse(overview.refreshed_at) : 0;
+        res.json({
+          decisions: rows.map((row) => ({ ...row, pending: Date.parse(row.reviewed_at ?? '') > refreshed })),
+        });
       })
     );
 
@@ -253,17 +270,19 @@ export function setupWorkflowRoutes(appkit: WorkflowAppKit) {
 
     app.get(
       '/api/reports/workflow',
-      handle(async (_req, res) => {
-        const [events, reproductions] = await Promise.all([
-          runSql(
-            `SELECT report_id, status, changed_by, changed_at, comment FROM ${fqn('report_status_events')}
+      handle(async (req, res) => {
+        const [events, reproductions] = await asReader(appkit, req, () =>
+          Promise.all([
+            runSql(
+              `SELECT report_id, status, changed_by, changed_at, comment FROM ${fqn('report_status_events')}
              ORDER BY report_id, changed_at`
-          ),
-          runSql(
-            `SELECT reproduction_id, report_id, reproduced_at, matches, reproduced_by, reproduced_digest
+            ),
+            runSql(
+              `SELECT reproduction_id, report_id, reproduced_at, matches, reproduced_by, reproduced_digest
              FROM ${fqn('report_reproductions')} ORDER BY reproduced_at DESC`
-          ),
-        ]);
+            ),
+          ])
+        );
         const byReport: Record<string, { status: string; history: Row[]; reproductions: Row[] }> = {};
         for (const event of events) {
           const entry = (byReport[event.report_id!] ??= { status: 'Draft', history: [], reproductions: [] });
@@ -285,12 +304,14 @@ export function setupWorkflowRoutes(appkit: WorkflowAppKit) {
       '/api/reports/:reportId/findings',
       handle(async (req, res) => {
         const reportId = param(req, 'reportId', REPORT_ID, 'report ID');
-        const findings = await runSql(
-          `SELECT obligation_id, obligation_version, obligation_title, gate_id, owner_role, requirement_id, artefact_type,
+        const findings = await asReader(appkit, req, () =>
+          runSql(
+            `SELECT obligation_id, obligation_version, obligation_title, gate_id, owner_role, requirement_id, artefact_type,
                   status, gap_reason, evidence_id, artefact_version, checksum, expires_on, days_to_expiry
            FROM ${fqn('report_findings')} WHERE report_id = :id
            ORDER BY CASE status WHEN 'Gap' THEN 1 WHEN 'Expiring' THEN 2 ELSE 3 END, obligation_id, requirement_id`,
-          [{ name: 'id', value: reportId }]
+            [{ name: 'id', value: reportId }]
+          )
         );
         res.json({ findings });
       })
@@ -302,9 +323,11 @@ export function setupWorkflowRoutes(appkit: WorkflowAppKit) {
         const reportId = param(req, 'reportId', REPORT_ID, 'report ID');
         const body = parse(StatusBody, req.body);
         const user = await currentUser(req);
-        const history = await runSql(
-          `SELECT status, changed_by FROM ${fqn('report_status_events')} WHERE report_id = :id ORDER BY changed_at DESC`,
-          [{ name: 'id', value: reportId }]
+        const history = await asReader(appkit, req, () =>
+          runSql(
+            `SELECT status, changed_by FROM ${fqn('report_status_events')} WHERE report_id = :id ORDER BY changed_at DESC`,
+            [{ name: 'id', value: reportId }]
+          )
         );
         if (!history.length) throw new HttpError(404, `${reportId} has no status history.`);
         const current = history[0].status ?? 'Draft';
