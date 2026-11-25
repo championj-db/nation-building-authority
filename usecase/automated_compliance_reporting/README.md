@@ -115,7 +115,8 @@ generation apply exactly the same rules.
 
 Jobs (`resources/compliance_jobs.job.yml`, serverless): `compliance_bootstrap` (run once),
 `compliance_daily` (scheduled), `compliance_report` (monthly, or on demand with `report_type`,
-`gate_id`, `as_of_date`, `reproduce_report_id`). SQL alerts (`resources/compliance_alerts.alert.yml`)
+`gate_id`, `as_of_date`, `reproduce_report_id`), `compliance_verify` (on demand from the app's
+Audit trail screen). SQL alerts (`resources/compliance_alerts.alert.yml`)
 notify on new high-severity gaps, evidence expiring within 7 days, and a failed chain verification.
 
 ## AI in the reporting path
@@ -153,10 +154,17 @@ Tables in `${catalog}.${schema}` that map to the screens in `design/`:
 | Obligations | `obligation_register_current`, `obligation_register` (history), `obligation_requirements`, `requirement_coverage` | - |
 | Evidence | `evidence_inbox`, `evidence_obligation_map`, `evidence_artefacts`, `source_health` | `mapping_reviews` (append: confirm or reject) |
 | Reports | `compliance_reports`, `report_findings`, `evidence_snapshots`, status = latest `report_status_events`, `report_reproductions`; files under `/Volumes/<catalog>/<schema>/<volume>/reports/<report_id>/` | `report_status_events` (append); run the `compliance_report` job for Generate / Reproduce |
-| Audit trail | `audit_events`, `audit_chain_verifications` | Run `06_verify_audit_chain` (Verify chain) |
+| Audit trail | `audit_events`, `audit_chain_verifications` | Run the `compliance_verify` job (Verify chain) |
 
 App decisions land in append-only tables. The next pipeline run turns them into hash-chained
 audit events.
+
+Decisions (confirm or reject a mapping; submit, approve, issue or return a report) are written
+**on behalf of the signed-in user** (`user_api_scopes: [sql]`), so Unity Catalog records the real
+actor and the user's own grants apply. Grant reviewers and approvers `MODIFY` on `mapping_reviews`
+and `report_status_events`. Everyone else can read the workspace but cannot record decisions. The
+server also enforces the report lifecycle (Draft → Ready for approval → Issued, or back to Draft
+with a reason) and separation of duties: the person who submits a report cannot issue it.
 
 ## Deploy
 
@@ -192,9 +200,27 @@ How the build meets these notes:
 ## Application
 
 `app/nba-compliance-reports` implements the design handoff as a responsive Databricks AppKit
-application. DBSQL queries the governed compliance tables at request time; Lakebase stores user
-preferences and saved views in the app-owned `compliance_app` schema. The app can trigger the
-bundle-managed report job and surfaces overview, obligation, evidence, report, and audit views.
+application:
+
+* **Overview**: coverage KPIs that filter the obligation table, coverage by gate, open alerts,
+  requirements met over time, and mapping accuracy against the labelled set. Warns when coverage is
+  stale (the daily job has not refreshed it).
+* **Obligations**: the register with search and filters; per obligation, its required evidence and
+  where each requirement stands, pending draft revisions and full version history.
+* **Evidence**: source health, an inbox that puts items needing review first, the AI suggestion
+  with confidence, rationale and model, and Confirm / Reject (with a reason) decisions.
+* **Reports**: report queue with live status, the approval workflow, findings, the output package
+  (HTML, JSON, CSV from the volume), reproducibility (digest, register and snapshot versions,
+  last reproduction) and Generate / Reproduce with run progress.
+* **Audit trail**: latest chain verification, event history with filters, each event's payload and
+  hash-chain link, and Verify chain.
+
+Gold tables are read through cached DBSQL queries (`config/queries`); workflow state that changes
+as people act (report status, recent decisions, verifications) is read uncached through
+`server/routes/workflow-routes.ts`. Lakebase backs a per-user preferences API (`/api/preferences`, app-owned
+`compliance_app` schema) that the UI does not use yet; the app starts and runs if Lakebase is
+unavailable. Filters and selections live in the URL, so any
+view can be shared or bookmarked.
 
 Deploy all assets together with the additional Lakebase bindings:
 

@@ -6,6 +6,10 @@ resources:
       source_code_path: ../app/nba-compliance-reports
       lifecycle:
         started: true
+      # Mapping decisions and report approvals are written on behalf of the signed-in user, so the
+      # user's own MODIFY grant on mapping_reviews / report_status_events applies and UC records them.
+      user_api_scopes:
+        - sql
       resources:
         - name: sql-warehouse
           sql_warehouse:
@@ -15,6 +19,12 @@ resources:
           job:
             id: ${resources.jobs.compliance_report.id}
             permission: CAN_MANAGE_RUN
+        - name: verify-job
+          job:
+            id: ${resources.jobs.compliance_verify.id}
+            permission: CAN_MANAGE_RUN
+        - name: evidence-volume
+          uc_securable: {securable_type: VOLUME, securable_full_name: "${var.catalog}.${var.schema}.${var.volume}", permission: READ_VOLUME}
         - name: postgres
           postgres:
             branch: ${var.postgres_branch}
@@ -42,12 +52,31 @@ resources:
           uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.audit_events", permission: SELECT}
         - name: audit-verifications-table
           uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.audit_chain_verifications", permission: SELECT}
+        - name: obligation-history-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.obligation_register", permission: SELECT}
+        - name: requirement-coverage-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.requirement_coverage", permission: SELECT}
+        - name: report-findings-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_findings", permission: SELECT}
+        - name: report-status-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_status_events", permission: SELECT}
+        - name: report-reproductions-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.report_reproductions", permission: SELECT}
+        - name: mapping-reviews-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.mapping_reviews", permission: SELECT}
+        - name: mapping-evaluation-table
+          uc_securable: {securable_type: TABLE, securable_full_name: "${var.catalog}.${var.schema}.mapping_evaluation", permission: SELECT}
       config:
         env:
           - name: DATABRICKS_WAREHOUSE_ID
             value_from: sql-warehouse
+          # DATABRICKS_JOB_ID satisfies the jobs plugin's static resource check; the app uses the named keys.
           - name: DATABRICKS_JOB_ID
             value_from: report-job
+          - name: DATABRICKS_JOB_REPORT
+            value_from: report-job
+          - name: DATABRICKS_JOB_VERIFY
+            value_from: verify-job
           - name: LAKEBASE_ENDPOINT
             value_from: postgres
           - name: DATABRICKS_CATALOG

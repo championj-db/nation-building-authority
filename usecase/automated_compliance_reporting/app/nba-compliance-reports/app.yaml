@@ -4,5 +4,9 @@ env:
     valueFrom: sql-warehouse
   - name: DATABRICKS_JOB_ID
     valueFrom: report-job
+  - name: DATABRICKS_JOB_REPORT
+    valueFrom: report-job
+  - name: DATABRICKS_JOB_VERIFY
+    valueFrom: verify-job
   - name: LAKEBASE_ENDPOINT
     valueFrom: postgres
