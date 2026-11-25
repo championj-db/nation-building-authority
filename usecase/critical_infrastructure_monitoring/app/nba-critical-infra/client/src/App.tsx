@@ -6,9 +6,10 @@ import { NetworkMap } from './components/NetworkMap';
 import { Hero, SectorTiles } from './components/Overview';
 import { EmptyState, ErrorState, Icon, Skeleton, Toast } from './components/primitives';
 import { ReviewDialog } from './components/ReviewDialog';
-import { identity, ScopeContext, useAnalyticsQuery, useScopeParams, useSession, useSticky, type QueryScope, type Session } from './lib/data';
+import { identity, ScopeContext, useAnalyticsQuery, useScope, useScopeParams, useSession, useSticky, type QueryScope, type Session } from './lib/data';
+import { sql } from '@databricks/appkit-ui/js';
 import type { Sector } from './lib/model';
-import { impactsByIncident, type IncidentRow } from './lib/rows';
+import { groupBy, impactsByIncident, type IncidentRow } from './lib/rows';
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
@@ -123,6 +124,17 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
   const hazards = useSticky(useAnalyticsQuery('hazards', params));
   const register = useSticky(useAnalyticsQuery('asset_register', params));
   const decisions = useSticky(useAnalyticsQuery('recent_decisions', params));
+  const disruptionRows = useSticky(useAnalyticsQuery('network_disruptions', params));
+  const hazardRouteRows = useSticky(useAnalyticsQuery('hazard_routes', params));
+  // network geometry is static reference data: a fixed token lets the result cache serve it, so the
+  // five-minute refresh does not re-download ~700 KB of lines
+  const { catalog, schema } = useScope();
+  const geometryParams = useMemo(() => ({ catalog: sql.string(catalog), schema: sql.string(schema), refresh: sql.string('static') }), [catalog, schema]);
+  const roads = useSticky(useAnalyticsQuery('network_roads', geometryParams));
+  const rail = useSticky(useAnalyticsQuery('network_rail', geometryParams));
+  const rivers = useSticky(useAnalyticsQuery('network_rivers', geometryParams));
+  const disruptions = useMemo(() => new Map((disruptionRows.data ?? []).map((d) => [String(d.incident_id), d])), [disruptionRows.data]);
+  const hazardRoutes = useMemo(() => groupBy(hazardRouteRows.data, (r) => String(r.warning_id)), [hazardRouteRows.data]);
 
   const opsRow = ops.data?.[0] ?? null;
   const openIncidents = useMemo(() => (incidents.data ?? []).filter((i) => i.status === 'open'), [incidents.data]);
@@ -236,6 +248,11 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
           hazards={hazards.data}
           incidents={incidents.data}
           impacts={impacts}
+          roads={roads.data}
+          rail={rail.data}
+          rivers={rivers.data}
+          disruptions={disruptions}
+          hazardRoutes={hazardRoutes}
           loading={network.loading}
           error={network.error}
           onReview={setTarget}
@@ -268,6 +285,7 @@ function OperationsCentre({ session, onRefresh }: { session: Session; onRefresh:
       <ReviewDialog
         incident={target}
         impacts={target ? (impacts.get(String(target.incident_id)) ?? []) : []}
+        disruption={target ? (disruptions.get(String(target.incident_id)) ?? null) : null}
         now={now}
         onClose={() => setTarget(null)}
         onDecided={(message) => {

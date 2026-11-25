@@ -77,6 +77,63 @@ LOCALITIES = [
 ]
 
 # ---------------------------------------------------------------------------
+# Transport networks (real public line geometry, fetched at run time - never committed)
+# ---------------------------------------------------------------------------
+# Department of Infrastructure National Key Freight Routes (CC BY 4.0) for road and rail; Natural
+# Earth rivers (public domain) as map context. 01a_fetch_networks downloads them into the landing
+# volume and builds a routable graph, so closures can be propagated as detours and isolation.
+_KFR = "https://spatial.infrastructure.gov.au/server/rest/services/KeyFreightRoutes/Key_Freight_Routes/MapServer"
+NETWORK_SOURCES = {
+    "road": {
+        "url": f"{_KFR}/5/query",
+        "attribution": "National Key Freight Routes (road), Department of Infrastructure, Transport, Regional Development, Communications, Sport and the Arts, CC BY 4.0",
+        "licence": "CC BY 4.0",
+    },
+    "rail": {
+        "url": f"{_KFR}/6/query",
+        "attribution": "National Key Freight Routes (rail), Department of Infrastructure, Transport, Regional Development, Communications, Sport and the Arts, CC BY 4.0",
+        "licence": "CC BY 4.0",
+    },
+    "river": {
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_australia.geojson",
+        "attribution": "Natural Earth rivers (Australia supplement), public domain",
+        "licence": "Public domain",
+    },
+}
+NETWORK_GENERALISE_DEG = 0.005   # server-side generalisation (~500 m) when fetching
+NODE_SNAP_KM = 1.5               # vertices closer than this become one network node
+DISPLAY_TOLERANCE_DEG = 0.01     # map geometry simplification (~1 km)
+ASSET_SNAP_MAX_KM = 30.0         # road/rail assets further than this from a key route stay off-network
+LOCALITY_SNAP_MAX_KM = 25.0
+
+# Which network each class sits on, and what its failure does to that network.
+NETWORK_ASSET_CLASSES = {
+    "bridge": ("road", "closure"), "tunnel": ("road", "closure"), "road_corridor": ("road", "closure"),
+    "track_section": ("rail", "closure"), "signalling": ("rail", "closure"),
+    "overhead_wiring": ("rail", "closure"), "level_crossing": ("rail", "restriction"),
+}
+# Network consequence of losing the asset (0-1), restrictions counting half:
+#   alternative route exists  extra detour km / DETOUR_FULL_KM (detours run along the sparse key
+#                             freight network, so they overstate real diversions; hence a long scale)
+#   localities cut off        ISOLATION_BASE + ISOLATION_PER_WEIGHT x their combined density weight
+#                             (LOCALITIES' relative size - a coarse proxy, not a population figure)
+#   no route round, no named locality cut off  NO_ALTERNATIVE_REMOTE
+DETOUR_FULL_KM = 600.0
+ISOLATION_BASE = 0.5
+ISOLATION_PER_WEIGHT = 0.1
+NO_ALTERNATIVE_REMOTE = 0.4
+RESTRICTION_FACTOR = 0.5
+
+
+def network_consequence(extra_km, localities_cut_weight, no_alternative, restriction):
+    """Network consequence of an asset's failure, as defined above."""
+    if no_alternative:
+        value = min(1.0, ISOLATION_BASE + ISOLATION_PER_WEIGHT * localities_cut_weight) if localities_cut_weight else NO_ALTERNATIVE_REMOTE
+    else:
+        value = min(1.0, (extra_km or 0.0) / DETOUR_FULL_KM)
+    return round(value * (RESTRICTION_FACTOR if restriction else 1.0), 3)
+
+# ---------------------------------------------------------------------------
 # Metrics and engineering limits
 # ---------------------------------------------------------------------------
 # metric: (label, unit, baseline, noise sd, diurnal amplitude, warn, alarm, direction, kind)
@@ -207,19 +264,21 @@ LIKELIHOOD_WEIGHTS = {
     "hazard_exposure": 0.20,   # inside an active warning, weighted by severity and relevance
     "condition": 0.10,         # poor inspection grade (3-5) and overdue inspections
 }
-# Consequence from people affected, including everything downstream that depends on the asset.
-# consequence = log10(people) mapped from CONSEQUENCE_LOG_RANGE onto 0-1.
+# Consequence = the larger of two readings of "what if it fails":
+#   people   log10(people relying on the asset and everything downstream), mapped from
+#            CONSEQUENCE_LOG_RANGE onto 0-1
+#   network  for road and rail assets: detour distance, or 1.0 if localities are cut off
 CONSEQUENCE_LOG_RANGE = (3.0, 6.0)  # 1,000 people -> 0, 1,000,000 -> 1
 CASCADE_DEPTH = 2
 # risk = 100 x likelihood x (CONSEQUENCE_FLOOR + (1 - CONSEQUENCE_FLOOR) x consequence)
 CONSEQUENCE_FLOOR = 0.7
 
 # Risk ratings (standard likelihood-consequence vocabulary) and the incident threshold.
-RISK_RATINGS = [("extreme", 70), ("high", 57), ("medium", 48)]
-INCIDENT_THRESHOLD = 48
+RISK_RATINGS = [("extreme", 70), ("high", 57), ("medium", 52)]
+INCIDENT_THRESHOLD = 52
 DISPOSITIONS = ["dispatch", "notify", "monitor"]
 
-MODEL_VERSION = "ioc-likelihood-consequence-v1"
+MODEL_VERSION = "ioc-likelihood-consequence-v2"
 
 
 def haversine_km_expr(lat1: str, lon1: str, lat2: str, lon2: str) -> str:
@@ -254,7 +313,7 @@ def exceedance_expr(metric_col: str, value_col: str) -> str:
 # Each generation (data version + as-of date) lands in its own folder and silver resolves only
 # the current one, so a rerun on a later day - or after a generator change - produces a clean
 # world instead of stacking backfills. Bump this when the generator's behaviour changes.
-DATA_VERSION = "ioc-v2"
+DATA_VERSION = "ioc-v3"
 
 
 def generation_tag(as_of: str) -> str:

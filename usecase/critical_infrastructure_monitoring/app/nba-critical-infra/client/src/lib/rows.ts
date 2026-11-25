@@ -10,6 +10,11 @@ export type HazardRow = QueryRegistry['hazards']['result'][number];
 export type TelemetryRow = QueryRegistry['asset_telemetry']['result'][number];
 export type RegisterRow = QueryRegistry['asset_register']['result'][number];
 export type DecisionRow = QueryRegistry['recent_decisions']['result'][number];
+export type RoadRow = QueryRegistry['network_roads']['result'][number];
+export type RailRow = QueryRegistry['network_rail']['result'][number];
+export type RiverRow = QueryRegistry['network_rivers']['result'][number];
+export type DisruptionRow = QueryRegistry['network_disruptions']['result'][number];
+export type HazardRouteRow = QueryRegistry['hazard_routes']['result'][number];
 
 /** Group downstream impact rows by incident, for the dialog and the map's cascade lines. */
 export function impactsByIncident(rows: ImpactRow[] | null): Map<string, ImpactRow[]> {
@@ -22,3 +27,21 @@ export function impactsByIncident(rows: ImpactRow[] | null): Map<string, ImpactR
   }
   return map;
 }
+
+/** Group rows by a string key (incident id, warning id). */
+export function groupBy<T>(rows: T[] | null, key: (row: T) => string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const row of rows ?? []) {
+    const k = key(row);
+    const list = map.get(k);
+    if (list) list.push(row);
+    else map.set(k, [row]);
+  }
+  return map;
+}
+
+/**
+ * SQL BOOLEAN columns arrive from the analytics transport as the strings "true" / "false" (the
+ * generated types say boolean). "false" is truthy, so always test booleans through this.
+ */
+export const isTrue = (value: unknown): boolean => value === true || value === 'true';

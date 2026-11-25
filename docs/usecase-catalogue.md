@@ -272,14 +272,16 @@ on one platform, streaming ingest feeding the same governed tables the analysts 
 incident resolved to an asset, an operator and a decision.
 
 **Scope.** Ingest operator telemetry and weather warnings; conform and quarantine readings; model
-cross-sector supply dependencies; score every asset for likelihood of failure and consequence,
+cross-sector supply dependencies; propagate road and rail failures over the Department of
+Infrastructure's National Key Freight Routes; score every asset for likelihood of failure and consequence,
 including downstream cascades; raise incidents with a recommended action; serve an operations app
 with a network map, human-in-the-loop decisions and an audit trail; dashboards and natural-language
 analysis over the same gold tables.
 
 **Functions.** Multi-feed streaming ingest · telemetry conformance and quarantine · dependency
-graph · hazard exposure · risk engine · incident queue and network map · decision audit ·
-dashboard · Genie space.
+graph · real key freight road and rail network with closure propagation (detours, isolation) ·
+hazard exposure · risk engine · incident queue and network map · decision audit · dashboard ·
+Genie space.
 
 ## 9. Open Data Sharing — Secure cross-agency sharing
 

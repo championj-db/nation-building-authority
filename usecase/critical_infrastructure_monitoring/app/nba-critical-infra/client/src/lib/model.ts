@@ -1,6 +1,6 @@
 /**
  * The risk engine's parameters, mirrored from src/common.py (LIKELIHOOD_WEIGHTS, CONSEQUENCE_FLOOR,
- * RISK_RATINGS; model ioc-likelihood-consequence-v1). The review dialog uses them to show each
+ * RISK_RATINGS; model ioc-likelihood-consequence-v2). The review dialog uses them to show each
  * factor's contribution to likelihood and how consequence scales the score, so an officer can see
  * exactly why an incident ranks where it does. If the pipeline changes, change these too -
  * model.test.ts checks the score reconstructs.
@@ -33,7 +33,7 @@ export const CONSEQUENCE_FLOOR = 0.7;
 export const RISK_RATINGS = [
   { rating: 'extreme', min: 70 },
   { rating: 'high', min: 57 },
-  { rating: 'medium', min: 48 },
+  { rating: 'medium', min: 52 },
 ] as const;
 
 export type Rating = 'extreme' | 'high' | 'medium' | 'low';

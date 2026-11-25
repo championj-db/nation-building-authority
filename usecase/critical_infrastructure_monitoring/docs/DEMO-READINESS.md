@@ -15,12 +15,15 @@ compliance dashboard and Genie space from the README's scope are not built; do n
 
 1. Run the pipeline job 15-30 minutes beforehand. Ages and the "All feeds current" pill are relative
    to the run; the pill shows "Data as of HH:MM" after 90 minutes.
-2. Scores follow the daily load cycle, which peaks late afternoon: in testing, a 12:45 run raised
-   33 incidents and a 13:20 run 42. `incident_threshold` (job parameter, 48) tunes the queue length.
-3. Open the app once to warm the SQL warehouse.
-4. Make sure every presenter has `CAN_USE` on the app and the grants in the app README; queries run
+2. Scores follow the daily load cycle, which peaks late afternoon: in testing, a 14:07 run raised
+   46 incidents (5 extreme). `incident_threshold` (job parameter, 52) tunes the queue length.
+3. The run fetches the key freight network from the Department of Infrastructure. If that service is
+   down it reuses the last good copy (`ref_network_source.from_cache` says which), so check a run has
+   succeeded at least once beforehand.
+4. Open the app once to warm the SQL warehouse.
+5. Make sure every presenter has `CAN_USE` on the app and the grants in the app README; queries run
    as the viewer.
-5. Run `npm run test:e2e` against `npm run dev` for a smoke check of the demo path.
+6. Run `npm run test:e2e` against `npm run dev` for a smoke check of the demo path.
 
 ## What the pivot built and verified
 
@@ -29,12 +32,29 @@ compliance dashboard and Genie space from the README's scope are not built; do n
 | Reference data | 599 assets in 14 classes at 57 real localities, 723 sensors with engineering limits, 282 cross-sector supply links, 2 years of inspections |
 | Telemetry | about 480,000 trusted 15-minute readings over 7 days; 998 unregistered and 467 implausible readings quarantined with a reason; 3-minute median lateness |
 | Hazards | 5 active warnings (heatwave ×2, flood, bushfire, storm) plus an expired one the app correctly ignores |
-| Risk engine | 33 to 42 incidents depending on time of day, in all four sectors, with a real extreme tier; normal assets score near zero |
+| Networks | Key freight routes fetched live (357 road segments, 426 rail, 163 rivers); 268 of 305 road and rail assets on the network; every network asset's closure propagated (detour or isolation) in under a second |
+| Risk engine | about 46 incidents near the afternoon peak, in all four sectors, with a real extreme tier; normal assets score near zero |
 | Storylines | Penrith substation (extreme, 12 dependants across rail, water and roads), Lismore treatment plant, Traralgon transmission line, Sunshine trunk main (high with no hazard), Brisbane signalling, Grafton road flooding |
 | Decision write | Dispatch, notify and monitor all recorded with `current_user()` and the evidence panels viewed; the queue, map, register and handover agree immediately |
 | Responsive | No horizontal overflow at all 9 handoff viewports (360-1920 px) |
 | Validation | `databricks apps validate` passes (types, AST lint, typecheck, build, 17 unit tests) |
 | Deployment | App deployed to `au-pubsec` and running in production mode behind the Apps auth gate |
+
+## Issues found and fixed while adding network propagation
+
+* **Spur closures over-reached.** Closing a whole route stretch from its last junction marked
+  Melbourne as cut off by a failure at Traralgon. Only the edges at the failure point are now blocked,
+  so only what lies beyond the break is cut off (unit test: `test_spur_cuts_off_only_what_lies_beyond_the_break`).
+* **Network consequence saturated** (137 of 268 assets at the maximum). It now scales detours on a
+  600 km scale and isolation by the size of what is cut off.
+* **Rail wording overstated isolation** ("cuts off Sydney"). A freight line's end is its terminal, so
+  rail now says "cuts the freight rail link to".
+* **AppKit transport quirks.** JSON-shaped string columns arrive already parsed (the map drew no
+  lines), and BOOLEAN columns arrive as the strings "true" / "false", so "false" was truthy (the
+  review said "no alternative" for a road with a detour). Both are handled centrally (`lib/geo.ts`,
+  `isTrue` in `lib/rows.ts`) and unit-tested.
+* **Static geometry was refetched every refresh.** Network layers now use a fixed cache token, so the
+  five-minute refresh does not re-download about 700 KB of lines.
 
 ## Issues found and fixed during the pivot
 
@@ -76,6 +96,8 @@ compliance dashboard and Genie space from the README's scope are not built; do n
 | Medium | Ingest is batch (`availableNow`) | Position it honestly, or add a frequent schedule or continuous trigger for a live feel |
 | Medium | The deployed UI was verified through logs and the auth gate only | Open the app URL yourself once before the demo |
 | Medium | People counts mix kinds of reliance (households, rail patronage, road traffic) | Labelled as an upper bound; a production model would use service-specific measures |
+| Medium | Detours use key freight routes only, so they overstate real diversions over local roads | Labelled in the review; for production, route over the full Geoscience Australia National Roads network |
+| Low | Key freight rail carries no line names | Rail sections are described by state and the places at each end |
 | Low | Typegen sample values in `config/queries/*.sql` name the dev catalog and schema | Used only by `npm run typegen`; runtime binds from app config |
 | Low | `react-refresh/only-export-components` warning on the `Icon` map | Cosmetic, dev hot reload only |
 

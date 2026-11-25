@@ -7,7 +7,8 @@
 #   anomaly           deviation of the last two hours from the asset's own seven-day baseline
 #   hazard_exposure   inside an active warning, by severity, sector relevance and proximity
 #   condition         poor inspection grade (3-5), plus a penalty when the inspection is overdue
-#   consequence       people relying on the asset and on everything downstream of it
+#   consequence       the larger of: people relying on the asset and everything downstream of it,
+#                     and (road and rail) the detour or isolation its failure causes on the network
 # Also writes gold_asset_dependency_impact: the downstream assets (up to CASCADE_DEPTH hops) each
 # asset supports, which the incident view uses to show what fails if this asset fails.
 
@@ -27,10 +28,15 @@ if _src_dir is None:
     raise FileNotFoundError("common.py not found - pass src_dir pointing at the use case's src folder")
 sys.path.insert(0, _src_dir)
 
+import json
+from collections import defaultdict
+
 from common import (
-    CASCADE_DEPTH, CONSEQUENCE_LOG_RANGE, HAZARD_RELEVANCE, SEVERITY_WEIGHT, get_params,
-    haversine_km_expr, local_now, timestamp_sql, use_local_time,
+    CASCADE_DEPTH, CONSEQUENCE_LOG_RANGE, HAZARD_RELEVANCE, LOCALITIES, NETWORK_ASSET_CLASSES,
+    SEVERITY_WEIGHT, get_params, haversine_km, haversine_km_expr, local_now, network_consequence,
+    timestamp_sql, use_local_time,
 )
+from network import Graph, closure_impact, coords
 
 params = get_params({"catalog": "", "schema": "", "recent_hours": 2, "baseline_days": 7}, dbutils)
 if not params["catalog"] or not params["schema"]:
@@ -192,17 +198,97 @@ downstream = impact.groupBy("asset_id").agg(
     F.concat_ws(", ", F.array_sort(F.collect_set("sector"))).alias("downstream_sector_list"),
 )
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Network consequence: what a road or rail asset's failure does to the network
+# MAGIC For every asset on the key-route network: close the route at the asset, then measure the
+# MAGIC detour around the closed section, or the localities cut off when there is no way round
+# MAGIC (see src/network.py). This is computed for every network asset, not just incidents, because
+# MAGIC it is part of each asset's consequence.
+
+# COMMAND ----------
+
+net_nodes = spark.table(table("ref_network_node")).select("node_id", "mode", "longitude", "latitude").collect()
+net_edges = spark.table(table("ref_network_edge")).select("edge_id", "mode", "from_node", "to_node", "segment_id", "length_km").collect()
+seg_info = {r["segment_id"]: r.asDict() for r in spark.table(table("ref_network_segment")).select(
+    "segment_id", "name", "route_no", "manager", "state").collect()}
+loc_nodes = spark.table(table("ref_locality_node")).collect()
+loc_weight = {l[0]: l[4] for l in LOCALITIES}
+
+
+def route_label(segment_id):
+    info = seg_info.get(segment_id)
+    if not info:
+        return "Key freight route"
+    return info["name"] or f"{info['state'] or ''} rail freight line".strip()
+
+
+def nearest_place(lon, lat):
+    name, _s, plat, plon, _w = min(LOCALITIES, key=lambda l: haversine_km(lat, lon, l[2], l[3]))
+    return name if haversine_km(lat, lon, plat, plon) <= 80 else None
+
+
+impact_rows = []
+network_assets = spark.table(table("dim_asset")).filter("network_mode IS NOT NULL").select(
+    "asset_id", "asset_class", "network_mode", "network_node_id", "network_segment_id").collect()
+for mode in ("road", "rail"):
+    g = Graph.build([(r[0], r[2], r[3]) for r in net_nodes if r[1] == mode],
+                    [(r[0], r[2], r[3], r[4], r[5]) for r in net_edges if r[1] == mode])
+    main = g.main_component()
+    on_node = defaultdict(list)
+    for l in loc_nodes:
+        if l["mode"] == mode:
+            on_node[l["node_id"]].append(l["locality"])
+    for a in [x for x in network_assets if x["network_mode"] == mode]:
+        imp = closure_impact(g, a["network_node_id"], a["network_segment_id"], main)
+        cut = sorted({loc for n in imp.isolated_nodes for loc in on_node.get(n, [])})
+        no_alt = imp.extra_km is None
+        effect = NETWORK_ASSET_CLASSES[a["asset_class"]][1]
+        via = sorted(imp.detour_segments.items(), key=lambda kv: -kv[1])
+        via_names = []
+        for seg, _km in via:
+            label = route_label(seg)
+            if label not in via_names and seg != a["network_segment_id"]:
+                via_names.append(label)
+        end_a, end_b = g.xy[imp.end_a], g.xy[imp.end_b]
+        impact_rows.append((
+            a["asset_id"], mode, a["network_segment_id"], route_label(a["network_segment_id"]),
+            seg_info.get(a["network_segment_id"], {}).get("route_no"),
+            seg_info.get(a["network_segment_id"], {}).get("manager"),
+            effect, round(imp.section_km, 1), nearest_place(*end_a), nearest_place(*end_b),
+            None if no_alt else round(imp.extra_km, 1), ", ".join(via_names[:2]) or None, no_alt,
+            ", ".join(cut) or None, len(cut),
+            network_consequence(imp.extra_km, sum(loc_weight.get(c, 1) for c in cut), no_alt, effect == "restriction"),
+            json.dumps(coords(g, imp.section_nodes)), json.dumps(coords(g, imp.detour_nodes)) if imp.detour_nodes else None,
+        ))
+
+spark.createDataFrame(
+    impact_rows,
+    "asset_id long, network_mode string, segment_id string, route_name string, route_no string, route_manager string, "
+    "network_effect string, section_km double, section_from string, section_to string, detour_extra_km double, "
+    "detour_via string, no_alternative boolean, localities_cut string, localities_cut_count int, "
+    "network_consequence_score double, section_coords string, detour_coords string",
+).write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_asset_network_impact"))
+network_impact = spark.table(table("gold_asset_network_impact")).drop("network_mode", "section_coords", "detour_coords")
+
 lo, hi = CONSEQUENCE_LOG_RANGE
 features = (
     assets.join(evidence, "asset_id", "left")
     .join(exposure, "asset_id", "left")
     .join(condition, "asset_id", "left")
     .join(downstream, "asset_id", "left")
-    .fillna(0.0, subset=["limit_exceedance_score", "anomaly_score", "hazard_exposure_score", "condition_score"])
+    .join(network_impact, "asset_id", "left")
+    .fillna(0.0, subset=["limit_exceedance_score", "anomaly_score", "hazard_exposure_score", "condition_score",
+                         "network_consequence_score"])
     .fillna(0, subset=["downstream_assets", "downstream_people", "downstream_sectors"])
     .withColumn("people_affected", F.col("people_served") + F.col("downstream_people"))
-    .withColumn("consequence_score", F.expr(
+    .withColumn("people_consequence_score", F.expr(
         f"least(1.0, greatest(0.0, (log10(greatest(people_affected, 1)) - {lo}) / {hi - lo}))"))
+    # consequence is the larger of who relies on the asset and what its loss does to the network
+    .withColumn("consequence_score", F.greatest("people_consequence_score", "network_consequence_score"))
+    .withColumn("consequence_driver", F.expr(
+        "CASE WHEN network_consequence_score > people_consequence_score THEN 'network' ELSE 'people' END"))
     .withColumn("minutes_since_reading", F.expr(
         f"round((unix_timestamp({RUN_SQL}) - unix_timestamp(last_reading_ts)) / 60.0, 0)"))
     .withColumn("run_ts", F.expr(RUN_SQL))
