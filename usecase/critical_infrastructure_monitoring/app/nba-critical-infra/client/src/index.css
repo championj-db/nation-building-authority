@@ -347,6 +347,29 @@ dialog[open] { animation: dialog-in var(--ioc-motion-base) var(--ioc-ease-standa
 .hazard-area circle { fill: color-mix(in oklab, var(--ioc-hazard), transparent 84%); stroke: color-mix(in oklab, var(--ioc-hazard), var(--ioc-navy-900) 20%); }
 .hazard-area.sev-extreme circle, .hazard-area.sev-severe circle { fill: color-mix(in oklab, var(--ioc-hazard), transparent 76%); }
 .hazard-area.focus circle { stroke: var(--ioc-navy-900); }
+/* transport networks: recessive, so assets and incidents stay legible on top */
+.network-map .road { fill: none; stroke: #a39373; opacity: .75; stroke-linecap: round; stroke-linejoin: round; }
+.network-map .road:hover { opacity: 1; stroke: var(--ioc-navy-900); }
+.network-map .rail { fill: none; stroke: var(--ioc-sector-rail); opacity: .55; stroke-linejoin: round; }
+.network-map .rail:hover { opacity: 1; }
+.network-map .river { fill: none; stroke: #8fb4c9; opacity: .8; stroke-linecap: round; }
+.network-map .river.intermittent { opacity: .45; }
+.network-map .closed-section { fill: none; stroke: var(--ioc-lava-600); stroke-linecap: round; stroke-linejoin: round; }
+.network-map .closed-section.restriction { stroke: var(--ioc-hazard); }
+.network-map .detour { fill: none; stroke: var(--ioc-navy-900); stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+.network-headline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--ioc-space-2) 0 var(--ioc-space-3); }
+.network-facts { display: grid; gap: var(--ioc-space-2); margin: 0 0 var(--ioc-space-3); }
+.network-facts div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: var(--ioc-space-3); font-size: var(--ioc-text-sm); }
+.network-facts dt { color: var(--ioc-muted); }
+.network-facts dd { margin: 0; }
+@media (max-width: 520px) { .network-facts div { grid-template-columns: 1fr; gap: 2px; } }
+.network-line { margin: 6px 0 0; font-size: var(--ioc-text-sm); line-height: 1.4; }
+.exp.route { background: var(--ioc-oat-medium); font-weight: 500; }
+.lg-road { width: 18px; height: 0; border-top: 2px solid #a39373; }
+.lg-rail { width: 18px; height: 0; border-top: 2px dashed var(--ioc-sector-rail); }
+.lg-river { width: 18px; height: 0; border-top: 2px solid #8fb4c9; }
+.lg-closed { width: 18px; height: 0; border-top: 3px solid var(--ioc-lava-600); }
+.lg-detour { width: 18px; height: 0; border-top: 2px dashed var(--ioc-navy-900); }
 .asset-dot { fill: var(--sector); opacity: .55; }
 .asset-dot:hover { opacity: 1; }
 .incident-marker { cursor: pointer; outline: none; }

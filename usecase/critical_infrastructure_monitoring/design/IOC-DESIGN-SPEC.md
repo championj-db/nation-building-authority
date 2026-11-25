@@ -67,16 +67,19 @@ The review dialog opens from the queue, the map or the register.
 ### Network map
 * Equirectangular SVG of the states (Natural Earth, public domain); the same projection places
   assets.
-* Layers, bottom to top: state outlines; warning footprints (warning amber, dashed); all assets as
-  small sector-coloured dots; open incidents as larger markers sized and ringed by rating (extreme:
+* Layers, bottom to top: state outlines; rivers (quiet blue, intermittent fainter); warning footprints
+  (warning amber, dashed); key freight roads (warm neutral) and rail (rail blue, dashed); for a
+  selected network incident, the affected section between junctions (Lava) and the detour (dashed
+  Navy); all assets as small sector-coloured dots; open incidents as larger markers sized and ringed by rating (extreme:
   Lava ring; high: Navy ring; medium: white ring); decided incidents at 40% opacity.
 * Region focus: National, NSW & ACT, VIC & TAS, QLD, SA, WA, NT. Sector toggles hide or show
-  layers.
-* Selecting an incident frames it and its direct dependants, draws supply links (solid for direct,
-  dashed for second hop), and opens a side card: rating, title, dependants (top five, then "+N
-  more"), "Review incident".
+  layers (Roads → key roads, Rail → key rail, Water → rivers).
+* Selecting an incident frames it, its direct dependants and, for road and rail, its affected
+  section and detour; draws supply links (solid for direct, dashed for second hop); and opens a side
+  card: rating, title, the network sentence ("Closes Pacific Highway: 497 km detour via New England
+  Highway"), dependants (top five, then "+N more"), "Review incident".
 * Active warnings list beside the map: icon, title, type · severity · time remaining, assets inside
-  by sector, linked incidents. Selecting a warning zooms to its footprint.
+  by sector, the key routes inside it with kilometres, linked incidents. Selecting a warning zooms to its footprint.
 * Markers are keyboard-focusable buttons with descriptive labels; the queue remains the accessible
   primary path.
 
@@ -88,6 +91,9 @@ The review dialog opens from the queue, the map or the register.
   sentence.
 * Evidence: 24-hour line of the triggering metric with warning and alarm limits.
 * Hazard context (when inside a warning).
+* Network impact (road and rail): closure or restriction, route and number, affected section
+  between named places, then the detour (extra km and route) or "no alternative", naming what is cut
+  off; a note that detours use key freight routes only.
 * If this fails: dependants grouped as "Directly supplied" and "Then, through those", each with
   sector badge, dependency type and people served.
 * Recommended first action and responsible operator; decision record explanation; optional notes.
@@ -118,6 +124,8 @@ self-hosted.
 | Water | `#1B5162` | brand teal |
 | Energy | `#FF7033` | brand secondary orange |
 | Warning areas | `#FBB300` tint, dashed | never Lava: footprints are large areas |
+| Key roads / rail / rivers | `#A39373` / `#4462C9` dashed / `#8FB4C9` | recessive, beneath assets |
+| Affected section / detour | Lava / Navy dashed | only for the selected incident |
 | Extreme | Lava ring / label | always paired with the word "extreme" |
 
 Sector and severity are never conveyed by colour alone: every use carries an icon (Lucide) or a

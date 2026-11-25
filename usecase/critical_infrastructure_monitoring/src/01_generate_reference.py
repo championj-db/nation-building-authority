@@ -31,9 +31,10 @@ if _src_dir is None:
 sys.path.insert(0, _src_dir)
 
 from common import (
-    ASSET_CLASSES, LOCALITIES, METRICS, OPERATORS, SECTORS, STORYLINE_LINKS, STORYLINES,
-    get_params, haversine_km, local_now, resolve_as_of,
+    ASSET_CLASSES, ASSET_SNAP_MAX_KM, LOCALITIES, METRICS, NETWORK_ASSET_CLASSES, OPERATORS, SECTORS,
+    STORYLINE_LINKS, STORYLINES, get_params, haversine_km, local_now, resolve_as_of,
 )
+from network import Graph
 
 params = get_params({"catalog": "", "schema": "", "seed": 42, "asset_scale": 6.25, "as_of": ""}, dbutils)
 if not params["catalog"] or not params["schema"]:
@@ -134,6 +135,44 @@ for a in sorted(assets, key=lambda x: x["asset_id"] not in anchored_ids):
     if seen[key] > 1:
         a["asset_name"] = f"{key} {seen[key]}"
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Put road and rail assets on the network
+# MAGIC Road and rail assets snap onto the nearest node of the national key-route network (from
+# MAGIC 01a_fetch_networks), so a bridge sits on its highway and an interlocking on its line. Assets
+# MAGIC further than ASSET_SNAP_MAX_KM from a key route stay where they are, off-network.
+
+# COMMAND ----------
+
+graphs, mains, node_segment = {}, {}, {}
+net_nodes = spark.table(table("ref_network_node")).select("node_id", "mode", "longitude", "latitude").collect()
+net_edges = spark.table(table("ref_network_edge")).select("edge_id", "mode", "from_node", "to_node", "segment_id", "length_km").collect()
+named = {r["segment_id"] for r in spark.table(table("ref_network_segment")).filter("name IS NOT NULL").select("segment_id").collect()}
+for mode in ("road", "rail"):
+    g = Graph.build([(r[0], r[2], r[3]) for r in net_nodes if r[1] == mode],
+                    [(r[0], r[2], r[3], r[4], r[5]) for r in net_edges if r[1] == mode])
+    graphs[mode], mains[mode] = g, g.main_component()
+    for n in mains[mode]:
+        segs = sorted({g.edges[e][2] for _m, e in g.adj[n]}, key=lambda sg: (sg not in named, sg))
+        node_segment[(mode, n)] = segs[0]
+
+for a in assets:
+    a.update(network_mode=None, network_node_id=None, network_segment_id=None, network_snap_km=None)
+    rule = NETWORK_ASSET_CLASSES.get(a["asset_class"])
+    if not rule:
+        continue
+    mode = rule[0]
+    g, main = graphs[mode], mains[mode]
+    nearest = min(main, key=lambda n: haversine_km(a["latitude"], a["longitude"], g.xy[n][1], g.xy[n][0]))
+    km = haversine_km(a["latitude"], a["longitude"], g.xy[nearest][1], g.xy[nearest][0])
+    if km <= ASSET_SNAP_MAX_KM:
+        a.update(network_mode=mode, network_node_id=nearest, network_segment_id=node_segment[(mode, nearest)],
+                 network_snap_km=round(km, 2), longitude=round(g.xy[nearest][0], 5), latitude=round(g.xy[nearest][1], 5))
+
+on_network = sum(1 for a in assets if a["network_mode"])
+print(f"{on_network} of {sum(1 for a in assets if a['asset_class'] in NETWORK_ASSET_CLASSES)} road and rail assets placed on the key-route network")
+
 asset_schema = T.StructType([
     T.StructField("asset_id", T.LongType()), T.StructField("asset_code", T.StringType()),
     T.StructField("asset_name", T.StringType()), T.StructField("asset_class", T.StringType()),
@@ -143,6 +182,8 @@ asset_schema = T.StructType([
     T.StructField("longitude", T.DoubleType()), T.StructField("install_year", T.IntegerType()),
     T.StructField("people_served", T.LongType()), T.StructField("criticality", T.IntegerType()),
     T.StructField("needs_power", T.BooleanType()),
+    T.StructField("network_mode", T.StringType()), T.StructField("network_node_id", T.StringType()),
+    T.StructField("network_segment_id", T.StringType()), T.StructField("network_snap_km", T.DoubleType()),
 ])
 spark.createDataFrame([tuple(a[f.name] for f in asset_schema.fields) for a in assets], asset_schema) \
     .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("dim_asset"))

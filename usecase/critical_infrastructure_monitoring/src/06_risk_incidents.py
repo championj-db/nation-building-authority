@@ -121,9 +121,21 @@ run_incidents = (
         "CASE WHEN trigger_key = 'hazard' THEN 'Pre-position crews and confirm the operator''s response plan' "
         "WHEN trigger_key = 'condition' THEN 'Bring the next inspection forward' "
         f"ELSE {sql_case('trigger_key', actions)} END"))
-    .withColumn("impact_summary", F.expr(
+    .withColumn("supply_summary", F.expr(
         "CASE WHEN downstream_assets > 0 THEN concat('Supplies ', downstream_assets, ' asset', "
         "CASE WHEN downstream_assets = 1 THEN '' ELSE 's' END, ' across ', downstream_sector_list) END"))
+    # what failure does to the road or rail network, in a phrase an officer can act on
+    .withColumn("network_summary", F.expr(
+        "CASE WHEN route_name IS NULL THEN NULL "
+        # rail: a freight line's end is its terminal, so it cuts the freight link, not the city
+        "WHEN no_alternative AND localities_cut IS NOT NULL AND network_mode = 'rail' THEN concat(route_name, ': no alternative route, cuts the freight rail link to ', localities_cut) "
+        "WHEN no_alternative AND localities_cut IS NOT NULL THEN concat(route_name, ': no alternative route, cuts off ', localities_cut) "
+        "WHEN no_alternative THEN concat(route_name, ': no alternative route on the key network') "
+        "WHEN detour_extra_km < 5 THEN concat(route_name, ': alternative route available') "
+        "ELSE concat(route_name, ': ', format_number(detour_extra_km, 0), ' km detour', "
+        "  CASE WHEN detour_via IS NOT NULL THEN concat(' via ', detour_via) ELSE '' END) END"))
+    .withColumn("impact_summary", F.expr("concat_ws(' · ', supply_summary, network_summary)"))
+    .withColumn("impact_summary", F.expr("CASE WHEN impact_summary = '' THEN NULL ELSE impact_summary END"))
     .withColumn("sector_label", F.expr(sql_case("sector", SECTOR_LABELS)))
 )
 
@@ -147,7 +159,10 @@ incidents = (
         "trigger_value_ts", "trigger_warn_limit", "trigger_alarm_limit", "trigger_direction",
         "hazard_warning_id", "hazard_title", "hazard_type", "hazard_severity", "condition_grade",
         "inspection_overdue", "people_served", "people_affected", "downstream_assets", "downstream_sectors",
-        "detected_lag_minutes",
+        "detected_lag_minutes", "people_consequence_score", "network_consequence_score", "consequence_driver",
+        "network_mode", "route_name", "route_no", "route_manager", "network_effect", "section_from", "section_to",
+        "detour_extra_km", "detour_via", "no_alternative", "localities_cut", "localities_cut_count",
+        "network_summary",
     )
 )
 incidents.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_incident"))
@@ -160,6 +175,15 @@ impact = (
           "downstream_asset_id", "left")
 )
 impact.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_incident_impact"))
+
+# Network disruption geometry for open network incidents: the closed section and the detour, for
+# the map. Kept apart from gold_incident so the queue stays light.
+(spark.table(table("gold_asset_network_impact"))
+    .join(incidents.select("incident_id", "asset_id", "risk_rating", "sector"), "asset_id")
+    .select("incident_id", "asset_id", "risk_rating", "sector", "network_mode", "route_name", "network_effect",
+            "section_from", "section_to", "section_km", "detour_extra_km", "detour_via", "no_alternative",
+            "localities_cut", "section_coords", "detour_coords")
+    .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_network_disruption")))
 
 # Human-in-the-loop decision record. Created once, never truncated; the app writes to it.
 spark.sql(f"""CREATE TABLE IF NOT EXISTS {table('gold_incident_review_audit')} (
@@ -221,6 +245,34 @@ hazard_status = (
     .withColumn("run_ts", F.expr(RUN_SQL))
 )
 hazard_status.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_hazard_status"))
+
+# Key freight route kilometres inside each active warning: which routes a warning threatens.
+import math as _m
+edge_rows = spark.table(table("ref_network_edge")).select("mode", "from_node", "to_node", "segment_id", "length_km").collect()
+node_xy = {r["node_id"]: (r["longitude"], r["latitude"]) for r in spark.table(table("ref_network_node")).select("node_id", "longitude", "latitude").collect()}
+seg_label = {r["segment_id"]: (r["name"] or f"{r['state'] or ''} rail freight line".strip())
+             for r in spark.table(table("ref_network_segment")).select("segment_id", "name", "state").collect()}
+
+
+def _km(lat1, lon1, lat2, lon2):
+    p1, p2 = _m.radians(lat1), _m.radians(lat2)
+    a_ = _m.sin((p2 - p1) / 2) ** 2 + _m.cos(p1) * _m.cos(p2) * _m.sin(_m.radians(lon2 - lon1) / 2) ** 2
+    return 2 * 6371 * _m.asin(_m.sqrt(a_))
+
+
+exposure_rows = []
+for w in active.select("warning_id", "centre_lat", "centre_lon", "radius_km").collect():
+    km_by_route = {}
+    for e in edge_rows:
+        (x1, y1), (x2, y2) = node_xy[e["from_node"]], node_xy[e["to_node"]]
+        if _km((y1 + y2) / 2, (x1 + x2) / 2, w["centre_lat"], w["centre_lon"]) <= w["radius_km"]:
+            key = (e["mode"], seg_label.get(e["segment_id"], "Key freight route"))
+            km_by_route[key] = km_by_route.get(key, 0.0) + e["length_km"]
+    for (mode, label), km in km_by_route.items():
+        exposure_rows.append((w["warning_id"], mode, label, round(km, 1)))
+spark.createDataFrame(exposure_rows, "warning_id string, mode string, route_name string, km_inside double") \
+    .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table("gold_hazard_network_exposure"))
+print(f"gold_hazard_network_exposure: {len(exposure_rows)} warning-route pairs")
 
 today_start = f"to_timestamp(to_date({RUN_SQL}))"
 feed = readings.agg(

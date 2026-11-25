@@ -2,7 +2,8 @@
 # Infrastructure Operations Centre over roads, rail, water and energy.
 #
 # Runs the synthetic-data generation and analytics pipeline end to end:
-# setup -> reference data (assets, sensors, dependencies) -> telemetry + hazard warnings ->
+# setup -> transport networks (fetched from public sources) -> reference data (assets, sensors,
+# dependencies) -> telemetry + hazard warnings ->
 # bronze (Auto Loader drain of both feeds) -> silver (conformance and quarantine) ->
 # gold features -> risk, incidents and the operating picture.
 #
@@ -33,9 +34,20 @@ resources:
               schema: ${var.schema}
               volume: ${var.volume}
 
-        - task_key: generate_reference_data
+        - task_key: fetch_networks
           depends_on:
             - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01a_fetch_networks.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              src_dir: ${workspace.file_path}
+
+        - task_key: generate_reference_data
+          depends_on:
+            - task_key: fetch_networks
           notebook_task:
             notebook_path: ../src/01_generate_reference.py
             base_parameters:
@@ -102,4 +114,4 @@ resources:
               catalog: ${var.catalog}
               schema: ${var.schema}
               src_dir: ${workspace.file_path}
-              incident_threshold: "48"
+              incident_threshold: "52"

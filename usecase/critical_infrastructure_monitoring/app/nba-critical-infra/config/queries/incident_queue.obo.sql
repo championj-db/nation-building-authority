@@ -21,6 +21,9 @@ SELECT
   i.trigger_value, i.trigger_value_ts, i.trigger_warn_limit, i.trigger_alarm_limit, i.trigger_direction,
   i.hazard_title, i.hazard_type, i.hazard_severity, i.condition_grade, i.inspection_overdue,
   i.people_served, i.people_affected, i.downstream_assets, i.downstream_sectors, i.detected_lag_minutes,
+  i.people_consequence_score, i.network_consequence_score, i.consequence_driver, i.network_mode, i.route_name,
+  i.route_no, i.network_effect, i.detour_extra_km, i.detour_via, i.no_alternative, i.localities_cut,
+  i.network_summary,
   CASE d.disposition WHEN 'dispatch' THEN 'dispatched' WHEN 'notify' THEN 'notified'
        WHEN 'monitor' THEN 'monitoring' ELSE 'open' END AS status,
   d.officer_name AS decided_by,

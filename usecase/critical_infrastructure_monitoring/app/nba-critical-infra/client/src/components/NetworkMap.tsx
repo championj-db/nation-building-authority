@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { KM, MAP_WIDTH, STATES, project } from '../lib/australia';
 import { formatHours, formatInt, formatPeople } from '../lib/format';
+import { linePath, linePoints, multiLinePath } from '../lib/geo';
 import { HAZARD_LABELS, SECTORS, SECTOR_LABELS, STATUS_LABELS, type Sector } from '../lib/model';
-import type { HazardRow, ImpactRow, IncidentRow, NetworkAssetRow } from '../lib/rows';
+import { isTrue, type DisruptionRow, type HazardRouteRow, type HazardRow, type ImpactRow, type IncidentRow, type NetworkAssetRow, type RailRow, type RiverRow, type RoadRow } from '../lib/rows';
 import { HazardIcon, SectorBadge, SectorIcon } from './icons';
 import { EmptyState, ErrorState, Skeleton } from './primitives';
 
@@ -31,12 +32,17 @@ interface Props {
   hazards: HazardRow[] | null;
   incidents: IncidentRow[] | null;
   impacts: Map<string, ImpactRow[]>;
+  roads: RoadRow[] | null;
+  rail: RailRow[] | null;
+  rivers: RiverRow[] | null;
+  disruptions: Map<string, DisruptionRow>;
+  hazardRoutes: Map<string, HazardRouteRow[]>;
   loading: boolean;
   error: string | null;
   onReview: (incident: IncidentRow) => void;
 }
 
-export function NetworkMap({ assets, hazards, incidents, impacts, loading, error, onReview }: Props) {
+export function NetworkMap({ assets, hazards, incidents, impacts, roads, rail, rivers, disruptions, hazardRoutes, loading, error, onReview }: Props) {
   const [region, setRegion] = useState('national');
   const [hazardFocus, setHazardFocus] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<Sector>>(new Set());
@@ -48,12 +54,22 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
 
   const selected = incidents?.find((i) => i.incident_id === selectedId) ?? null;
   const cascade = useMemo(() => (selected ? (impacts.get(String(selected.incident_id)) ?? []) : []), [selected, impacts]);
+  const disruption = selected ? (disruptions.get(String(selected.incident_id)) ?? null) : null;
+
+  // network geometry is large: project it once per data load, not per render
+  const roadPaths = useMemo(() => (roads ?? []).map((r) => ({ id: String(r.segment_id), name: r.name, d: multiLinePath(r.display_coords) })), [roads]);
+  const railPaths = useMemo(() => (rail ?? []).map((r) => ({ id: String(r.segment_id), d: multiLinePath(r.display_coords) })), [rail]);
+  const riverPaths = useMemo(() => (rivers ?? []).map((r) => ({ id: String(r.river_id), name: r.name, intermittent: isTrue(r.intermittent), d: multiLinePath(r.display_coords) })), [rivers]);
+  const sectionPath = useMemo(() => linePath(disruption?.section_coords), [disruption]);
+  const detourPath = useMemo(() => linePath(disruption?.detour_coords), [disruption]);
 
   const vb = useMemo(() => {
     if (frameSelection && selected) {
       // frame the incident and what it supplies directly; second-hop links may run off-frame
       const direct = cascade.filter((c) => Number(c.hop) === 1);
-      const pts = [selected, ...direct].map((p) => project(Number(p.longitude), Number(p.latitude)));
+      // a network incident also frames its closed section and the detour around it
+      const networkPts = [...linePoints(disruption?.section_coords), ...linePoints(disruption?.detour_coords)].map(([lon, lat]) => project(lon, lat));
+      const pts = [...[selected, ...direct].map((p) => project(Number(p.longitude), Number(p.latitude))), ...networkPts];
       const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
       const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
       // at least ~0.7 degrees across (so assets a few km apart separate), padded, near the map's aspect
@@ -70,7 +86,7 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
       return viewBoxFor([lon - dLon * 1.3, lat + dLat, lon + dLon * 1.3, lat - dLat]);
     }
     return viewBoxFor(REGIONS.find((r) => r.id === region)?.box ?? REGIONS[0].box);
-  }, [region, hazardFocus, hazards, frameSelection, selected, cascade]);
+  }, [region, hazardFocus, hazards, frameSelection, selected, cascade, disruption]);
   const zoom = vb.w / MAP_WIDTH; // marker sizes stay constant on screen
 
   const visibleIncidents = (incidents ?? []).filter((i) => !hidden.has(i.sector as Sector) && i.status === 'open');
@@ -156,6 +172,14 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
                     <path key={s.code} d={s.d} className="state" style={{ strokeWidth: 1 * zoom }} />
                   ))}
 
+                  {!hidden.has('water') ? (
+                    <g className="net-rivers" aria-hidden="true">
+                      {riverPaths.map((r) => (
+                        <path key={r.id} d={r.d} className={r.intermittent ? 'river intermittent' : 'river'} style={{ strokeWidth: (r.intermittent ? 0.7 : 1.1) * zoom }} />
+                      ))}
+                    </g>
+                  ) : null}
+
                   {(hazards ?? []).map((h) => {
                     const [cx, cy] = project(Number(h.centre_lon), Number(h.centre_lat));
                     return (
@@ -165,6 +189,34 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
                       </g>
                     );
                   })}
+
+                  {!hidden.has('roads') ? (
+                    <g className="net-roads">
+                      {roadPaths.map((r) => (
+                        <path key={r.id} d={r.d} className="road" style={{ strokeWidth: 1.6 * zoom }}
+                          onMouseMove={(e) => r.name && showTip(e, r.name, 'Key freight route (road)')} />
+                      ))}
+                    </g>
+                  ) : null}
+                  {!hidden.has('rail') ? (
+                    <g className="net-rail">
+                      {railPaths.map((r) => (
+                        <path key={r.id} d={r.d} className="rail" style={{ strokeWidth: 1.3 * zoom, strokeDasharray: `${4 * zoom} ${2 * zoom}` }}
+                          onMouseMove={(e) => showTip(e, 'Key freight route (rail)', 'Department of Infrastructure')} />
+                      ))}
+                    </g>
+                  ) : null}
+
+                  {disruption && detourPath ? (
+                    <path d={detourPath} className="detour" style={{ strokeWidth: 3 * zoom, strokeDasharray: `${6 * zoom} ${4 * zoom}` }}>
+                      <title>Detour{disruption.detour_via ? ` via ${disruption.detour_via}` : ''}</title>
+                    </path>
+                  ) : null}
+                  {disruption && sectionPath ? (
+                    <path d={sectionPath} className={`closed-section${disruption.network_effect === 'restriction' ? ' restriction' : ''}`} style={{ strokeWidth: 4.5 * zoom }}>
+                      <title>{disruption.network_effect === 'restriction' ? 'Restricted' : 'Unusable'} between junctions: {disruption.route_name}</title>
+                    </path>
+                  ) : null}
 
                   {assets.filter((a) => !hidden.has(a.sector as Sector)).map((a) => {
                     const [x, y] = project(Number(a.longitude), Number(a.latitude));
@@ -230,7 +282,12 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
               <span><i className="lg-inc high" /> High</span>
               <span><i className="lg-inc medium" /> Medium</span>
               <span><i className="lg-hazard" /> Warning area</span>
+              <span><i className="lg-road" /> Key freight road</span>
+              <span><i className="lg-rail" /> Key freight rail</span>
+              <span><i className="lg-river" /> River</span>
               <span><i className="lg-line" /> Supply link (selected)</span>
+              <span><i className="lg-closed" /> Affected section (between junctions)</span>
+              <span><i className="lg-detour" /> Detour</span>
             </div>
           </div>
 
@@ -245,6 +302,11 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
                 </div>
                 <h3 style={{ marginTop: 10 }}>{selected.asset_name}</h3>
                 <p className="alert-copy" style={{ marginTop: 0 }}>{selected.incident_title}</p>
+                {selected.network_summary ? (
+                  <p className="network-line">
+                    <strong>{selected.network_effect === 'restriction' ? 'Restricts' : 'Closes'}</strong> {selected.network_summary}
+                  </p>
+                ) : null}
                 <p className="meta" style={{ margin: '8px 0 12px' }}>
                   {cascade.length
                     ? `${cascade.length} dependent asset${cascade.length === 1 ? '' : 's'} · ${formatPeople(selected.people_affected)} people relying on these services`
@@ -304,6 +366,11 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
                                 </span>
                               ) : null;
                             })}
+                            {(hazardRoutes.get(String(h.warning_id)) ?? []).slice(0, 2).map((r) => (
+                              <span key={`${r.mode}-${r.route_name}`} className={`exp route sector-${r.mode === 'rail' ? 'rail' : 'roads'}`} title="Key freight route inside the warning area">
+                                {r.route_name} {Math.round(Number(r.km_inside))} km
+                              </span>
+                            ))}
                             {Number(h.linked_incidents) ? <span className="exp linked">{h.linked_incidents} incident{Number(h.linked_incidents) === 1 ? '' : 's'}</span> : null}
                           </span>
                         </span>
@@ -316,7 +383,8 @@ export function NetworkMap({ assets, hazards, incidents, impacts, loading, error
           </aside>
         </div>
         <p className="meta" style={{ marginTop: 10 }}>
-          Map: Natural Earth (public domain). Every asset, operator, reading and warning is synthetic.
+          Road and rail: National Key Freight Routes, Department of Infrastructure (CC BY 4.0). Outlines and rivers: Natural Earth
+          (public domain). Every asset, operator, reading and warning is synthetic.
         </p>
       </div>
     </section>

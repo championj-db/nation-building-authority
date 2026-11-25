@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAnalyticsQuery, useScope } from '../lib/data';
 import { formatAge, formatHour, formatMetric, formatPeople, formatTime, toDate } from '../lib/format';
 import { CONSEQUENCE_FLOOR, FACTOR_HELP, FACTOR_LABELS, HAZARD_LABELS, STATUS_LABELS, contributions } from '../lib/model';
-import type { ImpactRow, IncidentRow, TelemetryRow } from '../lib/rows';
+import { isTrue, type DisruptionRow, type ImpactRow, type IncidentRow, type TelemetryRow } from '../lib/rows';
 import { HazardIcon, SectorBadge } from './icons';
 import { EmptyState, ErrorState, Icon, Skeleton } from './primitives';
 
@@ -12,12 +12,13 @@ type Disposition = 'dispatch' | 'notify' | 'monitor';
 interface Props {
   incident: IncidentRow | null;
   impacts: ImpactRow[];
+  disruption: DisruptionRow | null;
   now: Date;
   onClose: () => void;
   onDecided: (message: string) => void;
 }
 
-export function ReviewDialog({ incident, impacts, now, onClose, onDecided }: Props) {
+export function ReviewDialog({ incident, impacts, disruption, now, onClose, onDecided }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -35,12 +36,12 @@ export function ReviewDialog({ incident, impacts, now, onClose, onDecided }: Pro
         if (e.target === ref.current) onClose();
       }}
     >
-      {incident ? <ReviewBody key={String(incident.incident_id)} incident={incident} impacts={impacts} now={now} onClose={onClose} onDecided={onDecided} /> : null}
+      {incident ? <ReviewBody key={String(incident.incident_id)} incident={incident} impacts={impacts} disruption={disruption} now={now} onClose={onClose} onDecided={onDecided} /> : null}
     </dialog>
   );
 }
 
-function ReviewBody({ incident, impacts, now, onClose, onDecided }: Props & { incident: IncidentRow }) {
+function ReviewBody({ incident, impacts, disruption, now, onClose, onDecided }: Props & { incident: IncidentRow }) {
   const { catalog, schema, refresh } = useScope();
   const metric = incident.trigger_metric ? String(incident.trigger_metric) : '';
   const params = useMemo(
@@ -72,7 +73,7 @@ function ReviewBody({ incident, impacts, now, onClose, onDecided }: Props & { in
       'risk_score',
       'contributing_factors',
       ...(telemetry.data?.length ? ['telemetry_trend'] : []),
-      ...(impacts.length ? ['downstream_impact'] : []),
+      ...(impacts.length || incident.route_name ? ['downstream_impact'] : []),
       ...(incident.hazard_title ? ['hazard_context'] : []),
     ];
     try {
@@ -158,9 +159,11 @@ function ReviewBody({ incident, impacts, now, onClose, onDecided }: Props & { in
             ))}
           </div>
           <p className="meta" style={{ marginTop: 14, marginBottom: 0 }}>
-            Consequence {consequence.toFixed(2)}: {formatPeople(incident.people_affected)} people relying on this asset
-            {Number(incident.downstream_assets) ? ` and the ${incident.downstream_assets} assets downstream of it` : ''}. It scales likelihood between{' '}
-            {CONSEQUENCE_FLOOR} and 1.
+            Consequence {consequence.toFixed(2)} is the larger of two readings. People {Number(incident.people_consequence_score).toFixed(2)}:{' '}
+            {formatPeople(incident.people_affected)} people relying on this asset
+            {Number(incident.downstream_assets) ? ` and the ${incident.downstream_assets} assets downstream of it` : ''}.
+            {incident.route_name ? ` Network ${Number(incident.network_consequence_score).toFixed(2)}: what its loss does to the ${incident.route_name}.` : ''} It scales
+            likelihood between {CONSEQUENCE_FLOOR} and 1.
           </p>
         </div>
 
@@ -190,6 +193,53 @@ function ReviewBody({ incident, impacts, now, onClose, onDecided }: Props & { in
                 {HAZARD_LABELS[String(incident.hazard_type)]} warning · {incident.hazard_severity} · this asset is inside the warning area
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {incident.route_name ? (
+          <div className="card card-rule">
+            <h3>Network impact</h3>
+            <p className="network-headline">
+              <span className={`pill ${isTrue(incident.no_alternative) ? 'danger' : 'warn'}`}>
+                {incident.network_effect === 'restriction' ? 'Restriction' : 'Closure'}
+              </span>{' '}
+              <strong>{incident.route_name}</strong>
+              {incident.route_no ? <span className="meta"> ({incident.route_no})</span> : null}
+            </p>
+            <dl className="network-facts">
+              {disruption?.section_from || disruption?.section_to ? (
+                <div>
+                  <dt>Affected section</dt>
+                  <dd>
+                    {disruption.section_from && disruption.section_from === disruption.section_to
+                      ? `Near ${disruption.section_from}`
+                      : `${disruption.section_from ?? 'junction'} to ${disruption.section_to ?? 'junction'}`}
+                    {disruption.section_km ? ` · ${Math.round(Number(disruption.section_km))} km between junctions` : ''}
+                  </dd>
+                </div>
+              ) : null}
+              {isTrue(incident.no_alternative) ? (
+                <div>
+                  <dt>Way round</dt>
+                  <dd>
+                    No alternative on the key freight network
+                    {incident.localities_cut ? (incident.network_mode === 'rail' ? `: cuts the freight rail link to ${incident.localities_cut}` : `: cuts off ${incident.localities_cut}`) : ''}
+                  </dd>
+                </div>
+              ) : (
+                <div>
+                  <dt>Detour</dt>
+                  <dd>
+                    {Number(incident.detour_extra_km) < 5
+                      ? 'Alternative route available with little extra distance'
+                      : `${Math.round(Number(incident.detour_extra_km))} km extra${incident.detour_via ? ` via ${incident.detour_via}` : ''}`}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <p className="meta" style={{ margin: 0 }}>
+              Detours run along key freight routes only, so they are an upper bound on the real diversion.
+            </p>
           </div>
         ) : null}
 

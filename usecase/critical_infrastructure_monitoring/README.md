@@ -25,6 +25,8 @@ A national Infrastructure Operations Centre on one governed platform:
 * readings conformed against an asset and sensor registry, with bad data quarantined rather than
   scored
 * a cross-sector dependency graph, so every asset knows what relies on it
+* the real national key freight road and rail network, so a road or rail failure propagates as a
+  detour or as localities cut off
 * an explainable likelihood × consequence risk score for every asset, where consequence includes the
   people relying on everything downstream
 * incidents with a recommended first action, worked through an operations app with a network map,
@@ -53,6 +55,8 @@ make every score resolve to a specific asset, operator and action.
 * Streaming ingest of operator telemetry and weather warnings
 * Conformance to an asset and sensor registry, deduplication, late arrival and quarantine
 * A cross-sector dependency graph (power and water supply links)
+* Real key freight road and rail networks, fetched at run time, with closure propagation (detours,
+  isolation) and freight-route exposure to warnings
 * Hazard exposure from active warnings
 * A transparent likelihood × consequence risk engine with incidents and recommended actions
 * An operations app: sector health, incident queue, network map, review and decision audit
@@ -77,6 +81,7 @@ asset + sensor + dependency registry ──────────────�
                        Infrastructure Operations Centre app (OBO) ── decisions ──> gold_incident_review_audit
 ```
 
+Key freight road and rail routes are fetched from the Department of Infrastructure at run time.
 Lakeflow Jobs with Auto Loader for ingest, Unity Catalog for governance and lineage, serverless
 compute throughout, a Databricks App (AppKit) running every query as the signed-in officer, AI/BI
 for the dashboard and Genie for natural-language analysis.
@@ -91,6 +96,8 @@ Synthetic and seeded (`seed=42`):
 | `dim_sensor` | 723 sensors (one per asset metric) with engineering warning and alarm limits |
 | `dim_dependency` | about 280 supply links: assets that need power fed by their nearest zone substation, substations by transmission lines, reservoirs by treatment plants |
 | `dim_inspection` | two years of condition inspections, some overdue |
+| `ref_network_segment` / `_node` / `_edge` | the real National Key Freight Routes (about 47,000 km of named road routes, 22,700 km of rail) as display geometry and a routable graph |
+| `ref_river` | major rivers, map context only |
 | `silver_reading` | about 480,000 trusted 15-minute readings over 7 days |
 | `silver_hazard_warning` | heatwave, flood, bushfire and storm warnings with a centre and radius |
 
@@ -113,9 +120,31 @@ How the synthetic world behaves (`src/common.py`):
 * **Generations.** Each run lands in a `generation=<data version>_<as_of>` folder and silver reads
   only the current one, so reruns rebuild a clean world instead of stacking data.
 
+## Transport networks and propagation
+
+Road and rail are modelled on real geometry, not just sites. `01a_fetch_networks` downloads, at run
+time, the Department of Infrastructure's
+[National Key Freight Routes](https://catalogue.data.infrastructure.gov.au/dataset/national-key-freight-routes-map)
+(road and rail, CC BY 4.0) and Natural Earth rivers (public domain), records provenance in
+`ref_network_source`, and keeps the last good copy in the landing volume so a run survives the source
+being unavailable. Nothing is committed to this repository.
+
+* **Graph.** Vertices within 1.5 km merge into one node, so routes that meet are connected. Road and
+  rail assets within 30 km of a key route are placed onto it.
+* **Propagation** (`src/network.py`, unit-tested in `tests/test_network.py`). For every network asset:
+  close the route at the asset, find the section between the junctions either side, and measure the
+  shortest way round. When there is none, everything beyond the break is cut off, and the localities
+  that join the network there are named. Results: `gold_asset_network_impact`, and for open
+  incidents `gold_network_disruption` (with section and detour geometry for the map).
+* **Warnings.** `gold_hazard_network_exposure` gives the kilometres of each key route inside each
+  active warning.
+* **Limits.** Detours run along key freight routes only, so they overstate real diversions over
+  local roads, and a freight line's end is its terminal, so rail isolation means "the freight rail
+  link to" a place, not the place itself.
+
 ## Risk engine
 
-`ioc-likelihood-consequence-v1`, the vocabulary infrastructure operators already use:
+`ioc-likelihood-consequence-v2`, the vocabulary infrastructure operators already use:
 
 | Factor (0-1) | Weight | Meaning |
 | --- | --- | --- |
@@ -124,11 +153,19 @@ How the synthetic world behaves (`src/common.py`):
 | Hazard exposure | 0.20 | inside an active warning, by severity, sector relevance and proximity |
 | Condition | 0.10 | a poor inspection grade (3-5), plus a penalty for an overdue inspection |
 
-`risk = 100 × likelihood × (0.7 + 0.3 × consequence)`, where consequence maps the people relying on
-the asset and everything up to two hops downstream onto 0-1 (1,000 people → 0, 1,000,000 → 1).
-Ratings: **extreme** ≥ 70, **high** ≥ 57, **medium** ≥ 48 (the incident threshold, a job
-parameter). People counts can overlap between services, so they are an upper bound for
-prioritisation and are never summed at sector level.
+`risk = 100 × likelihood × (0.7 + 0.3 × consequence)`. Consequence is the larger of two readings of
+"what if it fails":
+
+* **People**: those relying on the asset and everything up to two hops downstream, log-mapped onto
+  0-1 (1,000 people → 0, 1,000,000 → 1). People counts can overlap between services, so they are an
+  upper bound for prioritisation and are never summed at sector level.
+* **Network** (road and rail): the extra detour distance on a 600 km scale, or, when there is no way
+  round, 0.5 plus 0.1 for each unit of the cut-off localities' relative size (a coarse density
+  weight, not a population figure), or 0.4 when no named locality is cut off. Restrictions count
+  half.
+
+Ratings: **extreme** ≥ 70, **high** ≥ 57, **medium** ≥ 52 (the incident threshold, a job
+parameter).
 
 ## Deploy
 

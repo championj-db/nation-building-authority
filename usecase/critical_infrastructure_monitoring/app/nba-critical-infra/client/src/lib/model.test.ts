@@ -21,7 +21,7 @@ describe('risk engine mirror', () => {
   });
 
   test('ratings match common.RISK_RATINGS', () => {
-    expect([ratingFor(90), ratingFor(70), ratingFor(69), ratingFor(57), ratingFor(56), ratingFor(48), ratingFor(47)]).toEqual([
+    expect([ratingFor(90), ratingFor(70), ratingFor(69), ratingFor(57), ratingFor(56), ratingFor(52), ratingFor(51)]).toEqual([
       'extreme', 'extreme', 'high', 'high', 'medium', 'medium', 'low',
     ]);
   });

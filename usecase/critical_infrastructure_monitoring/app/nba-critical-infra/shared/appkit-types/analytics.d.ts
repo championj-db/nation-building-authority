@@ -87,6 +87,27 @@ declare module "@databricks/appkit-ui/react" {
           direction: string;
         }>;
       };
+    hazard_routes: {
+        name: "hazard_routes";
+        parameters: {
+          /** STRING - use sql.string() */
+          catalog: SQLStringMarker;
+          /** STRING - use sql.string() */
+          schema: SQLStringMarker;
+          /** STRING - use sql.string() */
+          refresh: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          warning_id: string;
+          /** @sqlType STRING */
+          mode: string;
+          /** @sqlType STRING */
+          route_name: string;
+          /** @sqlType DOUBLE */
+          km_inside: number;
+        }>;
+      };
     hazards: {
         name: "hazards";
         parameters: {
@@ -290,6 +311,30 @@ declare module "@databricks/appkit-ui/react" {
           downstream_sectors: number;
           /** @sqlType DECIMAL(22,0) */
           detected_lag_minutes: number;
+          /** @sqlType DOUBLE */
+          people_consequence_score: number;
+          /** @sqlType DOUBLE */
+          network_consequence_score: number;
+          /** @sqlType STRING */
+          consequence_driver: string;
+          /** @sqlType STRING */
+          network_mode: string;
+          /** @sqlType STRING */
+          route_name: string;
+          /** @sqlType STRING */
+          route_no: string;
+          /** @sqlType STRING */
+          network_effect: string;
+          /** @sqlType DOUBLE */
+          detour_extra_km: number;
+          /** @sqlType STRING */
+          detour_via: string;
+          /** @sqlType BOOLEAN */
+          no_alternative: boolean;
+          /** @sqlType STRING */
+          localities_cut: string;
+          /** @sqlType STRING */
+          network_summary: string;
           /** @sqlType STRING */
           status: string;
           /** @sqlType STRING */
@@ -333,6 +378,112 @@ declare module "@databricks/appkit-ui/react" {
           priority: number;
           /** @sqlType BIGINT */
           people_served: number;
+        }>;
+      };
+    network_disruptions: {
+        name: "network_disruptions";
+        parameters: {
+          /** STRING - use sql.string() */
+          catalog: SQLStringMarker;
+          /** STRING - use sql.string() */
+          schema: SQLStringMarker;
+          /** STRING - use sql.string() */
+          refresh: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          incident_id: string;
+          /** @sqlType BIGINT */
+          asset_id: number;
+          /** @sqlType STRING */
+          risk_rating: string;
+          /** @sqlType STRING */
+          sector: string;
+          /** @sqlType STRING */
+          network_mode: string;
+          /** @sqlType STRING */
+          route_name: string;
+          /** @sqlType STRING */
+          network_effect: string;
+          /** @sqlType STRING */
+          section_from: string;
+          /** @sqlType STRING */
+          section_to: string;
+          /** @sqlType DOUBLE */
+          section_km: number;
+          /** @sqlType DOUBLE */
+          detour_extra_km: number;
+          /** @sqlType STRING */
+          detour_via: string;
+          /** @sqlType BOOLEAN */
+          no_alternative: boolean;
+          /** @sqlType STRING */
+          localities_cut: string;
+          /** @sqlType STRING */
+          section_coords: string;
+          /** @sqlType STRING */
+          detour_coords: string;
+        }>;
+      };
+    network_rail: {
+        name: "network_rail";
+        parameters: {
+          /** STRING - use sql.string() */
+          catalog: SQLStringMarker;
+          /** STRING - use sql.string() */
+          schema: SQLStringMarker;
+          /** STRING - use sql.string() */
+          refresh: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          segment_id: string;
+          /** @sqlType STRING */
+          state: string;
+          /** @sqlType STRING */
+          display_coords: string;
+        }>;
+      };
+    network_rivers: {
+        name: "network_rivers";
+        parameters: {
+          /** STRING - use sql.string() */
+          catalog: SQLStringMarker;
+          /** STRING - use sql.string() */
+          schema: SQLStringMarker;
+          /** STRING - use sql.string() */
+          refresh: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          river_id: string;
+          /** @sqlType STRING */
+          name: string;
+          /** @sqlType BOOLEAN */
+          intermittent: boolean;
+          /** @sqlType STRING */
+          display_coords: string;
+        }>;
+      };
+    network_roads: {
+        name: "network_roads";
+        parameters: {
+          /** STRING - use sql.string() */
+          catalog: SQLStringMarker;
+          /** STRING - use sql.string() */
+          schema: SQLStringMarker;
+          /** STRING - use sql.string() */
+          refresh: SQLStringMarker;
+        };
+        result: Array<{
+          /** @sqlType STRING */
+          segment_id: string;
+          /** @sqlType STRING */
+          name: string;
+          /** @sqlType STRING */
+          route_no: string;
+          /** @sqlType STRING */
+          display_coords: string;
         }>;
       };
     ops_status: {
