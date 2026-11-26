@@ -1,0 +1,69 @@
+# Improper Payments Workbench - Databricks App for the improper payments detection use case.
+#
+# Reads the governed gold layer written by ../../resources/improper_payments_job.yml on behalf of
+# the signed-in investigator (user_api_scopes: sql), so Unity Catalog grants apply per person.
+# Case assignments and investigation outcomes are app-owned records in Lakebase Postgres (schema
+# `ipw`, created by the app's service principal on first start); the feedback job reads them back
+# into Unity Catalog to measure precision.
+#
+# No environment-specific value is committed here (see ../../../../CONTRIBUTING.md). Supply the
+# variables with --var, or in the git-ignored .databricks/bundle/<target>/variable-overrides.json,
+# and select the workspace with --profile.
+
+bundle:
+  name: nba-payments-workbench-app
+
+variables:
+  app_name:
+    description: Databricks App resource name (26 characters max, lowercase and hyphens).
+    default: nba-payments-workbench
+  catalog:
+    description: Unity Catalog catalog holding the use case's gold layer.
+  schema:
+    description: Schema written by the improper payments pipeline.
+  sql_warehouse_id:
+    description: SQL warehouse used for on-behalf-of-user reads.
+  postgres_branch:
+    description: >-
+      Lakebase branch resource name, e.g. projects/<project-id>/branches/production. List with
+      `databricks postgres list-branches projects/<project-id>`.
+  postgres_database:
+    description: >-
+      Lakebase database resource name on that branch. List with
+      `databricks postgres list-databases <branch-name>` and use the item's .name.
+
+resources:
+  apps:
+    app:
+      name: ${var.app_name}
+      description: Improper Payments Workbench - investigator triage for potentially improper payments (synthetic data)
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+        - name: postgres
+          postgres:
+            branch: ${var.postgres_branch}
+            database: ${var.postgres_database}
+            permission: CAN_CONNECT_AND_CREATE
+      config:
+        command: ['npm', 'run', 'start']
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: LAKEBASE_ENDPOINT
+            value_from: postgres
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+
+targets:
+  default:
+    default: true

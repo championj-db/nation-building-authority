@@ -1,0 +1,572 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T02:44:02.749574+00:00",
+  "title": "Design System: Improper Payments Workbench",
+  "extensions": {
+    "colorMeta": {
+      "lava": {
+        "role": "primary",
+        "displayName": "Lava",
+        "canonical": "#ff3621",
+        "tonalRamp": [
+          "oklch(15% 0.073 33)",
+          "oklch(25% 0.11 33)",
+          "oklch(35% 0.147 33)",
+          "oklch(45% 0.183 33)",
+          "oklch(58% 0.209 33)",
+          "oklch(70% 0.165 33)",
+          "oklch(82% 0.121 33)",
+          "oklch(95% 0.073 33)"
+        ]
+      },
+      "lava-strong": {
+        "role": "primary",
+        "displayName": "Deep Lava",
+        "canonical": "#c42a18",
+        "tonalRamp": [
+          "oklch(15% 0.067 33)",
+          "oklch(25% 0.1 33)",
+          "oklch(35% 0.133 33)",
+          "oklch(45% 0.167 33)",
+          "oklch(58% 0.19 33)",
+          "oklch(70% 0.15 33)",
+          "oklch(82% 0.11 33)",
+          "oklch(95% 0.067 33)"
+        ]
+      },
+      "lava-hover": {
+        "role": "primary",
+        "displayName": "Deep Lava Hover",
+        "canonical": "color-mix(in oklab, #c42a18, black 10%)",
+        "tonalRamp": [
+          "oklch(15% 0.063 33)",
+          "oklch(25% 0.095 33)",
+          "oklch(35% 0.127 33)",
+          "oklch(45% 0.158 33)",
+          "oklch(58% 0.18 33)",
+          "oklch(70% 0.143 33)",
+          "oklch(82% 0.105 33)",
+          "oklch(95% 0.063 33)"
+        ]
+      },
+      "lava-active": {
+        "role": "primary",
+        "displayName": "Deep Lava Pressed",
+        "canonical": "color-mix(in oklab, #c42a18, black 18%)",
+        "tonalRamp": [
+          "oklch(15% 0.06 33)",
+          "oklch(25% 0.09 33)",
+          "oklch(35% 0.12 33)",
+          "oklch(45% 0.15 33)",
+          "oklch(58% 0.171 33)",
+          "oklch(70% 0.135 33)",
+          "oklch(82% 0.099 33)",
+          "oklch(95% 0.06 33)"
+        ]
+      },
+      "meter-teal": {
+        "role": "secondary",
+        "displayName": "Meter Teal",
+        "canonical": "#1b5162",
+        "tonalRamp": [
+          "oklch(15% 0.02 220)",
+          "oklch(25% 0.03 220)",
+          "oklch(35% 0.04 220)",
+          "oklch(45% 0.05 220)",
+          "oklch(58% 0.057 220)",
+          "oklch(70% 0.045 220)",
+          "oklch(82% 0.033 220)",
+          "oklch(95% 0.02 220)"
+        ]
+      },
+      "slate-teal": {
+        "role": "secondary",
+        "displayName": "Slate Teal",
+        "canonical": "#618794",
+        "tonalRamp": [
+          "oklch(15% 0.013 220)",
+          "oklch(25% 0.02 220)",
+          "oklch(35% 0.027 220)",
+          "oklch(45% 0.033 220)",
+          "oklch(58% 0.038 220)",
+          "oklch(70% 0.03 220)",
+          "oklch(82% 0.022 220)",
+          "oklch(95% 0.013 220)"
+        ]
+      },
+      "navy-ink": {
+        "role": "neutral",
+        "displayName": "Navy Ink",
+        "canonical": "#0b2026",
+        "tonalRamp": [
+          "oklch(15% 0.01 215)",
+          "oklch(25% 0.015 215)",
+          "oklch(35% 0.02 215)",
+          "oklch(45% 0.025 215)",
+          "oklch(58% 0.028 215)",
+          "oklch(70% 0.022 215)",
+          "oklch(82% 0.017 215)",
+          "oklch(95% 0.01 215)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "color-mix(in oklab, var(--fg), transparent 38%)",
+        "tonalRamp": [
+          "oklch(15% 0.007 215)",
+          "oklch(25% 0.01 215)",
+          "oklch(35% 0.013 215)",
+          "oklch(45% 0.017 215)",
+          "oklch(58% 0.019 215)",
+          "oklch(70% 0.015 215)",
+          "oklch(82% 0.011 215)",
+          "oklch(95% 0.007 215)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "color-mix(in oklab, var(--fg), transparent 76%)",
+        "tonalRamp": [
+          "oklch(15% 0.007 215)",
+          "oklch(25% 0.01 215)",
+          "oklch(35% 0.013 215)",
+          "oklch(45% 0.017 215)",
+          "oklch(58% 0.019 215)",
+          "oklch(70% 0.015 215)",
+          "oklch(82% 0.011 215)",
+          "oklch(95% 0.007 215)"
+        ]
+      },
+      "hairline-soft": {
+        "role": "neutral",
+        "displayName": "Hairline Soft",
+        "canonical": "color-mix(in oklab, var(--fg), transparent 88%)",
+        "tonalRamp": [
+          "oklch(15% 0.007 215)",
+          "oklch(25% 0.01 215)",
+          "oklch(35% 0.013 215)",
+          "oklch(45% 0.017 215)",
+          "oklch(58% 0.019 215)",
+          "oklch(70% 0.015 215)",
+          "oklch(82% 0.011 215)",
+          "oklch(95% 0.007 215)"
+        ]
+      },
+      "oat": {
+        "role": "neutral",
+        "displayName": "Oat",
+        "canonical": "#eeede9",
+        "tonalRamp": [
+          "oklch(15% 0.002 90)",
+          "oklch(25% 0.003 90)",
+          "oklch(35% 0.004 90)",
+          "oklch(45% 0.005 90)",
+          "oklch(58% 0.006 90)",
+          "oklch(70% 0.005 90)",
+          "oklch(82% 0.003 90)",
+          "oklch(95% 0.002 90)"
+        ]
+      },
+      "warm-white": {
+        "role": "neutral",
+        "displayName": "Warm White",
+        "canonical": "#f9f7f4",
+        "tonalRamp": [
+          "oklch(15% 0.002 75)",
+          "oklch(25% 0.003 75)",
+          "oklch(35% 0.004 75)",
+          "oklch(45% 0.005 75)",
+          "oklch(58% 0.006 75)",
+          "oklch(70% 0.005 75)",
+          "oklch(82% 0.003 75)",
+          "oklch(95% 0.002 75)"
+        ]
+      },
+      "row-hover": {
+        "role": "neutral",
+        "displayName": "Row Hover",
+        "canonical": "color-mix(in oklab, var(--surface), var(--fg) 5%)",
+        "tonalRamp": [
+          "oklch(15% 0.002 80)",
+          "oklch(25% 0.003 80)",
+          "oklch(35% 0.003 80)",
+          "oklch(45% 0.004 80)",
+          "oklch(58% 0.005 80)",
+          "oklch(70% 0.004 80)",
+          "oklch(82% 0.003 80)",
+          "oklch(95% 0.002 80)"
+        ]
+      },
+      "signal-ok": {
+        "role": "status",
+        "displayName": "Signal OK",
+        "canonical": "#00875c",
+        "tonalRamp": [
+          "oklch(15% 0.04 160)",
+          "oklch(25% 0.06 160)",
+          "oklch(35% 0.08 160)",
+          "oklch(45% 0.1 160)",
+          "oklch(58% 0.114 160)",
+          "oklch(70% 0.09 160)",
+          "oklch(82% 0.066 160)",
+          "oklch(95% 0.04 160)"
+        ]
+      },
+      "signal-caution": {
+        "role": "status",
+        "displayName": "Signal Caution",
+        "canonical": "#ffab00",
+        "tonalRamp": [
+          "oklch(15% 0.05 75)",
+          "oklch(25% 0.075 75)",
+          "oklch(35% 0.1 75)",
+          "oklch(45% 0.125 75)",
+          "oklch(58% 0.142 75)",
+          "oklch(70% 0.112 75)",
+          "oklch(82% 0.083 75)",
+          "oklch(95% 0.05 75)"
+        ]
+      },
+      "signal-alert": {
+        "role": "status",
+        "displayName": "Signal Alert",
+        "canonical": "#bd2b26",
+        "tonalRamp": [
+          "oklch(15% 0.057 28)",
+          "oklch(25% 0.085 28)",
+          "oklch(35% 0.113 28)",
+          "oklch(45% 0.142 28)",
+          "oklch(58% 0.162 28)",
+          "oklch(70% 0.128 28)",
+          "oklch(82% 0.094 28)",
+          "oklch(95% 0.057 28)"
+        ]
+      },
+      "dark-ground": {
+        "role": "neutral",
+        "displayName": "Dark Ground (dark theme --bg)",
+        "canonical": "#303f47",
+        "tonalRamp": [
+          "oklch(15% 0.007 225)",
+          "oklch(25% 0.01 225)",
+          "oklch(35% 0.013 225)",
+          "oklch(45% 0.017 225)",
+          "oklch(58% 0.019 225)",
+          "oklch(70% 0.015 225)",
+          "oklch(82% 0.011 225)",
+          "oklch(95% 0.007 225)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark Surface (dark theme --surface)",
+        "canonical": "#0b2026",
+        "tonalRamp": [
+          "oklch(15% 0.01 215)",
+          "oklch(25% 0.015 215)",
+          "oklch(35% 0.02 215)",
+          "oklch(45% 0.025 215)",
+          "oklch(58% 0.028 215)",
+          "oklch(70% 0.022 215)",
+          "oklch(82% 0.017 215)",
+          "oklch(95% 0.01 215)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Dark Ink (dark theme --fg)",
+        "canonical": "#e8ecf0",
+        "tonalRamp": [
+          "oklch(15% 0.002 240)",
+          "oklch(25% 0.003 240)",
+          "oklch(35% 0.004 240)",
+          "oklch(45% 0.005 240)",
+          "oklch(58% 0.006 240)",
+          "oklch(70% 0.005 240)",
+          "oklch(82% 0.003 240)",
+          "oklch(95% 0.002 240)"
+        ]
+      },
+      "caution-ink": {
+        "role": "status",
+        "displayName": "Caution Ink",
+        "canonical": "color-mix(in oklab, #ffab00, #0b2026 45%)",
+        "tonalRamp": [
+          "oklch(15% 0.04 80)",
+          "oklch(25% 0.06 80)",
+          "oklch(35% 0.08 80)",
+          "oklch(45% 0.1 80)",
+          "oklch(55% 0.11 80)",
+          "oklch(68% 0.1 80)",
+          "oklch(82% 0.08 80)",
+          "oklch(95% 0.04 80)"
+        ]
+      },
+      "related-ink": {
+        "role": "primary",
+        "displayName": "Related Ink",
+        "canonical": "var(--lava-strong) (#c42a18); dark #ff8a7a",
+        "tonalRamp": [
+          "oklch(15% 0.067 33)",
+          "oklch(25% 0.1 33)",
+          "oklch(35% 0.133 33)",
+          "oklch(45% 0.167 33)",
+          "oklch(58% 0.19 33)",
+          "oklch(70% 0.15 33)",
+          "oklch(82% 0.11 33)",
+          "oklch(95% 0.067 33)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page H1 only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Drawer title (entity name)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and panel headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Table cells and running text."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "One sentence under each H1, max 64ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field and metric labels, sub-lines, footers."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Metric tile values."
+      },
+      "data-mono": {
+        "displayName": "Data Mono",
+        "purpose": "Case ids, risk pills, counts, timestamps."
+      },
+      "column-head": {
+        "displayName": "Column Head",
+        "purpose": "Table column headers only (uppercase)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "elev-raised",
+        "value": "0 2px 8px color-mix(in oklab, var(--fg), transparent 92%)",
+        "purpose": "Resting shadow for metric tiles and panels."
+      },
+      {
+        "name": "elev-overlay",
+        "value": "0 16px 48px color-mix(in oklab, var(--fg), transparent 78%)",
+        "purpose": "Review drawer and toasts."
+      }
+    ],
+    "motion": [
+      {
+        "name": "motion-fast",
+        "value": "150ms",
+        "purpose": "Hover, border and tone changes."
+      },
+      {
+        "name": "motion-base",
+        "value": "200ms",
+        "purpose": "Drawer slide, backdrop fade, toast, meter fill."
+      },
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "State transitions."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrances: drawer, toast, meter fill."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition/animation 0.01ms",
+        "purpose": "Applied under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "1000px"
+      },
+      {
+        "name": "mobile",
+        "value": "680px"
+      },
+      {
+        "name": "max-content",
+        "value": "1440px"
+      }
+    ],
+    "focus": {
+      "value": "2px solid var(--lava), offset 3px; queue rows: same outline on the row at offset -2px, box-shadow none",
+      "purpose": "Every focusable element; the component library's [tabindex] focus box-shadow is suppressed so only the lava ring shows."
+    },
+    "darkTheme": {
+      "--bg": "#303f47",
+      "--surface": "#0b2026",
+      "--fg": "#e8ecf0",
+      "--lava": "#bd2b26",
+      "--lava-strong": "#bd2b26",
+      "--lava-on": "#e8ecf0",
+      "--ok": "#00a972",
+      "--meter": "#8fb0bc",
+      "--alert": "#ff6b5e",
+      "--caution-ink": "#ffc94d",
+      "--related-ink": "#ff8a7a"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default outlined action.",
+      "html": "<button class=\"ds-btn\">Clear filters</button>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-btn{font-family:var(--font-body);font-size:14px;min-height:44px;padding:10px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font-weight:550;letter-spacing:.02em;cursor:pointer;transition:border-color 150ms cubic-bezier(.2,0,0,1),background 150ms cubic-bezier(.2,0,0,1);}.ds-btn:hover{border-color:var(--fg);background:var(--hover);}.ds-btn:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one commit action per view, in deep lava.",
+      "html": "<button class=\"ds-btn-primary\">Escalate for assessment</button>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-btn-primary{font-family:var(--font-body);font-size:14px;min-height:44px;padding:10px 16px;border:1px solid var(--lava-strong);border-radius:12px;background:var(--lava-strong);color:#f9f7f4;font-weight:550;letter-spacing:.02em;cursor:pointer;transition:background 150ms cubic-bezier(.2,0,0,1);}.ds-btn-primary:hover{background:color-mix(in oklab,var(--lava-strong),black 10%);border-color:color-mix(in oklab,var(--lava-strong),black 10%);}.ds-btn-primary:active{background:color-mix(in oklab,var(--lava-strong),black 18%);}.ds-btn-primary:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "control",
+      "description": "Labelled control on an oat well.",
+      "html": "<label class=\"ds-field\"><span>Search case, entity or signal</span><input class=\"ds-control\" placeholder=\"e.g. IP-2048 or North Harbour\"></label>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-field{display:grid;gap:4px;font-family:var(--font-body);font-size:14px;}.ds-field span{color:var(--fg-muted);font-size:12px;}.ds-control{font:inherit;min-height:44px;width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);caret-color:var(--lava);transition:border-color 150ms cubic-bezier(.2,0,0,1);}.ds-control::placeholder{color:var(--fg-muted);}.ds-control:hover{border-color:var(--fg);}.ds-control:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}"
+    },
+    {
+      "name": "Status Tabs",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Queue tabs with mono counts and a lava rule on the selected tab.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" aria-selected=\"true\">All cases <span>169</span></button><button class=\"ds-tab\">Unassigned <span>169</span></button><button class=\"ds-tab\">In review <span>0</span></button></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);font-family:var(--font-body);font-size:14px;}.ds-tab{font:inherit;position:relative;border:0;background:transparent;padding:0 0 12px;color:var(--fg-muted);cursor:pointer;display:inline-flex;gap:8px;align-items:end;}.ds-tab span{font-family:var(--font-mono);font-size:12px;}.ds-tab:hover{color:var(--fg);}.ds-tab[aria-selected=true]{color:var(--fg);font-weight:590;}.ds-tab[aria-selected=true]::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--lava);border-radius:9999px;}.ds-tab:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}"
+    },
+    {
+      "name": "Top Bar Nav",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Brand mark, name and view links.",
+      "html": "<nav class=\"ds-topbar\"><span class=\"ds-mark\">IP</span><strong>Improper Payments Workbench</strong><a href=\"#\" aria-current=\"page\">Review queue</a><a href=\"#\">Precision</a></nav>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-topbar{display:flex;align-items:center;gap:12px;min-height:64px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--line);font-family:var(--font-body);font-size:14px;color:var(--fg);}.ds-topbar strong{font-weight:590;letter-spacing:-.01em;margin-right:20px;}.ds-mark{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--fg);border-radius:8px;font-family:var(--font-mono);font-size:12px;}.ds-topbar a{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;color:var(--fg-muted);text-decoration:none;transition:background 150ms,color 150ms;}.ds-topbar a:hover{color:var(--fg);background:var(--hover);}.ds-topbar a[aria-current=page]{color:var(--fg);font-weight:590;background:color-mix(in oklab,var(--surface),var(--fg) 7%);}.ds-topbar a:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}"
+    },
+    {
+      "name": "Risk Badge",
+      "kind": "chip",
+      "refersTo": "risk-badge-high",
+      "description": "Score plus band word in a pale signal pill.",
+      "html": "<span class=\"ds-risk ds-high\">99 · High</span> <span class=\"ds-risk ds-medium\">64 · Medium</span>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--caution-ink:color-mix(in oklab,var(--caution),var(--fg) 45%);--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-risk{display:inline-flex;min-width:96px;justify-content:center;padding:4px 9px;border-radius:9999px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);}.ds-high{color:var(--alert);border-color:color-mix(in oklab,var(--alert),transparent 55%);background:color-mix(in oklab,var(--alert),transparent 92%);}.ds-medium{color:color-mix(in oklab,var(--caution),var(--fg) 45%);border-color:color-mix(in oklab,var(--caution),transparent 48%);background:color-mix(in oklab,var(--caution),transparent 90%);}"
+    },
+    {
+      "name": "Metric Tile",
+      "kind": "card",
+      "refersTo": "metric-tile",
+      "description": "Raised summary tile with a mono figure.",
+      "html": "<div class=\"ds-metric\"><span class=\"ds-ml\">Unassigned cases</span><span class=\"ds-mv\">169</span><span class=\"ds-ml\">95 high-risk cases open</span></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-metric{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:132px;width:260px;box-sizing:border-box;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);font-family:var(--font-body);font-size:14px;color:var(--fg);}.ds-ml{color:var(--fg-muted);font-size:12px;}.ds-mv{font-family:var(--font-mono);font-size:28px;letter-spacing:-.03em;line-height:1.2;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Evidence Factor",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Ranked factor from the review drawer: a rule factor carries a Rule signal tag; a model factor a share-of-model meter. Never one scale for both.",
+      "html": "<ol class=\"ds-factors\"><li class=\"ds-factor\"><span class=\"ds-idx\">01</span><div><strong>Approver lives at the supplier's director address</strong><p>The approving officer's home address matches the director address on the supplier record.</p><div class=\"ds-w\"><span class=\"ds-tag\">Rule signal</span>A defined pattern matched in the source records</div></div></li><li class=\"ds-factor\"><span class=\"ds-idx\">02</span><div><strong>Invoice value far above the supplier's norm</strong><p>The payment is several times this supplier's typical invoice.</p><div class=\"ds-w\"><span class=\"ds-track\"><span style=\"width:62%\"></span></span>Model pattern · 62% of the model’s contribution here</div></div></li></ol>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--caution-ink:color-mix(in oklab,var(--caution),var(--fg) 45%);--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-factors{list-style:none;margin:0;padding:0;display:grid;gap:16px;max-width:520px;font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--fg);}.ds-factor{display:grid;grid-template-columns:32px 1fr;gap:12px;}.ds-idx{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-family:var(--font-mono);font-size:12px;}.ds-factor strong{font-weight:590;}.ds-factor p{margin:2px 0 0;color:var(--fg-muted);}.ds-w{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--fg-muted);font-size:12px;}.ds-tag{flex:none;white-space:nowrap;padding:1px 8px;border:1px solid var(--line);border-radius:9999px;color:var(--fg);}.ds-track{width:96px;height:4px;border-radius:9999px;background:color-mix(in oklab,var(--fg),transparent 90%);overflow:hidden;display:block;flex:none;}.ds-track span{display:block;height:100%;background:var(--meter);border-radius:9999px;}"
+    },
+    {
+      "name": "Precision Meter",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Single-series meter: teal bar = held up, lava tick = ground truth. Hover or focus swaps the row's sub-line for its breakdown; no tooltip.",
+      "html": "<div class=\"ds-meter\" tabindex=\"0\"><span class=\"ds-mn\">Approver linked to supplier<small class=\"ds-count\">24 decisions</small><small class=\"ds-detail\">18 escalated · 6 cleared · truth 80%</small></span><span class=\"ds-mt\"><span class=\"ds-mf\" style=\"width:75%\"></span><span class=\"ds-tick\" style=\"left:80%\"></span></span><span class=\"ds-mvl\">75%</span></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 38%);--line:color-mix(in oklab,var(--fg),transparent 76%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--alert:#bd2b26;--caution:#ffab00;--ok:#00875c;--meter:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;}.ds-meter{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(120px,2fr) 4.5rem;align-items:center;gap:16px;padding:8px;border-radius:8px;font-family:var(--font-body);font-size:14px;color:var(--fg);outline:none;width:560px;}.ds-meter:hover,.ds-meter:focus-visible{background:var(--hover);}.ds-meter:focus-visible{outline:2px solid var(--lava);}.ds-meter small{display:block;color:var(--fg-muted);font-size:12px;}.ds-meter .ds-detail{display:none;color:var(--fg);white-space:nowrap;}.ds-meter:hover .ds-count,.ds-meter:focus-visible .ds-count{display:none;}.ds-meter:hover .ds-detail,.ds-meter:focus-visible .ds-detail{display:block;}.ds-mt{position:relative;height:12px;border-radius:4px;background:color-mix(in oklab,var(--fg),transparent 90%);}.ds-mf{position:absolute;inset:0 auto 0 0;border-radius:0 4px 4px 0;background:var(--meter);}.ds-tick{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;border-radius:1px;background:var(--lava);box-shadow:0 0 0 2px var(--surface);}.ds-mvl{text-align:right;font-family:var(--font-mono);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Ledger",
+    "overview": "**Creative North Star: \"The Quiet Ledger\"**\n\nThe workbench is an operational ledger, not a command centre. An oat ground carries warm-white panels drawn with hairline ink borders, and the case table is the dominant object on every screen. Density is high but unhurried: 14px body text at a generous 1.55 leading, 16px cell padding, and a single soft shadow under raised panels. Colour is almost entirely navy ink on oat; the one loud colour, lava, is spent on the primary action, the active-tab rule, focus, and data markers, so the investigator's eye always knows where the action is.\n\nEvery number is typeset in system mono with tabular figures (case ids, money, scores, counts, timestamps) and every score travels with its words: a risk pill reads \"99 · High\", a status reads \"Unassigned\" beside its dot. The signature interaction is a right-hand review drawer that slides over a dimmed queue and carries the evidence (ranked factors, each marked as a rule signal or measured as a share of the model, a data-drawn linked-entity graph, the payments) and the outcome form. Motion is state-only, 150 to 200ms, and collapses under reduced motion.\n\nThe system ships in light and dark. Dark mode swaps the ground to deep slate and the panels to navy, keeps every structural rule, and lowers lava to the alert red so it never glares.",
+    "keyCharacteristics": [
+      "Oat ground, warm-white panels, navy ink, hairline borders at 24% ink.",
+      "Lava reserved for the primary action, the active-tab rule, focus rings and data markers.",
+      "DM Sans for all prose and headings; system mono with tabular figures for every id, figure and score.",
+      "12 to 16px radii throughout, pills only for risk badges, rule-signal tags and meter ends.",
+      "One soft raised shadow; one overlay shadow for the drawer and toasts.",
+      "One focus ring: a 2px lava line, never doubled.",
+      "Score plus word, status plus word: colour never carries meaning alone."
+    ],
+    "rules": [
+      {
+        "name": "The One Hot Colour Rule",
+        "body": "Lava appears only on the primary action, the active-tab rule, focus, and small data markers (ticks, flag dots, spinner). It never fills a tile, a header, or a large area, and risk is never shown in lava: high risk uses the alert red in a pale pill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Lava Under Text Rule",
+        "body": "Wherever text sits on a lava fill, use deep lava (#c42a18), never #ff3621.",
+        "section": "colors"
+      },
+      {
+        "name": "The Figures Are Mono Rule",
+        "body": "Every id, amount, score, count and timestamp is set in the mono stack with tabular figures; prose is never set in mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Heading Stands Alone Rule",
+        "body": "A heading carries its own weight. Context (team, case reference) goes in the top-bar identity line or beside the title as a mono id, never as a small label stacked above the heading.",
+        "section": "typography"
+      },
+      {
+        "name": "The Queue Is The Page Rule",
+        "body": "The case table is the largest object on the queue screen and the top-ranked case stays above the fold at 1440 by 900; nothing (charts, banners, hero art) is placed between the metric tiles and the table.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Soft Shadow Rule",
+        "body": "Resting surfaces get the raised shadow or none; nothing hovers, glows or lifts on hover. Hover is shown by border and tone, never by elevation.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Ring Rule",
+        "body": "Focus is a single 2px lava line. Where an outset would clip or collide (table rows), pull the same outline inside with a negative offset; never stack it with a library focus shadow, a per-cell inset shadow, or a glow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** put every score next to its band word and every status dot next to its label.",
+      "**Do** set ids, money, scores, counts and times in the mono stack with tabular figures.",
+      "**Do** use deep lava (#c42a18) for any filled control that carries text, and limit it to one primary action per view.",
+      "**Do** draw containers with a 1px hairline at 24% ink and round them at 12 or 16px.",
+      "**Do** keep motion to state changes at 150 to 200ms with the standard or out ease, and honour reduced motion.",
+      "**Do** label synthetic data on every surface with the status-note card beside the page head.",
+      "**Do** reveal detail in place (swap a row's own sub-line) rather than in a floating tooltip."
+    ],
+    "donts": [
+      "**Don't** build a chart-heavy \"command centre\": no red alarm tiles, no hero charts above the queue, no large lava fills.",
+      "**Don't** colour risk in lava; high risk is the alert red in a pale pill.",
+      "**Don't** place a small label or kicker above a heading; context belongs in the top bar or beside the title.",
+      "**Don't** use Unicode glyphs as icons; use the lucide set at 18px and 1.75 stroke.",
+      "**Don't** add hover lift, glows, or hard offset shadows; the raised and overlay shadows are the whole vocabulary."
+    ]
+  }
+}

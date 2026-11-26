@@ -2,8 +2,9 @@
 # Modelled on public sector improper payments detection and entity resolution:
 # https://www.databricks.com/sites/default/files/2025-02/public-sector-report-jan-30.pdf
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# Synthetic, seeded data only. Pipeline in src/, jobs in resources/improper_payments_job.yml, the
+# investigator workbench's Lakebase project in resources/workbench_lakebase.yml. The React app in app/ is
+# developed separately and is not part of this bundle's sync.
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -22,7 +23,7 @@ variables:
     default: improper_payments_detection
 
   volume:
-    description: Unity Catalog volume used to land raw payment and registry extracts.
+    description: Unity Catalog volume used to land the synthetic source extracts.
     default: landing
 
   warehouse_id:
@@ -33,22 +34,68 @@ variables:
     description: Address notified when a job run fails.
     default: ${workspace.current_user.userName}
 
+  seed:
+    description: >-
+      Seed for the synthetic source generator. The same seed reproduces the same sources, entities,
+      payments, labels and cases.
+    default: "42"
+
+  case_threshold:
+    description: >-
+      Case score at or above which a supplier or claimant cluster becomes an investigator case.
+      Medium band starts here; high starts at 80.
+    default: "55"
+
+  lakebase_project_id:
+    description: >-
+      Lakebase (Autoscaling Postgres) project ID backing the investigator workbench's operational
+      state: case triage decisions. Namespaced per developer in the dev target.
+    default: nba-payments-workbench
+
+  lakebase_pg_version:
+    description: Postgres major version for the Lakebase project.
+    default: 17
+
+  lakebase_min_cu:
+    description: Minimum compute units on the Lakebase primary endpoint.
+    default: 0.5
+
+  lakebase_max_cu:
+    description: Maximum compute units on the Lakebase primary endpoint.
+    default: 2.0
+
+  lakebase_suspend_timeout:
+    description: Idle time before the Lakebase endpoint scales to zero.
+    default: 300s
+
   environment:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
+
+sync:
+  exclude:
+    - app/**
+    - tests/**
 
 targets:
   dev:
     mode: development
     default: true
+    # Upload sources into the bundle root (instead of linking to the Git folder) so
+    # src/*.py files with a "# Databricks notebook source" header are deployed as notebooks.
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: improper_payments_detection_${workspace.current_user.short_name}
+      lakebase_project_id: nba-payments-workbench-${workspace.current_user.domain_friendly_name}
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       environment: prod

@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2197" height="612" viewBox="0 0 2197 612" font-family="'DejaVu Sans Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace" font-size="14px">
+  <title>Improper payments detection - workbench architecture</title>
+  <defs>
+    <marker id="raf690260-arrow-5A6F77" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6F77"/>
+    </marker>
+    <mask id="raf690260-cut-1" maskUnits="userSpaceOnUse" x="0" y="0" width="2197" height="612">
+      <rect x="0" y="0" width="2197" height="612" fill="white"/>
+      <circle cx="972.5" cy="507.5" r="6.2" fill="black"/>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="2197" height="612" fill="#F9F7F4"/>
+  <path d="M48 40 H282 a8 8 0 0 1 8 8 V515 a8 8 0 0 1 -8 8 H48 a8 8 0 0 1 -8 -8 V48 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="55.5" y="68.4" fill="#1B3139" text-anchor="start">Synthetic sources (seeded)</text>
+  <path d="M62 83 H268 a8 8 0 0 1 8 8 V141 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="165" y="111.4" fill="#1B3139" text-anchor="middle">Supplier master</text>
+  <text x="165" y="130.4" fill="#5A6F77" text-anchor="middle">finance system</text>
+  <path d="M62 173 H268 a8 8 0 0 1 8 8 V231 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V181 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="165" y="201.4" fill="#1B3139" text-anchor="middle">Business registry</text>
+  <text x="165" y="220.4" fill="#5A6F77" text-anchor="middle">ABN-like, with drift</text>
+  <path d="M62 263 H268 a8 8 0 0 1 8 8 V321 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V271 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="165" y="291.4" fill="#1B3139" text-anchor="middle">Claims system</text>
+  <text x="165" y="310.4" fill="#5A6F77" text-anchor="middle">claimants + claims</text>
+  <path d="M62 353 H268 a8 8 0 0 1 8 8 V411 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V361 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="165" y="381.4" fill="#1B3139" text-anchor="middle">Officer register</text>
+  <text x="165" y="400.4" fill="#5A6F77" text-anchor="middle">approvers, assessors</text>
+  <path d="M62 443 H268 a8 8 0 0 1 8 8 V501 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V451 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="165" y="471.4" fill="#1B3139" text-anchor="middle">Payments</text>
+  <text x="165" y="490.4" fill="#5A6F77" text-anchor="middle">+ injected ground truth</text>
+  <path d="M490 101.5 H1505 a8 8 0 0 1 8 8 V453.5 a8 8 0 0 1 -8 8 H490 a8 8 0 0 1 -8 -8 V109.5 a8 8 0 0 1 8 -8 Z" fill="#EEEDE9" stroke="#90A5B1"/>
+  <text x="892.5" y="129.9" fill="#1B3139" text-anchor="start">Lakeflow Job (serverless)</text>
+  <path d="M504 189.5 H754 a8 8 0 0 1 8 8 V394.5 a8 8 0 0 1 -8 8 H504 a8 8 0 0 1 -8 -8 V197.5 a8 8 0 0 1 8 -8 Z" fill="#F6E3D3" stroke="#B5651D"/>
+  <text x="603.5" y="217.9" fill="#1B3139" text-anchor="start">Bronze</text>
+  <path d="M518 232.5 H740 a8 8 0 0 1 8 8 V290.5 a8 8 0 0 1 -8 8 H518 a8 8 0 0 1 -8 -8 V240.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="604" y="260.9" fill="#1B3139" text-anchor="middle">bronze_*</text>
+  <text x="604" y="279.9" fill="#5A6F77" text-anchor="middle">five source tables</text>
+  <g transform="translate(692 246.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M518 322.5 H740 a8 8 0 0 1 8 8 V380.5 a8 8 0 0 1 -8 8 H518 a8 8 0 0 1 -8 -8 V330.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="604" y="350.9" fill="#1B3139" text-anchor="middle">bronze_ground_truth</text>
+  <text x="604" y="369.9" fill="#5A6F77" text-anchor="middle">evaluation only</text>
+  <g transform="translate(696 336.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M818 144.5 H1127 a8 8 0 0 1 8 8 V439.5 a8 8 0 0 1 -8 8 H818 a8 8 0 0 1 -8 -8 V152.5 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="947" y="172.9" fill="#1B3139" text-anchor="start">Silver</text>
+  <path d="M832 187.5 H1113 a8 8 0 0 1 8 8 V245.5 a8 8 0 0 1 -8 8 H832 a8 8 0 0 1 -8 -8 V195.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="947.5" y="215.9" fill="#1B3139" text-anchor="middle">silver_entity</text>
+  <text x="947.5" y="234.9" fill="#5A6F77" text-anchor="middle">Splink 4 entity resolution</text>
+  <g transform="translate(1069 201.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M832 277.5 H1113 a8 8 0 0 1 8 8 V335.5 a8 8 0 0 1 -8 8 H832 a8 8 0 0 1 -8 -8 V285.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="947.5" y="305.9" fill="#1B3139" text-anchor="middle">silver_graph_*</text>
+  <text x="947.5" y="324.9" fill="#5A6F77" text-anchor="middle">shared accounts, addresses</text>
+  <g transform="translate(1069 291.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M832 367.5 H1113 a8 8 0 0 1 8 8 V425.5 a8 8 0 0 1 -8 8 H832 a8 8 0 0 1 -8 -8 V375.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="947.5" y="395.9" fill="#1B3139" text-anchor="middle">silver_investigation</text>
+  <text x="947.5" y="414.9" fill="#5A6F77" text-anchor="middle">outcomes fed back</text>
+  <g transform="translate(1043.5 381.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1191 144.5 H1491 a8 8 0 0 1 8 8 V439.5 a8 8 0 0 1 -8 8 H1191 a8 8 0 0 1 -8 -8 V152.5 a8 8 0 0 1 8 -8 Z" fill="#FBF1D0" stroke="#C9A227"/>
+  <text x="1324" y="172.9" fill="#1B3139" text-anchor="start">Gold</text>
+  <path d="M1205 187.5 H1477 a8 8 0 0 1 8 8 V245.5 a8 8 0 0 1 -8 8 H1205 a8 8 0 0 1 -8 -8 V195.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1316" y="215.9" fill="#1B3139" text-anchor="middle">gold_payment_score</text>
+  <text x="1316" y="234.9" fill="#5A6F77" text-anchor="middle">LightGBM + SHAP factors</text>
+  <g transform="translate(1425 201.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1205 277.5 H1477 a8 8 0 0 1 8 8 V335.5 a8 8 0 0 1 -8 8 H1205 a8 8 0 0 1 -8 -8 V285.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1316" y="305.9" fill="#1B3139" text-anchor="middle">gold_case_*</text>
+  <text x="1316" y="324.9" fill="#5A6F77" text-anchor="middle">queue, factors, subgraphs</text>
+  <g transform="translate(1433 291.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1205 367.5 H1477 a8 8 0 0 1 8 8 V425.5 a8 8 0 0 1 -8 8 H1205 a8 8 0 0 1 -8 -8 V375.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1316" y="395.9" fill="#1B3139" text-anchor="middle">gold_precision</text>
+  <text x="1316" y="414.9" fill="#5A6F77" text-anchor="middle">by signal and band</text>
+  <g transform="translate(1404 381.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M497 474.5 H761 a8 8 0 0 1 8 8 V532.5 a8 8 0 0 1 -8 8 H497 a8 8 0 0 1 -8 -8 V482.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="629" y="502.9" fill="#1B3139" text-anchor="middle">MLflow + UC model</text>
+  <text x="629" y="521.9" fill="#5A6F77" text-anchor="middle">improper_payment_risk@champion</text>
+  <path d="M1689 263 H1928 a8 8 0 0 1 8 8 V321 a8 8 0 0 1 -8 8 H1689 a8 8 0 0 1 -8 -8 V271 a8 8 0 0 1 8 -8 Z" fill="#1B3139" stroke="#1B3139"/>
+  <text x="1808.5" y="291.4" fill="#FFFFFF" text-anchor="middle">Improper Payments Workbench</text>
+  <text x="1808.5" y="310.4" fill="#DCE0E2" text-anchor="middle">Databricks App, AppKit</text>
+  <g transform="translate(2087.5 262.5) scale(1.58333)">
+    <path d="M4 3.6 h16 v11.4 h-16 Z" fill="#F9F7F4" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M2.2 16 h19.6 l1.6 2.6 a0.7 0.7 0 0 1 -0.6 1.1 h-21.6 a0.7 0.7 0 0 1 -0.6 -1.1 Z" fill="#57606a"/>
+    <path d="M9.6 17.2 h4.8 v1 h-4.8 Z" fill="#d6d9e6"/>
+  </g>
+  <text x="2106.5" y="324.9" fill="#1B3139" text-anchor="middle">Investigator</text>
+  <path d="M1659.5 449 H1957.5 a8 8 0 0 1 8 8 V507 a8 8 0 0 1 -8 8 H1659.5 a8 8 0 0 1 -8 -8 V457 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="1783.5" y="477.4" fill="#1B3139" text-anchor="middle">Lakebase Postgres</text>
+  <text x="1783.5" y="496.4" fill="#5A6F77" text-anchor="middle">ipw.case_event, case_outcome</text>
+  <g transform="translate(1913.5 463) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <g font-size="12px">
+  <text x="1675" y="219.2" fill="#1B3139" text-anchor="start">Unity Catalog grants, reads on behalf</text>
+  <text x="1675" y="235.2" fill="#1B3139" text-anchor="start">of the investigator</text>
+  </g>
+  <line x1="290" y1="281.5" x2="482" y2="281.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <rect x="352" y="273.5" width="68" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="386" y="285.7" fill="#1B3139" text-anchor="middle">generate</text>
+  </g>
+  <line x1="762" y1="296" x2="810" y2="296" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <line x1="1135" y1="296" x2="1183" y2="296" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <path d="M 769 507.5 L 1341 507.5 L 1341 447.5" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <rect x="1058" y="499.5" width="54" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1085" y="511.7" fill="#1B3139" text-anchor="middle">scores</text>
+  </g>
+  <line x1="1499" y1="296" x2="1681" y2="296" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <rect x="1538" y="288" width="104" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1590" y="300.2" fill="#1B3139" text-anchor="middle">SQL warehouse</text>
+  </g>
+  <line x1="1936" y1="296" x2="2056" y2="296" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)" marker-start="url(#raf690260-arrow-5A6F77)"/>
+  <line x1="1808.5" y1="329" x2="1808.5" y2="449" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#raf690260-arrow-5A6F77)"/>
+  <rect x="1720.5" y="381" width="176" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1808.5" y="393.2" fill="#1B3139" text-anchor="middle">assign, clear, escalate</text>
+  </g>
+  <path d="M 1808.5 515 L 1808.5 563 L 972.5 563 L 972.5 433.5" fill="none" stroke="#5A6F77" stroke-width="1.6" stroke-dasharray="6.4 4.8" marker-end="url(#raf690260-arrow-5A6F77)" mask="url(#raf690260-cut-1)"/>
+  <rect x="1276.25" y="555" width="147" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1349.75" y="567.2" fill="#1B3139" text-anchor="middle">08_outcome_feedback</text>
+  </g>
+</svg>
