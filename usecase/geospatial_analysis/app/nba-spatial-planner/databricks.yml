@@ -1,0 +1,58 @@
+# Spatial Service Planner - Databricks App for the geospatial analysis use case.
+#
+# Reads the governed gold layer produced by ../../resources/geospatial_job.yml and records officer
+# review notes, saved views and decision briefs to the app_* tables. Every query and every write
+# runs on behalf of the signed-in user (user_api_scopes: sql), so Unity Catalog grants apply per
+# officer and the record says who did what.
+#
+# No environment-specific value is committed here (see ../../../../CONTRIBUTING.md). Supply
+# catalog, schema and sql_warehouse_id with --var, or in the git-ignored
+# .databricks/bundle/<target>/variable-overrides.json, and select the workspace with --profile.
+
+bundle:
+  name: nba-spatial-planner-app
+
+variables:
+  app_name:
+    description: Databricks App resource name (26 characters max, lowercase and hyphens).
+    default: nba-spatial-planner
+  catalog:
+    description: Unity Catalog catalog holding the use case's gold layer.
+  schema:
+    description: Schema written by the geospatial analysis pipeline.
+  sql_warehouse_id:
+    description: SQL warehouse used for on-behalf-of-user analytics and officer write-back.
+  suppression_min_count:
+    description: Disclosure threshold for small-count suppression (persons).
+    default: "10"
+
+resources:
+  apps:
+    app:
+      name: ${var.app_name}
+      description: Spatial Service Planner - plan equitable access to essential services
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+      config:
+        command: ['npm', 'run', 'start']
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+          - name: SUPPRESSION_MIN_COUNT
+            value: ${var.suppression_min_count}
+
+targets:
+  default:
+    default: true

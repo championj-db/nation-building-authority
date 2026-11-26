@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2288" height="539" viewBox="0 0 2288 539" font-family="'DejaVu Sans Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace" font-size="14px">
+  <title>Geospatial analysis - access to essential services</title>
+  <defs>
+    <marker id="rc02d353b-arrow-5A6F77" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6F77"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="2288" height="539" fill="#F9F7F4"/>
+  <path d="M48 113.5 H399 a8 8 0 0 1 8 8 V408.5 a8 8 0 0 1 -8 8 H48 a8 8 0 0 1 -8 -8 V121.5 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="114" y="141.9" fill="#1B3139" text-anchor="start">Public sources (CC BY 4.0)</text>
+  <path d="M62 156.5 H385 a8 8 0 0 1 8 8 V214.5 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V164.5 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="223.5" y="184.9" fill="#1B3139" text-anchor="middle">ABS ASGS 2021</text>
+  <text x="223.5" y="203.9" fill="#5A6F77" text-anchor="middle">SA1-SA4, LGA, RA, state</text>
+  <path d="M62 246.5 H385 a8 8 0 0 1 8 8 V304.5 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V254.5 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="223.5" y="274.9" fill="#1B3139" text-anchor="middle">ABS Data API</text>
+  <text x="223.5" y="293.9" fill="#5A6F77" text-anchor="middle">ERP by SA2 and age</text>
+  <path d="M62 336.5 H385 a8 8 0 0 1 8 8 V394.5 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V344.5 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="223.5" y="364.9" fill="#1B3139" text-anchor="middle">Digital Atlas + GA</text>
+  <text x="223.5" y="383.9" fill="#5A6F77" text-anchor="middle">hospitals, UCCs, aged care, ambulance</text>
+  <path d="M655 40 H1671 a8 8 0 0 1 8 8 V482 a8 8 0 0 1 -8 8 H655 a8 8 0 0 1 -8 -8 V48 a8 8 0 0 1 8 -8 Z" fill="#EEEDE9" stroke="#90A5B1"/>
+  <text x="1058" y="68.4" fill="#1B3139" text-anchor="start">Lakeflow Job (serverless)</text>
+  <path d="M669 173 H953 a8 8 0 0 1 8 8 V378 a8 8 0 0 1 -8 8 H669 a8 8 0 0 1 -8 -8 V181 a8 8 0 0 1 8 -8 Z" fill="#F6E3D3" stroke="#B5651D"/>
+  <text x="785.5" y="201.4" fill="#1B3139" text-anchor="start">Bronze</text>
+  <path d="M683 216 H939 a8 8 0 0 1 8 8 V274 a8 8 0 0 1 -8 8 H683 a8 8 0 0 1 -8 -8 V224 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="786" y="244.4" fill="#1B3139" text-anchor="middle">landing volume</text>
+  <text x="786" y="263.4" fill="#5A6F77" text-anchor="middle">raw GeoJSON + CSV</text>
+  <g transform="translate(869.5 230) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M683 306 H939 a8 8 0 0 1 8 8 V364 a8 8 0 0 1 -8 8 H683 a8 8 0 0 1 -8 -8 V314 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="786" y="334.4" fill="#1B3139" text-anchor="middle">bronze_boundary</text>
+  <text x="786" y="353.4" fill="#5A6F77" text-anchor="middle">bronze_erp, bronze_site</text>
+  <g transform="translate(895 320) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1017 83 H1343 a8 8 0 0 1 8 8 V468 a8 8 0 0 1 -8 8 H1017 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="1154.5" y="111.4" fill="#1B3139" text-anchor="start">Silver</text>
+  <path d="M1031 126 H1329 a8 8 0 0 1 8 8 V184 a8 8 0 0 1 -8 8 H1031 a8 8 0 0 1 -8 -8 V134 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1155" y="154.4" fill="#1B3139" text-anchor="middle">silver_boundary</text>
+  <text x="1155" y="173.4" fill="#5A6F77" text-anchor="middle">ST_MakeValid, WKB</text>
+  <g transform="translate(1238.5 140) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1031 216 H1329 a8 8 0 0 1 8 8 V274 a8 8 0 0 1 -8 8 H1031 a8 8 0 0 1 -8 -8 V224 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1155" y="244.4" fill="#1B3139" text-anchor="middle">silver_household</text>
+  <text x="1155" y="263.4" fill="#5A6F77" text-anchor="middle">dbldatagen + ST_Contains</text>
+  <g transform="translate(1268 230) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1031 306 H1329 a8 8 0 0 1 8 8 V364 a8 8 0 0 1 -8 8 H1031 a8 8 0 0 1 -8 -8 V314 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1155" y="334.4" fill="#1B3139" text-anchor="middle">containment</text>
+  <text x="1155" y="353.4" fill="#5A6F77" text-anchor="middle">H3 chips, LGA + RA</text>
+  <g transform="translate(1243 320) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1031 396 H1329 a8 8 0 0 1 8 8 V454 a8 8 0 0 1 -8 8 H1031 a8 8 0 0 1 -8 -8 V404 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1155" y="424.4" fill="#1B3139" text-anchor="middle">proximity</text>
+  <text x="1155" y="443.4" fill="#5A6F77" text-anchor="middle">H3-pruned, ST_DistanceSphere</text>
+  <g transform="translate(1285 410) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1407 83 H1657 a8 8 0 0 1 8 8 V468 a8 8 0 0 1 -8 8 H1407 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z" fill="#FBF1D0" stroke="#C9A227"/>
+  <text x="1515" y="111.4" fill="#1B3139" text-anchor="start">Gold</text>
+  <path d="M1421 126 H1643 a8 8 0 0 1 8 8 V184 a8 8 0 0 1 -8 8 H1421 a8 8 0 0 1 -8 -8 V134 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1507" y="154.4" fill="#1B3139" text-anchor="middle">gold_region</text>
+  <text x="1507" y="173.4" fill="#5A6F77" text-anchor="middle">map-ready geometry</text>
+  <g transform="translate(1595 140) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1421 216 H1643 a8 8 0 0 1 8 8 V274 a8 8 0 0 1 -8 8 H1421 a8 8 0 0 1 -8 -8 V224 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1507" y="244.4" fill="#1B3139" text-anchor="middle">gold_access_band</text>
+  <text x="1507" y="263.4" fill="#5A6F77" text-anchor="middle">1 km distance bands</text>
+  <g transform="translate(1599 230) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1421 306 H1643 a8 8 0 0 1 8 8 V364 a8 8 0 0 1 -8 8 H1421 a8 8 0 0 1 -8 -8 V314 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1507" y="334.4" fill="#1B3139" text-anchor="middle">gold_cell_access</text>
+  <text x="1507" y="353.4" fill="#5A6F77" text-anchor="middle">H3 res 8 cells</text>
+  <g transform="translate(1586.5 320) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1421 396 H1643 a8 8 0 0 1 8 8 V454 a8 8 0 0 1 -8 8 H1421 a8 8 0 0 1 -8 -8 V404 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1507" y="424.4" fill="#1B3139" text-anchor="middle">gold_service_site</text>
+  <text x="1507" y="443.4" fill="#5A6F77" text-anchor="middle">catchments</text>
+  <g transform="translate(1590.5 410) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1855 246.5 H2061 a8 8 0 0 1 8 8 V304.5 a8 8 0 0 1 -8 8 H1855 a8 8 0 0 1 -8 -8 V254.5 a8 8 0 0 1 8 -8 Z" fill="#1B3139" stroke="#1B3139"/>
+  <text x="1958" y="274.9" fill="#FFFFFF" text-anchor="middle">Spatial Service Planner</text>
+  <text x="1958" y="293.9" fill="#DCE0E2" text-anchor="middle">Databricks App, AppKit</text>
+  <g transform="translate(2199.5 246) scale(1.58333)">
+    <path d="M4 3.6 h16 v11.4 h-16 Z" fill="#F9F7F4" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M2.2 16 h19.6 l1.6 2.6 a0.7 0.7 0 0 1 -0.6 1.1 h-21.6 a0.7 0.7 0 0 1 -0.6 -1.1 Z" fill="#57606a"/>
+    <path d="M9.6 17.2 h4.8 v1 h-4.8 Z" fill="#d6d9e6"/>
+  </g>
+  <text x="2218.5" y="308.4" fill="#1B3139" text-anchor="middle">Officer</text>
+  <path d="M1822 432.5 H2094 a8 8 0 0 1 8 8 V490.5 a8 8 0 0 1 -8 8 H1822 a8 8 0 0 1 -8 -8 V440.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="1933" y="460.9" fill="#1B3139" text-anchor="middle">app_review_note</text>
+  <text x="1933" y="479.9" fill="#1B3139" text-anchor="middle">app_saved_view, app_brief</text>
+  <g transform="translate(2050 446.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <g font-size="12px">
+  <text x="1864" y="186.7" fill="#1B3139" text-anchor="start">Unity Catalog grants, OBO,</text>
+  <text x="1864" y="202.7" fill="#1B3139" text-anchor="start">small-count suppression in</text>
+  <text x="1864" y="218.7" fill="#1B3139" text-anchor="start">SQL</text>
+  </g>
+  <path d="M 407 265 L 534 265 L 534 279.5 L 661 279.5" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)"/>
+  <rect x="478.5" y="256.25" width="111" height="32" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="534" y="268.45" fill="#1B3139" text-anchor="middle">fetch,</text>
+  <text x="534" y="284.45" fill="#1B3139" text-anchor="middle">cache fallback</text>
+  </g>
+  <line x1="961" y1="279.5" x2="1009" y2="279.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)"/>
+  <line x1="1351" y1="279.5" x2="1399" y2="279.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)"/>
+  <line x1="1665" y1="279.5" x2="1847" y2="279.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)"/>
+  <rect x="1704" y="271.5" width="104" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1756" y="283.7" fill="#1B3139" text-anchor="middle">SQL warehouse</text>
+  </g>
+  <line x1="2069" y1="279.5" x2="2189" y2="279.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)" marker-start="url(#rc02d353b-arrow-5A6F77)"/>
+  <line x1="1958" y1="312.5" x2="1958" y2="432.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc02d353b-arrow-5A6F77)"/>
+  <rect x="1870" y="364.5" width="176" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1958" y="376.7" fill="#1B3139" text-anchor="middle">append-only, as officer</text>
+  </g>
+</svg>

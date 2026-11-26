@@ -1,0 +1,8 @@
+{
+  "name": "nba-spatial-planner-smoke",
+  "private": true,
+  "description": "Pre-demo browser smoke test. Kept out of the app's dependency graph: the Apps build installs the root package only.",
+  "type": "module",
+  "scripts": { "test": "playwright test" },
+  "devDependencies": { "@playwright/test": "1.55.1" }
+}
