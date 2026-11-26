@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "usecase/geospatial_analysis/design/spatial-service-planner.html"
+        ],
+        "createdAt": "2026-11-26T00:01:47.580Z",
+        "reason": "assistant judgment: verbatim copy of the Genie Design handoff kept as the design reference, not shipped; the shipped app fixes the contrast with --lava-strong"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "usecase/geospatial_analysis/design/spatial-service-planner.html"
+        ],
+        "createdAt": "2026-11-26T00:01:47.615Z",
+        "reason": "assistant judgment: verbatim copy of the Genie Design handoff kept as the design reference, not shipped; the shipped app fixes the contrast with --lava-strong"
+      }
+    ]
+  }
+}
