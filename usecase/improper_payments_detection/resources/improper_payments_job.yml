@@ -1,0 +1,160 @@
+# Improper payments detection - pipeline and feedback jobs.
+#
+# Pipeline (serverless, chained):
+#   00 setup -> 01 sources -> 02 entity resolution -> 03 graph -> 04 features -> 05 train model
+#   -> 06 score and cases -> 07 gold reporting -> 08 outcome feedback
+#
+# Feedback (serverless, single task): 08 alone, so investigator decisions can be read back and
+# precision recomputed without retraining or rescoring.
+#
+# The Lakebase branch and endpoint names are the project defaults (production, primary) and are
+# structural identifiers that travel with the code. The project ID is a bundle variable.
+# Every environment-specific value is a ${var.*} reference. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    improper_payments_pipeline:
+      name: nba-improper-payments-detection-${var.environment}
+      description: >-
+        Synthetic improper-payments pipeline: seeded sources, probabilistic entity resolution,
+        relationship graph, payment risk scoring with a rule floor, investigator cases, and precision
+        measured against ground truth and investigator outcomes.
+
+      tags:
+        usecase: improper_payments_detection
+        environment: ${var.environment}
+
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+
+      max_concurrent_runs: 1
+      timeout_seconds: 10800
+
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: generate_sources
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/01_generate_sources.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              # The seed pins every synthetic record, so each deployment reproduces the same
+              # sources, entities, labels, scores and cases.
+              seed: ${var.seed}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: entity_resolution
+          depends_on:
+            - task_key: generate_sources
+          notebook_task:
+            notebook_path: ../src/02_entity_resolution.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: graph
+          depends_on:
+            - task_key: entity_resolution
+          notebook_task:
+            notebook_path: ../src/03_graph.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: features
+          depends_on:
+            - task_key: graph
+          notebook_task:
+            notebook_path: ../src/04_features.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: train_model
+          depends_on:
+            - task_key: features
+          notebook_task:
+            notebook_path: ../src/05_train_model.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              seed: ${var.seed}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: score_and_cases
+          depends_on:
+            - task_key: train_model
+          notebook_task:
+            notebook_path: ../src/06_score_and_cases.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              case_threshold: ${var.case_threshold}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: gold_reporting
+          depends_on:
+            - task_key: score_and_cases
+          notebook_task:
+            notebook_path: ../src/07_gold_reporting.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              seed: ${var.seed}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: outcome_feedback
+          depends_on:
+            - task_key: gold_reporting
+          notebook_task:
+            notebook_path: ../src/08_outcome_feedback.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+              lakebase_project_id: ${var.lakebase_project_id}
+              lakebase_branch_id: production
+              lakebase_endpoint_id: primary
+
+    improper_payments_feedback:
+      name: nba-improper-payments-detection-feedback-${var.environment}
+      description: >-
+        Reads investigator outcomes from the workbench's Lakebase store and rebuilds the precision
+        table. Runs without retraining or rescoring.
+
+      tags:
+        usecase: improper_payments_detection
+        environment: ${var.environment}
+
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+
+      max_concurrent_runs: 1
+      timeout_seconds: 1800
+
+      tasks:
+        - task_key: outcome_feedback
+          notebook_task:
+            notebook_path: ../src/08_outcome_feedback.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+              lakebase_project_id: ${var.lakebase_project_id}
+              lakebase_branch_id: production
+              lakebase_endpoint_id: primary

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Improper Payments Workbench</title>
+  <style>
+    @font-face {
+      font-family: "DM Sans";
+      src: url("./fonts/dmsans-variable.woff2") format("woff2");
+      font-weight: 100 1000;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #EEEDE9;
+      --surface: #F9F7F4;
+      --surface-warm: color-mix(in oklab, var(--accent), transparent 92%);
+      --fg: #0B2026;
+      --fg-2: var(--fg);
+      --muted: color-mix(in oklab, var(--fg), transparent 38%);
+      --meta: var(--muted);
+      --border: color-mix(in oklab, var(--fg), transparent 76%);
+      --border-soft: color-mix(in oklab, var(--fg), transparent 88%);
+      --accent: #FF3621;
+      --accent-on: #F9F7F4;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #00875C;
+      --warn: #FFAB00;
+      --danger: #BD2B26;
+      --viz-1: #FF3621;
+      --viz-2: #143D4A;
+      --viz-3: #0B2026;
+      --viz-4: #FFAB00;
+      --viz-5: #00875C;
+      --viz-6: #00A972;
+      --viz-7: #BD2B26;
+      --viz-8: #1B5162;
+      --viz-9: #AB4057;
+      --viz-10: #618794;
+      --font-display: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: -0.02em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #303F47;
+      --surface: #0B2026;
+      --fg: #E8ECF0;
+      --accent: #BD2B26;
+      --accent-on: #E8ECF0;
+      --success: #00A972;
+    }
+  </style>
+  <style>
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body { margin: 0; color: var(--fg); background: var(--bg); font-family: var(--font-body); font-size: var(--text-sm); line-height: var(--leading-body); }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button, a, select, input, textarea { min-height: 44px; }
+    button { cursor: pointer; }
+    :focus-visible { outline: var(--focus-ring) solid var(--accent); outline-offset: 3px; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); }
+    h1 { font-size: clamp(2rem, 3.2vw, var(--text-4xl)); font-weight: 590; }
+    h2 { font-size: var(--text-xl); font-weight: 590; }
+    h3 { font-size: var(--text-base); font-weight: 590; }
+    a { color: inherit; }
+    .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+    .topbar { position: relative; z-index: 20; background: color-mix(in oklab, var(--surface), transparent 4%); border-bottom: 1px solid var(--border); }
+    .topbar-inner { max-width: 1440px; min-height: 64px; padding: 0 var(--space-8); margin: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 590; letter-spacing: -0.01em; }
+    .brand-mark { width: 28px; height: 28px; border: 1px solid var(--fg); border-radius: var(--radius-sm); display: grid; place-items: center; font-family: var(--font-mono); font-size: var(--text-xs); }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); }
+    .identity { color: var(--muted); font-size: var(--text-xs); text-align: right; line-height: 1.35; }
+    .identity strong { display: block; color: var(--fg); font-weight: 550; }
+    .icon-button { width: 44px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+    .icon-button:hover { border-color: var(--fg); background: color-mix(in oklab, var(--surface), var(--fg) 4%); }
+    .workspace { max-width: 1440px; width: 100%; margin: 0 auto; padding: var(--space-8); }
+    .page-head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-8); margin-bottom: var(--space-8); }
+    .kicker { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: var(--space-2); }
+    .lede { max-width: 64ch; color: var(--muted); font-size: var(--text-base); margin-top: var(--space-3); }
+    .status-note { flex: 0 0 auto; padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-size: var(--text-xs); }
+    .status-note strong { color: var(--fg); }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); min-height: 132px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--elev-raised); }
+    .metric-label { color: var(--muted); font-size: var(--text-xs); letter-spacing: .02em; }
+    .metric-value { font-family: var(--font-mono); font-size: var(--text-2xl); letter-spacing: -0.03em; }
+    .metric-foot { color: var(--muted); font-size: var(--text-xs); }
+    .tabs { display: flex; gap: var(--space-6); border-bottom: 1px solid var(--border); margin-bottom: var(--space-5); overflow-x: auto; }
+    .tab { position: relative; border: 0; background: transparent; padding: 0 0 var(--space-3); color: var(--muted); white-space: nowrap; }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--fg); font-weight: 590; }
+    .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--accent); border-radius: var(--radius-pill); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elev-raised); overflow: hidden; }
+    .filters { padding: var(--space-4); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(260px, 1.5fr) repeat(3, minmax(150px, .6fr)) auto; gap: var(--space-3); align-items: end; }
+    .field { display: grid; gap: var(--space-1); }
+    .field label { color: var(--muted); font-size: var(--text-xs); }
+    .control { width: 100%; border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-md); padding: 9px 12px; }
+    .control:hover { border-color: var(--fg); }
+    .button { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 16px; background: var(--surface); font-weight: 550; letter-spacing: .02em; }
+    .button:hover { border-color: var(--fg); background: color-mix(in oklab, var(--surface), var(--fg) 5%); }
+    .button.primary { border-color: var(--accent); background: var(--accent); color: var(--accent-on); }
+    .button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .button.primary:active { background: var(--accent-active); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 940px; }
+    th { padding: var(--space-3) var(--space-4); text-align: left; color: var(--muted); font-family: var(--font-mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; border-bottom: 1px solid var(--border); }
+    td { padding: var(--space-4); border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    tbody tr { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+    tbody tr:hover, tbody tr.selected { background: color-mix(in oklab, var(--surface), var(--fg) 5%); }
+    tbody tr:last-child td { border-bottom: 0; }
+    .case-id { font-family: var(--font-mono); font-size: var(--text-xs); }
+    .entity { font-weight: 550; }
+    .entity-sub { color: var(--muted); font-size: var(--text-xs); margin-top: 2px; }
+    .money { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+    .risk { display: inline-flex; min-width: 72px; justify-content: center; padding: 4px 9px; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: var(--text-xs); border: 1px solid var(--border); }
+    .risk.high { color: var(--danger); border-color: color-mix(in oklab, var(--danger), transparent 55%); background: color-mix(in oklab, var(--danger), transparent 92%); }
+    .risk.medium { color: color-mix(in oklab, var(--warn), var(--fg) 36%); border-color: color-mix(in oklab, var(--warn), transparent 48%); background: color-mix(in oklab, var(--warn), transparent 90%); }
+    .state { color: var(--muted); font-size: var(--text-xs); }
+    .state::before { content: ""; width: 7px; height: 7px; display: inline-block; margin-right: 7px; border-radius: 50%; background: var(--viz-10); }
+    .state.review::before { background: var(--warn); }
+    .state.done::before { background: var(--success); }
+    .table-foot { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: var(--text-xs); }
+    .drawer-backdrop { position: fixed; inset: 0; z-index: 30; background: color-mix(in oklab, var(--fg), transparent 70%); opacity: 0; pointer-events: none; transition: opacity var(--motion-base) var(--ease-standard); }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; z-index: 40; right: 0; top: 0; height: 100vh; width: min(620px, 100%); background: var(--surface); border-left: 1px solid var(--border); transform: translateX(100%); transition: transform var(--motion-base) var(--ease-standard); overflow-y: auto; }
+    .drawer.open { transform: translateX(0); }
+    .drawer-head { position: sticky; top: 0; z-index: 2; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--surface), transparent 3%); backdrop-filter: blur(10px); display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); }
+    .drawer-body { padding: var(--space-6); display: grid; gap: var(--space-6); }
+    .case-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+    .mini { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+    .mini span { display: block; color: var(--muted); font-size: var(--text-xs); margin-bottom: var(--space-1); }
+    .mini strong { font-family: var(--font-mono); font-size: var(--text-base); }
+    .evidence { border-top: 1px solid var(--border); padding-top: var(--space-5); }
+    .evidence-list { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+    .evidence-item { display: grid; grid-template-columns: 32px 1fr; gap: var(--space-3); align-items: start; }
+    .evidence-index { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-xs); }
+    .evidence-item p { color: var(--muted); margin-top: 2px; }
+    .graph { min-height: 220px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg); position: relative; overflow: hidden; }
+    .graph-line { position: absolute; height: 1px; background: var(--border); transform-origin: left center; }
+    .line-a { width: 33%; left: 23%; top: 42%; transform: rotate(12deg); }
+    .line-b { width: 29%; left: 23%; top: 45%; transform: rotate(-31deg); }
+    .line-c { width: 24%; left: 51%; top: 52%; transform: rotate(38deg); }
+    .node { position: absolute; min-width: 96px; padding: 8px 10px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: var(--text-xs); box-shadow: var(--elev-raised); }
+    .node strong { display: block; }
+    .node small { color: var(--muted); }
+    .node-a { left: 7%; top: 34%; }
+    .node-b { left: 46%; top: 22%; }
+    .node-c { left: 42%; bottom: 14%; }
+    .node-d { right: 7%; top: 48%; }
+    .assurance { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--muted); background: var(--bg); }
+    .assurance strong { color: var(--fg); }
+    .outcome { display: grid; gap: var(--space-3); }
+    .outcome-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .empty { padding: var(--space-12); text-align: center; color: var(--muted); display: none; }
+    @media (max-width: 1000px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .filters { grid-template-columns: 1fr 1fr; }
+      .filters .field:first-child { grid-column: 1 / -1; }
+      .filters .button { width: 100%; }
+    }
+    @media (max-width: 680px) {
+      .topbar-inner, .workspace { padding-left: var(--container-gutter-phone); padding-right: var(--container-gutter-phone); }
+      .identity { display: none; }
+      .page-head { align-items: start; flex-direction: column; gap: var(--space-4); }
+      .summary-grid { grid-template-columns: 1fr; }
+      .filters { grid-template-columns: 1fr; }
+      .filters .field:first-child { grid-column: auto; }
+      .case-summary, .outcome-actions { grid-template-columns: 1fr; }
+      .drawer-head, .drawer-body { padding-left: var(--space-4); padding-right: var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar" data-od-id="global-navigation">
+      <div class="topbar-inner">
+        <div class="brand" data-od-id="product-brand">
+          <span class="brand-mark" aria-hidden="true">IP</span>
+          <span>Improper Payments Workbench</span>
+        </div>
+        <div class="top-actions">
+          <div class="identity"><strong>Alex Morgan</strong>Investigator · Integrity Operations</div>
+          <button class="icon-button" id="themeToggle" aria-label="Toggle dark theme" title="Toggle theme">◐</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace" data-od-id="investigator-workspace">
+      <section class="page-head" data-od-id="work-queue-heading">
+        <div>
+          <p class="kicker">Integrity operations · Daily review</p>
+          <h1 data-od-id="page-title">Payment review queue</h1>
+          <p class="lede">Prioritise potentially improper payments, inspect linked evidence, and record an accountable investigation outcome.</p>
+        </div>
+        <div class="status-note" data-od-id="demo-data-notice"><strong>Synthetic demonstration data</strong><br />Scores are indicators, not findings.</div>
+      </section>
+
+      <section class="summary-grid" data-od-id="queue-summary" aria-label="Queue summary">
+        <article class="metric" data-od-id="metric-unassigned"><span class="metric-label">Unassigned cases</span><strong class="metric-value">18</strong><span class="metric-foot">Illustrative seeded queue</span></article>
+        <article class="metric" data-od-id="metric-review"><span class="metric-label">In review</span><strong class="metric-value">7</strong><span class="metric-foot">Across the investigation team</span></article>
+        <article class="metric" data-od-id="metric-value"><span class="metric-label">Value under review</span><strong class="metric-value">$1.84m</strong><span class="metric-foot">Not an estimated recovery amount</span></article>
+        <article class="metric" data-od-id="metric-feedback"><span class="metric-label">Outcomes captured</span><strong class="metric-value" id="outcomesCount">42</strong><span class="metric-foot">Feeds precision monitoring</span></article>
+      </section>
+
+      <nav class="tabs" data-od-id="queue-tabs" aria-label="Case status">
+        <button class="tab active" data-tab="all">All cases <span class="num">25</span></button>
+        <button class="tab" data-tab="unassigned">Unassigned <span class="num">18</span></button>
+        <button class="tab" data-tab="review">In review <span class="num">7</span></button>
+        <button class="tab" data-tab="closed">Closed today <span class="num">4</span></button>
+      </nav>
+
+      <section class="panel" data-od-id="case-queue">
+        <div class="filters" data-od-id="queue-filters">
+          <div class="field"><label for="search">Search case, entity or reference</label><input class="control" id="search" type="search" placeholder="e.g. IP-2048 or North Harbour" /></div>
+          <div class="field"><label for="riskFilter">Risk band</label><select class="control" id="riskFilter"><option value="all">All risk bands</option><option value="high">High</option><option value="medium">Medium</option></select></div>
+          <div class="field"><label for="programFilter">Program</label><select class="control" id="programFilter"><option value="all">All programs</option><option value="supplier">Supplier payments</option><option value="claims">Claims</option></select></div>
+          <div class="field"><label for="sortFilter">Sort by</label><select class="control" id="sortFilter"><option value="risk">Highest risk</option><option value="value">Highest value</option><option value="age">Oldest first</option></select></div>
+          <button class="button" id="clearFilters" data-od-id="clear-filters">Clear filters</button>
+        </div>
+        <div class="table-wrap">
+          <table aria-label="Payment review cases">
+            <thead><tr><th>Case</th><th>Entity</th><th>Program</th><th>Primary signal</th><th>Risk</th><th>Status</th><th style="text-align:right">Payment value</th></tr></thead>
+            <tbody id="caseRows">
+              <tr tabindex="0" data-case="IP-2048" data-risk="high" data-program="supplier" data-status="unassigned" data-value="486220" data-age="4" data-od-id="case-ip-2048"><td class="case-id">IP-2048</td><td><div class="entity">North Harbour Supplies</div><div class="entity-sub">Supplier · ABN ending 410</div></td><td>Supplier payments</td><td>Shared bank account</td><td><span class="risk high">92 · High</span></td><td><span class="state">Unassigned</span></td><td class="money">$486,220</td></tr>
+              <tr tabindex="0" data-case="IP-2051" data-risk="high" data-program="claims" data-status="review" data-value="184900" data-age="2" data-od-id="case-ip-2051"><td class="case-id">IP-2051</td><td><div class="entity">Claimant cluster 078</div><div class="entity-sub">6 linked claims</div></td><td>Claims</td><td>Address linked to assessor</td><td><span class="risk high">87 · High</span></td><td><span class="state review">In review</span></td><td class="money">$184,900</td></tr>
+              <tr tabindex="0" data-case="IP-2039" data-risk="medium" data-program="supplier" data-status="unassigned" data-value="92140" data-age="7" data-od-id="case-ip-2039"><td class="case-id">IP-2039</td><td><div class="entity">Metro Field Services</div><div class="entity-sub">Supplier · created 12 days ago</div></td><td>Supplier payments</td><td>New vendor, early invoice</td><td><span class="risk medium">68 · Medium</span></td><td><span class="state">Unassigned</span></td><td class="money">$92,140</td></tr>
+              <tr tabindex="0" data-case="IP-2044" data-risk="medium" data-program="claims" data-status="review" data-value="67800" data-age="5" data-od-id="case-ip-2044"><td class="case-id">IP-2044</td><td><div class="entity">Claimant cluster 114</div><div class="entity-sub">3 linked claims</div></td><td>Claims</td><td>Reused contact details</td><td><span class="risk medium">64 · Medium</span></td><td><span class="state review">In review</span></td><td class="money">$67,800</td></tr>
+              <tr tabindex="0" data-case="IP-2027" data-risk="medium" data-program="supplier" data-status="closed" data-value="41400" data-age="11" data-od-id="case-ip-2027"><td class="case-id">IP-2027</td><td><div class="entity">Riverbend Maintenance</div><div class="entity-sub">Supplier · ABN ending 982</div></td><td>Supplier payments</td><td>Duplicate invoice pattern</td><td><span class="risk medium">59 · Medium</span></td><td><span class="state done">Closed today</span></td><td class="money">$41,400</td></tr>
+            </tbody>
+          </table>
+          <div class="empty" id="emptyState">No cases match the current filters.</div>
+        </div>
+        <div class="table-foot"><span id="resultCount">Showing 5 illustrative cases</span><span>Last model refresh: 08:15 AEST</span></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="caseDrawer" aria-hidden="true" aria-labelledby="drawerTitle" data-od-id="case-review-drawer">
+    <div class="drawer-head">
+      <div><p class="kicker" id="drawerCase">Case IP-2048</p><h2 id="drawerTitle">North Harbour Supplies</h2></div>
+      <button class="icon-button" id="closeDrawer" aria-label="Close case review">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="case-summary" data-od-id="case-summary">
+        <div class="mini"><span>Risk score</span><strong>92 / 100</strong></div>
+        <div class="mini"><span>Payment value</span><strong>$486,220</strong></div>
+        <div class="mini"><span>Queue age</span><strong>4 days</strong></div>
+      </div>
+
+      <section class="evidence" data-od-id="contributing-factors">
+        <h3>Why this case was prioritised</h3>
+        <div class="evidence-list">
+          <div class="evidence-item"><span class="evidence-index">01</span><div><strong>Bank account shared across suppliers</strong><p>The nominated account also appears on two separately registered supplier records.</p></div></div>
+          <div class="evidence-item"><span class="evidence-index">02</span><div><strong>Recent counterparty creation</strong><p>The supplier record was created 12 days before its first invoice was submitted.</p></div></div>
+          <div class="evidence-item"><span class="evidence-index">03</span><div><strong>Unusual approval relationship</strong><p>The approving officer's contact address is linked to a supplier director record.</p></div></div>
+        </div>
+      </section>
+
+      <section class="evidence" data-od-id="relationship-graph">
+        <h3>Linked entity view</h3>
+        <p style="color:var(--muted); margin-top:var(--space-1);">A compact view of the records that contributed to this score.</p>
+        <div class="graph" style="margin-top:var(--space-4);" role="img" aria-label="Relationship graph linking North Harbour Supplies to a shared bank account, related supplier and approving officer">
+          <span class="graph-line line-a"></span><span class="graph-line line-b"></span><span class="graph-line line-c"></span>
+          <div class="node node-a"><strong>North Harbour</strong><small>Supplier</small></div>
+          <div class="node node-b"><strong>Account ··824</strong><small>Bank account</small></div>
+          <div class="node node-c"><strong>Coastal Trade</strong><small>Related supplier</small></div>
+          <div class="node node-d"><strong>Officer 029</strong><small>Approver</small></div>
+        </div>
+      </section>
+
+      <div class="assurance" data-od-id="assurance-note"><strong>Decision support only.</strong> The risk score does not establish wrongdoing. Verify source records, follow procedural fairness requirements, and record the basis for any escalation.</div>
+
+      <section class="outcome" data-od-id="investigation-outcome">
+        <h3>Record investigation outcome</h3>
+        <div class="field"><label for="caseNotes">Investigator notes</label><textarea class="control" id="caseNotes" rows="4" placeholder="Summarise checks completed and evidence considered"></textarea></div>
+        <div class="outcome-actions">
+          <button class="button" data-outcome="cleared">Clear indicator</button>
+          <button class="button primary" data-outcome="escalated" data-od-id="submit-outcome">Escalate for assessment</button>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <script>
+    const root = document.documentElement;
+    const rows = [...document.querySelectorAll('#caseRows tr')];
+    const search = document.getElementById('search');
+    const riskFilter = document.getElementById('riskFilter');
+    const programFilter = document.getElementById('programFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const drawer = document.getElementById('caseDrawer');
+    const backdrop = document.getElementById('backdrop');
+    let activeTab = 'all';
+
+    function applyFilters() {
+      const term = search.value.toLowerCase();
+      const risk = riskFilter.value;
+      const program = programFilter.value;
+      let visible = 0;
+      rows.forEach(row => {
+        const tabMatch = activeTab === 'all' || row.dataset.status === activeTab;
+        const termMatch = row.textContent.toLowerCase().includes(term);
+        const riskMatch = risk === 'all' || row.dataset.risk === risk;
+        const programMatch = program === 'all' || row.dataset.program === program;
+        const show = tabMatch && termMatch && riskMatch && programMatch;
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+      const sorted = rows.slice().sort((a, b) => Number(b.dataset[sortFilter.value]) - Number(a.dataset[sortFilter.value]));
+      sorted.forEach(row => row.parentElement.appendChild(row));
+      document.getElementById('emptyState').style.display = visible ? 'none' : 'block';
+      document.getElementById('resultCount').textContent = `Showing ${visible} illustrative ${visible === 1 ? 'case' : 'cases'}`;
+    }
+
+    function openDrawer(row) {
+      rows.forEach(item => item.classList.toggle('selected', item === row));
+      document.getElementById('drawerCase').textContent = `Case ${row.dataset.case}`;
+      document.getElementById('drawerTitle').textContent = row.querySelector('.entity').textContent;
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.getElementById('closeDrawer').focus();
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      rows.forEach(row => row.classList.remove('selected'));
+    }
+
+    rows.forEach(row => {
+      row.addEventListener('click', () => openDrawer(row));
+      row.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDrawer(row); } });
+    });
+    [search, riskFilter, programFilter, sortFilter].forEach(control => control.addEventListener('input', applyFilters));
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(item => item.classList.remove('active'));
+      tab.classList.add('active');
+      activeTab = tab.dataset.tab;
+      applyFilters();
+    }));
+    document.getElementById('clearFilters').addEventListener('click', () => { search.value = ''; riskFilter.value = 'all'; programFilter.value = 'all'; sortFilter.value = 'risk'; applyFilters(); });
+    document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDrawer(); });
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      localStorage.setItem('ipw-theme', next);
+    });
+    root.dataset.theme = localStorage.getItem('ipw-theme') || 'light';
+    document.querySelectorAll('[data-outcome]').forEach(button => button.addEventListener('click', () => {
+      const notes = document.getElementById('caseNotes');
+      if (!notes.value.trim()) { notes.focus(); notes.setAttribute('aria-invalid', 'true'); return; }
+      notes.removeAttribute('aria-invalid');
+      const count = document.getElementById('outcomesCount');
+      count.textContent = String(Number(count.textContent) + 1);
+      button.textContent = button.dataset.outcome === 'escalated' ? 'Escalation recorded' : 'Indicator cleared';
+      setTimeout(closeDrawer, 500);
+    }));
+  </script>
+</body>
+</html>

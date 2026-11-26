@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design/improper-payments-workbench.html"
+        ],
+        "createdAt": "2026-11-26T01:38:42.973Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-payments-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "hero-eyebrow-chip",
+        "value": "*",
+        "files": [
+          "design/improper-payments-workbench.html"
+        ],
+        "createdAt": "2026-11-26T01:38:43.006Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-payments-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          "design/improper-payments-workbench.html"
+        ],
+        "createdAt": "2026-11-26T01:38:43.034Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-payments-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "roboto",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-26T02:51:54.192Z",
+        "reason": "Claude: reladraw-generated diagram viewer page using its own bundled font stack; documentation tooling, not part of the app's design system"
+      }
+    ]
+  }
+}

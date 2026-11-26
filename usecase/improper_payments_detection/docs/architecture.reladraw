@@ -1,0 +1,61 @@
+// Improper payments detection: four synthetic source systems in, entities resolved, a
+// relationship graph built, payments scored with retained factors, an investigator queue out,
+// and outcomes fed back from Lakebase to measure precision.
+diagram  title: "Improper payments detection - workbench architecture"  theme: light  background: #F9F7F4
+
+default node  border: #1B3139  text: (color: #1B3139)
+default leaf  fill: #FFFFFF
+default container  fill: #EEEDE9  border: #90A5B1
+default edge  line: #5A6F77  text: (color: #1B3139, size: small)
+
+style  dim     text: (size: small, color: #5A6F77)
+style  ondark  text: (size: small, color: #DCE0E2)
+style  ext     fill: #DCE0E2                        border: #618794
+style  store   fill: #FFF1EF                        border: #FF3621  badge: database
+style  dbx     fill: #1B3139                        border: #1B3139  text: (color: #FFFFFF)
+style  table   badge: database
+style  bronze  fill: #F6E3D3                        border: #B5651D
+style  silver  fill: #E8ECEF                        border: #8A9BA8
+style  gold    fill: #FBF1D0                        border: #C9A227
+
+// Seeded synthetic sources
+node  src           "Synthetic sources (seeded)" (inside top)              layout: column (gap: tight, widths: match)  style: ext
+node  src.supplier  "Supplier master / [dim]finance system[/dim]"          style: ext
+node  src.registry  "Business registry / [dim]ABN-like, with drift[/dim]"  style: ext
+node  src.claims    "Claims system / [dim]claimants + claims[/dim]"        style: ext
+node  src.officer   "Officer register / [dim]approvers, assessors[/dim]"   style: ext
+node  src.payment   "Payments / [dim]+ injected ground truth[/dim]"        style: ext
+
+// Lakeflow Job, serverless
+node  job  "Lakeflow Job (serverless)" (inside top)  layout: row (gap: normal, align-children: center)  right of src (gap: 16)
+
+node  job.bronze      "Bronze" (inside top)                               layout: column (gap: tight, widths: match)  style: bronze
+node  job.bronze.src  "bronze_* / [dim]five source tables[/dim]"          style: table
+node  job.bronze.gt   "bronze_ground_truth / [dim]evaluation only[/dim]"  style: table
+
+node  job.silver        "Silver" (inside top)                                     layout: column (gap: tight, widths: match)  style: silver
+node  job.silver.er     "silver_entity / [dim]Splink 4 entity resolution[/dim]"   style: table
+node  job.silver.graph  "silver_graph_* / [dim]shared accounts, addresses[/dim]"  style: table
+node  job.silver.out    "silver_investigation / [dim]outcomes fed back[/dim]"     style: table
+
+node  job.gold        "Gold" (inside top)                                        layout: column (gap: tight, widths: match)  style: gold
+node  job.gold.score  "gold_payment_score / [dim]LightGBM + SHAP factors[/dim]"  style: table
+node  job.gold.case   "gold_case_* / [dim]queue, factors, subgraphs[/dim]"       style: table
+node  job.gold.prec   "gold_precision / [dim]by signal and band[/dim]"           style: table
+
+node  mlflow  "MLflow + UC model / [dim]improper_payment_risk@champion[/dim]"  below job.bronze (gap: 6)
+
+// Serving
+node  app       "Improper Payments Workbench / [ondark]Databricks App, AppKit[/ondark]"                style: dbx    right of job (gap: 14)  even with job.gold
+node  inv       "Investigator"                                                                         icon: laptop  right of app (gap: 10)
+node  lakebase  "Lakebase Postgres / [dim]ipw.case_event, case_outcome[/dim]"                          style: store  below app (gap: 10)
+node  uc        "Unity Catalog grants, reads on behalf / of the investigator" (size: small, wrap: 40)  shape: none   above app (gap: tight)
+
+edge  src -> job                  "generate"                 from: right   to: left
+edge  job.bronze -> job.silver
+edge  job.silver -> job.gold
+edge  mlflow -> job.gold          "scores"                   from: right   to: bottom  line: (path: square)
+edge  job.gold -> app             "SQL warehouse"
+edge  app <-> inv
+edge  app -> lakebase             "assign, clear, escalate"
+edge  lakebase -> job.silver.out  "08_outcome_feedback"      from: bottom  to: bottom  line: (path: square, pattern: dashed)
