@@ -1,12 +1,12 @@
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { money } from '../lib/format';
-import { applyFilter, counts, FILTERS, type FilterKey } from '../lib/queue';
+import { counts, FILTERS, rowsForMode, type QueueMode } from '../lib/queue';
+export type { QueueMode };
 import type { QueueRow } from '../lib/types';
 import { ErrorNotice, PanelHead, SkeletonRows } from './primitives';
 import { QueueList } from './QueueList';
 
-export type QueueMode = FilterKey | 'due' | 'overdue';
 const PAGE = 25;
 
 export function QueueView({
@@ -30,14 +30,7 @@ export function QueueView({
   const [page, setPage] = useState(0);
   const all = useMemo(() => rows ?? [], [rows]);
   const c = useMemo(() => counts(all), [all]);
-  const shown = useMemo(() => {
-    if (mode === 'due')
-      return applyFilter(all, 'all', search).filter(
-        (r) => r.clock_state !== 'overdue' && r.clock_state !== 'not_started' && (r.business_days_left ?? 99) <= 5
-      );
-    if (mode === 'overdue') return applyFilter(all, 'all', search).filter((r) => r.clock_state === 'overdue');
-    return applyFilter(all, mode, search);
-  }, [all, mode, search]);
+  const shown = useMemo(() => rowsForMode(all, mode, search), [all, mode, search]);
   const pages = Math.max(1, Math.ceil(shown.length / PAGE));
   const current = Math.min(page, pages - 1);
   const value = shown.reduce((s, r) => s + (r.total_inc_gst ?? 0), 0);

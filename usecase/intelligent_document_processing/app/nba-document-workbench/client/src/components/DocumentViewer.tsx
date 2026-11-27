@@ -1,5 +1,5 @@
-import { ImageOff, ZoomIn, ZoomOut } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { ImageOff, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Region } from '../lib/types';
 import { Skeleton } from './primitives';
 
@@ -31,8 +31,20 @@ export function DocumentViewer({
   const [failed, setFailed] = useState<string | null>(null);
   const [prevSelected, setPrevSelected] = useState(selected);
   const [prevDoc, setPrevDoc] = useState(docId);
+  const [lensOn, setLensOn] = useState(true);
+  const [lensWidth, setLensWidth] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
+  const lensBoxRef = useRef<HTMLDivElement>(null);
+
+  // The lens fills the viewer's width; track it so the magnification is exact.
+  useEffect(() => {
+    const el = lensBoxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setLensWidth(Math.floor(entry.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Follow a newly selected field to its page; start a new document on page one.
   if (docId !== prevDoc) {
@@ -63,6 +75,34 @@ export function DocumentViewer({
 
   const onPage = (r: Region) => r.page === page;
 
+  // A magnified crop of the actual page pixels around the cited region, so the printed text can be
+  // read at a legible size beside the decision. Height is capped; width follows the viewer.
+  const lensRegion = selected?.regions.find(onPage);
+  const lens = (() => {
+    if (!lensRegion || !size || !lensWidth) return null;
+    const padX = 24;
+    const padY = 10;
+    const x0 = Math.max(0, lensRegion.x0 - padX);
+    const y0 = Math.max(0, lensRegion.y0 - padY);
+    const x1 = Math.min(size.w, lensRegion.x1 + padX);
+    const y1 = Math.min(size.h, lensRegion.y1 + padY);
+    // At least ~print size (the page image is rendered at about 200 dpi); a wide region scrolls
+    // sideways inside the lens rather than shrinking below legibility.
+    const scale = Math.max(0.9, Math.min(lensWidth / (x1 - x0), 200 / (y1 - y0), 2.4));
+    return {
+      width: Math.round((x1 - x0) * scale),
+      height: Math.round((y1 - y0) * scale),
+      bgSize: `${Math.round(size.w * scale)}px ${Math.round(size.h * scale)}px`,
+      bgPos: `${Math.round(-x0 * scale)}px ${Math.round(-y0 * scale)}px`,
+      mark: {
+        left: Math.round((lensRegion.x0 - x0) * scale),
+        top: Math.round((lensRegion.y0 - y0) * scale),
+        width: Math.round((lensRegion.x1 - lensRegion.x0) * scale),
+        height: Math.round((lensRegion.y1 - lensRegion.y0) * scale),
+      },
+    };
+  })();
+
   return (
     <section className="document-view" aria-label="Source document">
       <div className="viewer-bar">
@@ -82,6 +122,17 @@ export function DocumentViewer({
                 {i + 1}
               </button>
             ))}
+          {lensRegion && (
+            <button
+              className="button small ghost icon-button"
+              onClick={() => setLensOn((v) => !v)}
+              aria-label={lensOn ? 'Hide the magnified evidence' : 'Show the magnified evidence'}
+              aria-pressed={lensOn}
+              title={lensOn ? 'Whole page only' : 'Magnify the evidence'}
+            >
+              {lensOn ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
+            </button>
+          )}
           <button
             className="button small ghost icon-button"
             onClick={() => setZoom((z) => !z)}
@@ -91,6 +142,26 @@ export function DocumentViewer({
             {zoom ? <ZoomOut aria-hidden="true" /> : <ZoomIn aria-hidden="true" />}
           </button>
         </span>
+      </div>
+      <div className="lens-box" ref={lensBoxRef}>
+        {lens && lensOn && enabled && (
+          <div className="lens-scroll">
+            <div
+              className="lens"
+              role="img"
+              aria-label={`${selected?.label ?? 'Evidence'} as printed on the page, magnified`}
+              style={{
+                width: lens.width,
+                height: lens.height,
+                backgroundImage: `url(${src})`,
+                backgroundSize: lens.bgSize,
+                backgroundPosition: lens.bgPos,
+              }}
+            >
+              <span className="lens-mark" style={lens.mark} aria-hidden="true" />
+            </div>
+          </div>
+        )}
       </div>
       <div className="viewer-scroll" ref={scrollRef}>
         {!enabled ? (

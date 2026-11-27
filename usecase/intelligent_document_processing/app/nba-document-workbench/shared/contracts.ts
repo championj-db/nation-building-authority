@@ -39,6 +39,48 @@ export const CHECK_LABELS: Record<string, string> = {
 /** Checks whose failure is the supplier's to fix: the invoice is not correctly rendered. */
 export const SUPPLIER_FAULT_CHECKS = Object.keys(CHECK_LABELS).filter((c) => c !== 'delivery_acknowledged');
 
+/** The extracted fields each check reads. A check that fails on a field still held for review
+ *  may be failing on a misread, so it cannot be relied on until that field is resolved. */
+export const CHECK_FIELDS: Record<string, string[]> = {
+  addressed_to_buyer: ['recipient_name'],
+  tax_invoice_label: ['document_title'],
+  supplier_abn_valid: ['supplier_abn'],
+  supplier_abn_matches_vendor: ['supplier_abn'],
+  recipient_identity: ['recipient_name', 'recipient_abn', 'total_inc_gst'],
+  po_quoted: ['po_number'],
+  po_matches: ['po_number'],
+  gst_calculated: ['subtotal_ex_gst', 'gst_amount', 'total_inc_gst'],
+  within_po_value: ['po_number', 'total_inc_gst'],
+  not_duplicate: ['invoice_number'],
+  delivery_acknowledged: ['po_number', 'total_inc_gst'],
+};
+
+export const FIELD_NAMES: Record<string, string> = {
+  supplier_name: 'Supplier',
+  supplier_abn: 'Supplier ABN',
+  recipient_name: 'Addressed to',
+  recipient_abn: 'Recipient ABN',
+  document_title: 'Document title',
+  invoice_number: 'Invoice number',
+  invoice_date: 'Invoice date',
+  po_number: 'Purchase order',
+  subtotal_ex_gst: 'Amount excl. GST',
+  gst_amount: 'GST',
+  total_inc_gst: 'Total incl. GST',
+};
+
+/** Held fields behind a check that the officer has not yet confirmed or corrected. */
+export function unresolvedBehind(
+  code: string,
+  heldFields: string[],
+  confirmed: string[],
+  corrected: string[],
+  invalid: string[] = []
+): string[] {
+  const done = new Set([...confirmed.filter((f) => !invalid.includes(f)), ...corrected]);
+  return (CHECK_FIELDS[code] ?? []).filter((f) => heldFields.includes(f) && !done.has(f));
+}
+
 export const DECISIONS = ['accepted', 'returned', 'reclassified', 'actioned'] as const;
 export type Decision = (typeof DECISIONS)[number];
 
@@ -117,6 +159,17 @@ export function decisionProblem(input: DecisionInput, snap: GovernedSnapshot): s
     if (unknown.length) return 'One of those reasons is not a correctly rendered criterion.';
     if (input.reasonCodes.includes('other') && input.note.length < OVERRIDE_NOTE_MIN) {
       return 'Explain the other reason in the note to the supplier.';
+    }
+    // A criterion that rests on a held field may only be failing because the field was misread.
+    const corrected = input.corrections.map((c) => c.field);
+    for (const code of input.reasonCodes) {
+      const behind = unresolvedBehind(code, snap.heldFields, input.confirmedFields, corrected, snap.invalidFields);
+      if (behind.length) {
+        return `Confirm or correct ${behind.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before returning the invoice for "${CHECK_LABELS[code]}".`;
+      }
+    }
+    if (input.reasonCodes.some((c) => c !== 'other' && !snap.failedChecks.includes(c)) && input.note.length < OVERRIDE_NOTE_MIN) {
+      return 'One of those criteria passed its check. Explain in the note why the invoice does not meet it.';
     }
     return null;
   }

@@ -162,6 +162,19 @@ p {
 /* AppKit UI sets p { line-height: 1.75rem }; restore the design's relative leading. */
 p {
   line-height: var(--leading-body);
+  text-wrap: pretty;
+}
+/* AppKit's Genie input keeps shadcn's dark-mode fill when the OS is dark; hold it to the palette. */
+.qa-box textarea,
+.qa-box input {
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+  border-color: var(--line) !important;
+}
+.qa-box textarea::placeholder,
+.qa-box input::placeholder {
+  color: var(--fg-muted) !important;
+  opacity: 1;
 }
 h1,
 h2,
@@ -543,7 +556,7 @@ select.input {
   margin-bottom: var(--space-8);
 }
 .page-intro {
-  max-width: 68ch;
+  max-width: 60ch;
   margin-top: var(--space-3);
   color: var(--fg-muted);
 }
@@ -568,6 +581,7 @@ select.input {
   border-bottom: 1px solid var(--line-soft);
 }
 .panel-copy {
+  max-width: 58ch;
   margin-top: var(--space-1);
   color: var(--fg-muted);
   font-size: var(--text-sm);
@@ -853,6 +867,18 @@ button.summary-card:hover {
 .back {
   margin-bottom: var(--space-4);
 }
+.doc-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+.doc-nav-pos {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  margin-right: var(--space-1);
+  white-space: nowrap;
+}
 .workspace {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(0, 1fr);
@@ -879,6 +905,36 @@ button.summary-card:hover {
 .viewer-bar .pages {
   display: flex;
   gap: var(--space-1);
+}
+.lens-box {
+  width: 100%;
+}
+.lens-scroll {
+  overflow-x: auto;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elev-raised);
+  outline: 1px solid var(--line-soft);
+}
+.lens {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  background-color: #fff;
+  background-repeat: no-repeat;
+  animation: lens-in var(--motion-base) var(--ease-out);
+}
+.lens-mark {
+  position: absolute;
+  border: 2px solid var(--evidence);
+  background: color-mix(in oklab, var(--evidence), transparent 82%);
+  border-radius: 4px;
+}
+@keyframes lens-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
 }
 .viewer-scroll {
   max-height: calc(100vh - var(--topbar-h) - 140px);
@@ -914,7 +970,7 @@ button.summary-card:hover {
 .evidence-box {
   fill: color-mix(in oklab, var(--evidence), transparent 78%);
   stroke: var(--evidence);
-  stroke-width: 3;
+  stroke-width: 4;
   rx: 4;
   transition: opacity var(--motion-base) var(--ease-standard);
 }
@@ -1301,6 +1357,13 @@ details[open] > summary .disclosure {
   place-items: center;
   cursor: pointer;
 }
+.reason.waiting {
+  color: var(--fg-muted);
+}
+.reason input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .reason input:hover {
   border-color: var(--fg);
 }
@@ -1572,6 +1635,7 @@ table.data tbody tr.clickable:hover td {
 
 .qa-shell {
   max-width: 980px;
+  margin-left: 0;
 }
 .qa-box {
   padding: var(--space-6);

@@ -28,6 +28,28 @@ export function applyFilter(rows: QueueRow[], filter: FilterKey, search = ''): Q
   );
 }
 
+export type QueueMode = FilterKey | 'due' | 'overdue';
+
+export const MODE_LABELS: Record<QueueMode, string> = {
+  all: 'All open',
+  needs_review: 'Needs review',
+  exception: 'To return',
+  awaiting_delivery: 'Awaiting delivery',
+  ready: 'Ready',
+  due: 'Due within 5 business days',
+  overdue: 'Past the pay-by date',
+};
+
+/** The rows a queue mode shows, in queue order. Shared by the queue and the review's next/previous. */
+export function rowsForMode(rows: QueueRow[], mode: QueueMode, search = ''): QueueRow[] {
+  if (mode === 'due')
+    return applyFilter(rows, 'all', search).filter(
+      (r) => r.clock_state !== 'overdue' && r.clock_state !== 'not_started' && (r.business_days_left ?? 99) <= 5
+    );
+  if (mode === 'overdue') return applyFilter(rows, 'all', search).filter((r) => r.clock_state === 'overdue');
+  return applyFilter(rows, mode, search);
+}
+
 export function counts(rows: QueueRow[]): Record<FilterKey, number> {
   const c = { all: rows.length, needs_review: 0, exception: 0, awaiting_delivery: 0, ready: 0 } as Record<
     FilterKey,

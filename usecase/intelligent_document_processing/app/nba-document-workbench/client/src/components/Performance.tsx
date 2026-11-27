@@ -167,7 +167,7 @@ export function Performance({ status }: { status: PipelineStatus | null }) {
           <PanelHead
             id="accuracy-title"
             title="Extraction by field"
-            copy="Agreement with ground truth, born-digital against scanned, and how often each field was held for a person. Fields wrong but not held are the risk the confidence gate exists to minimise."
+            copy="Agreement with ground truth, born-digital and scanned, and how often each field was held for a person. Wrong values that were not held are the risk."
           />
           {acc.loading ? (
             <SkeletonRows rows={8} height={20} />
