@@ -36,6 +36,28 @@ export const CHECK_LABELS: Record<string, string> = {
   delivery_acknowledged: 'Delivery acknowledged',
 };
 
+/**
+ * What each check means when it fails. CHECK_LABELS name the criterion as it reads when met (the
+ * checks panel shows pass and fail against it); anywhere the officer states what is wrong (the
+ * return form, the decision record, the log, refusal messages) uses these instead.
+ */
+export const CHECK_FAILURES: Record<string, string> = {
+  addressed_to_buyer: 'Not addressed to the Authority',
+  tax_invoice_label: 'Not identified as a tax invoice',
+  supplier_abn_valid: 'Supplier ABN missing or invalid',
+  supplier_abn_matches_vendor: 'ABN does not match our vendor record',
+  recipient_identity: 'Recipient identity not shown',
+  po_quoted: 'No purchase order quoted',
+  po_matches: 'Purchase order does not match an open order',
+  gst_calculated: 'GST or total miscalculated',
+  within_po_value: 'Exceeds the value left on the order',
+  not_duplicate: 'Already received (same invoice number)',
+  delivery_acknowledged: 'Delivery not yet acknowledged',
+  other: 'Another reason',
+};
+
+export const failureLabel = (code: string) => CHECK_FAILURES[code] ?? CHECK_LABELS[code] ?? code;
+
 /** Checks whose failure is the supplier's to fix: the invoice is not correctly rendered. */
 export const SUPPLIER_FAULT_CHECKS = Object.keys(CHECK_LABELS).filter((c) => c !== 'delivery_acknowledged');
 
@@ -165,14 +187,14 @@ export function decisionProblem(input: DecisionInput, snap: GovernedSnapshot): s
     for (const code of input.reasonCodes) {
       const behind = unresolvedBehind(code, snap.heldFields, input.confirmedFields, corrected, snap.invalidFields);
       if (behind.length) {
-        return `Confirm or correct ${behind.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before returning the invoice for "${CHECK_LABELS[code]}".`;
+        return `Confirm or correct ${behind.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before returning it for "${failureLabel(code)}".`;
       }
     }
     if (
       input.reasonCodes.some((c) => c !== 'other' && !snap.failedChecks.includes(c)) &&
       input.note.length < OVERRIDE_NOTE_MIN
     ) {
-      return 'One of those criteria passed its check. Explain in the note why the invoice does not meet it.';
+      return 'One of the reasons you chose passed its check. Say in the note why it still applies.';
     }
     return null;
   }

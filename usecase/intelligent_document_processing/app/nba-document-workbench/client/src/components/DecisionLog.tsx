@@ -1,4 +1,4 @@
-import { CHECK_LABELS, DOC_TYPES } from '../../../shared/contracts';
+import { DOC_TYPES, failureLabel } from '../../../shared/contracts';
 import { REVIEW_THRESHOLD, scoreTitle } from '../lib/confidence';
 import { useDecisionsContext } from '../lib/data';
 import { timeOfDay, weekday } from '../lib/format';
@@ -68,7 +68,7 @@ export function DecisionLog({ onOpen }: { onOpen: (id: string) => void }) {
                     <td>
                       {LABEL[r.decision] ?? r.decision}
                       {r.reason_codes.length > 0 && (
-                        <div className="doc-meta">{r.reason_codes.map((c) => CHECK_LABELS[c] ?? c).join(', ')}</div>
+                        <div className="doc-meta">{r.reason_codes.map(failureLabel).join(', ')}</div>
                       )}
                       {r.note && <div className="doc-meta">&ldquo;{r.note}&rdquo;</div>}
                     </td>

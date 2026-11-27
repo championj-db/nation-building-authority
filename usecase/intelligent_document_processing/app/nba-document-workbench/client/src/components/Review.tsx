@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CHECK_LABELS,
+  failureLabel,
   FIELD_NAMES,
   unresolvedBehind,
   decisionProblem,
@@ -801,9 +801,7 @@ export function Review({
                   </h3>
                   <p>
                     By {decided.decided_by} on {weekday(decided.decided_at)}
-                    {decided.reason_codes.length
-                      ? ` · ${decided.reason_codes.map((c) => CHECK_LABELS[c] ?? c).join(', ')}`
-                      : ''}
+                    {decided.reason_codes.length ? ` · ${decided.reason_codes.map(failureLabel).join(', ')}` : ''}
                     {recorded?.corrections.length
                       ? ` · ${recorded.corrections.length} field ${recorded.corrections.length === 1 ? 'correction' : 'corrections'}`
                       : ''}
@@ -853,7 +851,7 @@ export function Review({
                 {mode === 'return' && invoice && (
                   <div className="decision-form">
                     <div>
-                      <span className="form-label">Criteria the invoice does not meet</span>
+                      <span className="form-label">What is wrong with this invoice?</span>
                       <div className="reason-list">
                         {SUPPLIER_FAULT_CHECKS.map((code) => {
                           const failedHere = supplierFails.some((c) => c.check_code === code);
@@ -870,7 +868,7 @@ export function Review({
                                 }
                               />
                               <span>
-                                {CHECK_LABELS[code]}
+                                {failureLabel(code)}
                                 {failedHere && !waiting.length && (
                                   <span className="tag fail" style={{ marginLeft: 8 }}>
                                     failed check
@@ -912,13 +910,14 @@ export function Review({
                               setReasons((r) => (e.target.checked ? [...r, 'other'] : r.filter((x) => x !== 'other')))
                             }
                           />
-                          <span>Another reason (explain below)</span>
+                          <span>Another reason (explain it in the note)</span>
                         </label>
                       </div>
                     </div>
                     <div>
                       <label className="form-label" htmlFor="return-note">
-                        Note to the supplier (optional)
+                        Note to the supplier{' '}
+                        {reasons.includes('other') ? '(required: explain the other reason)' : '(optional)'}
                       </label>
                       <textarea
                         id="return-note"
