@@ -251,7 +251,17 @@ export function Performance({ status }: { status: PipelineStatus | null }) {
                       <td className="num mono">
                         {r.defect === 'none' ? `${r.false_alarms} sent back` : `${r.caught} of ${r.documents}`}
                       </td>
-                      <td className="num mono">{r.to_ready}</td>
+                      <td
+                        className="num mono"
+                        title={
+                          r.defect === 'no_receipt' && r.to_ready
+                            ? 'Their delivery receipt arrived later, so the clock started and they became ready'
+                            : undefined
+                        }
+                      >
+                        {r.to_ready}
+                        {r.defect === 'no_receipt' && r.to_ready > 0 && <div className="doc-meta">receipted later</div>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

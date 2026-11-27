@@ -130,7 +130,7 @@ export function Topbar({
           {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
         </button>
         <button
-          className="button primary"
+          className="button"
           onClick={onIngest}
           disabled={!ingest.enabled || ingest.running}
           title={ingest.enabled ? undefined : 'Ingestion is not configured for this deployment'}

@@ -556,7 +556,7 @@ select.input {
   margin-bottom: var(--space-8);
 }
 .page-intro {
-  max-width: 60ch;
+  max-width: 56ch;
   margin-top: var(--space-3);
   color: var(--fg-muted);
 }
@@ -746,8 +746,11 @@ button.summary-card:hover {
   background: var(--viz-10);
 }
 .confidence {
-  font: 600 var(--text-sm) / 1 var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font: 500 var(--text-sm) / 1 var(--font-body);
+  color: var(--fg-muted);
+}
+.confidence.low {
+  font-weight: 600;
 }
 .confidence small,
 .clock small {
@@ -847,6 +850,12 @@ button.summary-card:hover {
   gap: var(--space-6);
   margin-bottom: var(--space-6);
 }
+.review-head > div {
+  min-width: 0;
+}
+.review-head h1 {
+  overflow-wrap: anywhere;
+}
 .review-head h1 {
   font-size: var(--text-2xl);
 }
@@ -862,7 +871,9 @@ button.summary-card:hover {
 .review-meta .clock {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
+  white-space: normal;
 }
 .back {
   margin-bottom: var(--space-4);
@@ -1108,6 +1119,27 @@ button.summary-card:hover {
 .field-score.low {
   color: var(--danger);
 }
+.field-score.band {
+  font: 600 var(--text-xs) / 1.2 var(--font-body);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.field-score.band.confident {
+  color: var(--fg-muted);
+  padding: 0;
+}
+.band-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.field-score.band.low,
+.field-score.band.not_on_page,
+.field-score.band.missing {
+  color: color-mix(in oklab, var(--danger), var(--fg) 22%);
+  background: var(--danger-tint);
+}
 .printed {
   grid-column: 1 / -1;
   display: grid;
@@ -1317,6 +1349,16 @@ details[open] > summary .disclosure {
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-4);
+}
+.draft-note {
+  color: var(--fg);
+}
+.next-step {
+  margin-top: var(--space-2);
+}
+.clock-term {
+  font-weight: 450;
+  color: var(--fg-muted);
 }
 .review-actions .hint .link-button {
   flex: none;
@@ -1850,9 +1892,16 @@ dialog.dialog[open] {
   }
   .page-head,
   .review-head {
-    align-items: start;
+    align-items: stretch;
     flex-direction: column;
     gap: var(--space-3);
+  }
+  .doc-nav {
+    justify-content: space-between;
+  }
+  .workspace > *,
+  .stack > * {
+    min-width: 0;
   }
   .date-note {
     text-align: left;

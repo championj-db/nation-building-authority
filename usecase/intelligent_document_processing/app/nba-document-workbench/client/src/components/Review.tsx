@@ -38,10 +38,11 @@ import {
   useRows,
   useSessionInfo,
 } from '../lib/data';
-import { day, money, pct, received, weekday } from '../lib/format';
+import { day, money, received, weekday } from '../lib/format';
 import { clockText } from '../lib/queue';
 import type { CheckRow, DocumentRow, FieldRow, InvoiceRow, Region } from '../lib/types';
 import { abnValid, recheck } from '../../../shared/recheck';
+import { BAND_LABELS, bandOf, scoreTitle } from '../lib/confidence';
 import { DocumentViewer } from './DocumentViewer';
 import { ErrorNotice, PanelHead, Skeleton, SkeletonRows, StatusText } from './primitives';
 
@@ -67,6 +68,30 @@ function display(f: FieldRow, value: string | null): string | null {
 }
 
 /** An ABN-shaped value printed on the page that passes the check digits: the likely intended value. */
+/** Field work in progress, kept per document for this browser session so that stepping away
+ *  (J/K, Back, refresh) does not throw it away. Cleared once a decision is recorded. */
+interface Draft {
+  confirmed: string[];
+  corrections: Record<string, string>;
+}
+const draftKey = (docId: string) => `daw-draft:${docId}`;
+function loadDraft(docId: string): Draft | null {
+  try {
+    const raw = sessionStorage.getItem(draftKey(docId));
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+function saveDraft(docId: string, d: Draft) {
+  try {
+    if (!d.confirmed.length && !Object.keys(d.corrections).length) sessionStorage.removeItem(draftKey(docId));
+    else sessionStorage.setItem(draftKey(docId), JSON.stringify(d));
+  } catch {
+    /* storage unavailable: the draft simply is not kept */
+  }
+}
+
 function printedCandidate(f: FieldRow): string | null {
   if (!f.field.endsWith('_abn') || !f.cited_text) return null;
   const text = f.cited_text.replace(/<[^>]+>/g, ' ');
@@ -139,8 +164,9 @@ export function Review({
   useEffect(() => {
     opened.current = Date.now();
     setSelected(null);
-    setConfirmed(new Set());
-    setCorrections({});
+    const draft = loadDraft(docId);
+    setConfirmed(new Set(draft?.confirmed ?? []));
+    setCorrections(draft?.corrections ?? {});
     setEditing(null);
     setMode('idle');
     setReasons([]);
@@ -151,6 +177,17 @@ export function Review({
       .then(setRecorded)
       .catch(() => setRecorded({ decision: null, corrections: [] }));
   }, [docId]);
+
+  // Persist field work as it happens.
+  const [restoredFor, setRestoredFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (restoredFor !== docId) {
+      setRestoredFor(docId); // the reset effect above has just loaded this document's draft
+      return;
+    }
+    saveDraft(docId, { confirmed: [...confirmed], corrections });
+  }, [docId, confirmed, corrections, restoredFor]);
+  const hasDraft = confirmed.size > 0 || Object.keys(corrections).length > 0;
 
   const held = useMemo(() => fields.filter((f) => f.below_threshold), [fields]);
   // Re-run the field-local checks against the officer's corrections.
@@ -236,6 +273,7 @@ export function Review({
     try {
       const body = { ...input, handlingSeconds: Math.round((Date.now() - opened.current) / 1000) };
       await postJson<DecisionRecord>(`/api/documents/${docId}/decision`, body);
+      sessionStorage.removeItem(draftKey(docId));
       decisions.reload();
       const r = await fetchDocumentDecision(docId).catch(() => null);
       if (r) setRecorded(r);
@@ -339,6 +377,9 @@ export function Review({
               <span className={`clock ${invoice.clock_state}`} title={clock.long}>
                 <Clock3 size={14} style={{ verticalAlign: -2, marginRight: 4 }} aria-hidden="true" />
                 {clock.long}
+                {invoice.term_label && invoice.clock_state !== 'not_started' && (
+                  <span className="clock-term"> · today&apos;s terms: {invoice.term_label}</span>
+                )}
               </span>
             )}
           </div>
@@ -402,7 +443,7 @@ export function Review({
         )}
 
         <div className="stack">
-          {verdict && invoice && (
+          {verdict && invoice && !decided && !historical && (
             <section className={`card verdict ${invoice.status}`} aria-live="polite">
               {verdict.icon}
               <div>
@@ -432,6 +473,7 @@ export function Review({
                     return (
                       <div
                         key={f.field}
+                        data-field={f.field}
                         className={`field-row${isHeld ? ' held' : ''}${selected === f.field ? ' selected' : ''}`}
                         role="group"
                         aria-label={f.label}
@@ -474,10 +516,14 @@ export function Review({
                             )}
                           </span>
                         </button>
-                        <span className={`field-score${f.routing_confidence < 0.85 ? ' low' : ''}`}>
-                          {pct(f.routing_confidence)}
-                          {(f.value == null || !f.grounded || f.routing_confidence < 0.85) && (
-                            <small>{f.value == null ? 'missing' : !f.grounded ? 'not on page' : 'low'}</small>
+                        <span className={`field-score band ${bandOf(f)}`} title={scoreTitle(f.routing_confidence)}>
+                          {bandOf(f) === 'confident' ? (
+                            <>
+                              <CircleCheck aria-hidden="true" className="band-icon" />
+                              <span className="sr-only">{BAND_LABELS.confident}</span>
+                            </>
+                          ) : (
+                            BAND_LABELS[bandOf(f)]
                           )}
                         </span>
                         {selected === f.field && f.cited_text && f.grounded && f.in_cited_region !== false && (
@@ -526,7 +572,12 @@ export function Review({
                               onClick={() => {
                                 setSelected(f.field);
                                 setEditing(f.field);
-                                setDraft(corrected ?? printedCandidate(f) ?? f.value ?? '');
+                                setDraft(
+                                  corrected ??
+                                    (printedCandidate(f) ? display(f, printedCandidate(f)) : null) ??
+                                    f.value ??
+                                    ''
+                                );
                               }}
                             >
                               <Pencil aria-hidden="true" /> {corrected != null ? 'Edit correction' : 'Correct'}
@@ -548,11 +599,13 @@ export function Review({
                               setEditing(null);
                             }}
                           >
-                            {printedCandidate(f) && draft === printedCandidate(f) && corrections[f.field] == null && (
-                              <span className="check-detail field-reason">
-                                Pre-filled with the valid ABN printed on the page. Check it before saving.
-                              </span>
-                            )}
+                            {printedCandidate(f) &&
+                              draft === display(f, printedCandidate(f)) &&
+                              corrections[f.field] == null && (
+                                <span className="check-detail field-reason">
+                                  Pre-filled with the valid ABN printed on the page. Check it before saving.
+                                </span>
+                              )}
                             <label className="sr-only" htmlFor={`fix-${f.field}`}>
                               Corrected {f.label}
                             </label>
@@ -687,14 +740,14 @@ export function Review({
                   </dd>
                 </div>
                 <div className="fact">
-                  <dt>Under the 1 January 2027 terms</dt>
+                  <dt>If the 1 January 2027 terms applied</dt>
                   <dd>
                     {invoice.pay_by_2027_date ? weekday(invoice.pay_by_2027_date) : '-'}
                     <small>
-                      10 business days
+                      10 business days for every invoice
                       {invoice.business_days_left_2027 != null && invoice.queue_state === 'open'
-                        ? `, ${invoice.business_days_left_2027} business days left`
-                        : ''}
+                        ? ` (${invoice.business_days_left_2027} business days left). For comparison only: today's terms govern this invoice.`
+                        : '. For comparison only.'}
                     </small>
                   </dd>
                 </div>
@@ -756,6 +809,16 @@ export function Review({
                       : ''}
                   </p>
                   {decided.note && <p>&ldquo;{decided.note}&rdquo;</p>}
+                  <p className="next-step">
+                    <strong>What happens next:</strong>{' '}
+                    {decided.decision === 'accepted'
+                      ? `It goes to approval and payment in the finance system; this workbench does not pay it.${invoice?.pay_by_date ? ` Pay by ${weekday(invoice.pay_by_date)}.` : ''}`
+                      : decided.decision === 'returned'
+                        ? 'The supplier receives the notice. No payment clock is running: it starts when they send a correctly rendered invoice.'
+                        : decided.decision === 'reclassified'
+                          ? 'The document is handled as its new type at the next assessment.'
+                          : 'Nothing further in this workbench.'}
+                  </p>
                   {nav?.next && (
                     <button
                       className="button primary"
@@ -794,7 +857,7 @@ export function Review({
                       <div className="reason-list">
                         {SUPPLIER_FAULT_CHECKS.map((code) => {
                           const failedHere = supplierFails.some((c) => c.check_code === code);
-                          if (!failedHere && !reasons.includes(code) && supplierFails.length) return null;
+                          if (!failedHere && !reasons.includes(code)) return null; // only failed criteria are offered
                           const waiting = failedHere ? behind(code) : [];
                           return (
                             <label key={code} className={`reason${waiting.length ? ' waiting' : ''}`}>
@@ -815,8 +878,26 @@ export function Review({
                                 )}
                                 {waiting.length > 0 && (
                                   <span className="check-detail" style={{ display: 'block' }}>
-                                    Confirm or correct {waiting.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before
-                                    returning on this.
+                                    Confirm or correct{' '}
+                                    {waiting.map((f, i) => (
+                                      <span key={f}>
+                                        {i > 0 && ' and '}
+                                        <button
+                                          type="button"
+                                          className="link-button inline"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            setSelected(f);
+                                            document
+                                              .querySelector(`[data-field="${f}"]`)
+                                              ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          }}
+                                        >
+                                          {FIELD_NAMES[f] ?? f}
+                                        </button>
+                                      </span>
+                                    ))}{' '}
+                                    before returning on this.
                                   </span>
                                 )}
                               </span>
@@ -908,6 +989,12 @@ export function Review({
                         'Every held field is resolved. Accepting confirms the invoice is correctly rendered.')
                       ) : (
                         'Not an invoice. Reclassify it if the type is wrong.'
+                      )}
+                      {hasDraft && !problem && (
+                        <span className="draft-note" title="Kept in this browser until you record a decision">
+                          {' '}
+                          Your field checks are kept if you step away.
+                        </span>
                       )}
                     </span>
                     {mode === 'idle' && (

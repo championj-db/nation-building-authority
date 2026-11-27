@@ -1,4 +1,5 @@
 import { CHECK_LABELS, DOC_TYPES } from '../../../shared/contracts';
+import { REVIEW_THRESHOLD, scoreTitle } from '../lib/confidence';
 import { useDecisionsContext } from '../lib/data';
 import { timeOfDay, weekday } from '../lib/format';
 import { Empty, ErrorNotice, PanelHead, SkeletonRows } from './primitives';
@@ -74,7 +75,11 @@ export function DecisionLog({ onOpen }: { onOpen: (id: string) => void }) {
                     <td>
                       {r.status_seen.replace('_', ' ')}
                       {r.lowest_confidence_seen != null && (
-                        <div className="doc-meta">lowest field {Math.round(r.lowest_confidence_seen * 100)}%</div>
+                        <div className="doc-meta" title={scoreTitle(r.lowest_confidence_seen)}>
+                          {r.lowest_confidence_seen < REVIEW_THRESHOLD
+                            ? 'had a field held for review'
+                            : 'all fields confident'}
+                        </div>
                       )}
                     </td>
                     <td className="num mono">{r.fields_corrected}</td>
