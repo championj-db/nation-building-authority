@@ -1,0 +1,737 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T23:49:53+00:00",
+  "title": "Design System: Document Assurance Workbench",
+  "extensions": {
+    "colorMeta": {
+      "lava": {
+        "role": "primary",
+        "displayName": "Lava",
+        "canonical": "oklch(65.0% 0.237 30)",
+        "tonalRamp": [
+          "#1b0302",
+          "#490501",
+          "#7d0100",
+          "#b50000",
+          "#e33422",
+          "#f77a67",
+          "#ffb2a4",
+          "#ffe4dc"
+        ]
+      },
+      "lava-strong": {
+        "role": "primary",
+        "displayName": "Deep Lava",
+        "canonical": "oklch(53.5% 0.192 31)",
+        "tonalRamp": [
+          "#180503",
+          "#431009",
+          "#731c11",
+          "#a72819",
+          "#d34d3a",
+          "#e98473",
+          "#fbb7ab",
+          "#ffe6df"
+        ]
+      },
+      "lava-hover": {
+        "role": "primary",
+        "displayName": "Deep Lava Hover",
+        "canonical": "color-mix(in oklab, #c42a18, black 10%)",
+        "tonalRamp": [
+          "#180503",
+          "#431009",
+          "#731c11",
+          "#a72819",
+          "#d34d3a",
+          "#e98473",
+          "#fbb7ab",
+          "#ffe6df"
+        ]
+      },
+      "lava-active": {
+        "role": "primary",
+        "displayName": "Deep Lava Pressed",
+        "canonical": "color-mix(in oklab, #c42a18, black 18%)",
+        "tonalRamp": [
+          "#180503",
+          "#431009",
+          "#731c11",
+          "#a72819",
+          "#d34d3a",
+          "#e98473",
+          "#fbb7ab",
+          "#ffe6df"
+        ]
+      },
+      "navy-ink": {
+        "role": "neutral",
+        "displayName": "Navy Ink",
+        "canonical": "oklch(22.9% 0.029 219)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "color-mix(in oklab, #0b2026, transparent 34%)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "color-mix(in oklab, #0b2026, transparent 76%)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "hairline-soft": {
+        "role": "neutral",
+        "displayName": "Soft Hairline",
+        "canonical": "color-mix(in oklab, #0b2026, transparent 88%)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "oat": {
+        "role": "neutral",
+        "displayName": "Oat",
+        "canonical": "oklch(94.6% 0.005 95)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242423",
+          "#40403e",
+          "#5e5e5b",
+          "#81807d",
+          "#a5a4a2",
+          "#cbcac9",
+          "#efeeee"
+        ]
+      },
+      "warm-white": {
+        "role": "neutral",
+        "displayName": "Warm White",
+        "canonical": "oklch(97.7% 0.005 78)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242423",
+          "#403f3e",
+          "#5f5d5b",
+          "#81807d",
+          "#a5a4a2",
+          "#cbcac9",
+          "#efeeee"
+        ]
+      },
+      "row-hover": {
+        "role": "neutral",
+        "displayName": "Row Hover",
+        "canonical": "color-mix(in oklab, #f9f7f4, #0b2026 5%)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242423",
+          "#403f3e",
+          "#5f5d5b",
+          "#81807d",
+          "#a5a4a2",
+          "#cbcac9",
+          "#efeeee"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242423",
+          "#40403e",
+          "#5e5e5b",
+          "#81807d",
+          "#a5a4a2",
+          "#cbcac9",
+          "#efeeee"
+        ]
+      },
+      "signal-ok": {
+        "role": "tertiary",
+        "displayName": "Signal OK",
+        "canonical": "oklch(55.1% 0.120 162)",
+        "tonalRamp": [
+          "#030e08",
+          "#062b1c",
+          "#074c33",
+          "#046f4b",
+          "#35946c",
+          "#76b596",
+          "#aed5c1",
+          "#e1f4ea"
+        ]
+      },
+      "signal-warn": {
+        "role": "tertiary",
+        "displayName": "Evidence Amber",
+        "canonical": "oklch(80.3% 0.170 74)",
+        "tonalRamp": [
+          "#140800",
+          "#381d00",
+          "#613300",
+          "#8d4c00",
+          "#b56e00",
+          "#cf994e",
+          "#e7c497",
+          "#fdecd6"
+        ]
+      },
+      "signal-danger": {
+        "role": "tertiary",
+        "displayName": "Signal Danger",
+        "canonical": "oklch(52.4% 0.183 28)",
+        "tonalRamp": [
+          "#180504",
+          "#42110d",
+          "#711e19",
+          "#a42c26",
+          "#d05045",
+          "#e6867a",
+          "#f9b8af",
+          "#ffe6e1"
+        ]
+      },
+      "warn-ink": {
+        "role": "tertiary",
+        "displayName": "Warn Ink",
+        "canonical": "color-mix(in oklab, #ffab00, #0b2026 52%)",
+        "tonalRamp": [
+          "#140800",
+          "#381d00",
+          "#613300",
+          "#8d4c00",
+          "#b56e00",
+          "#cf994e",
+          "#e7c497",
+          "#fdecd6"
+        ]
+      },
+      "deep-teal": {
+        "role": "secondary",
+        "displayName": "Deep Teal",
+        "canonical": "oklch(40.7% 0.062 222)",
+        "tonalRamp": [
+          "#060c0f",
+          "#15272d",
+          "#27454f",
+          "#396574",
+          "#5a8899",
+          "#89abb7",
+          "#b9cfd7",
+          "#e6f1f5"
+        ]
+      },
+      "slate-teal": {
+        "role": "secondary",
+        "displayName": "Slate Teal",
+        "canonical": "oklch(60.0% 0.047 221)",
+        "tonalRamp": [
+          "#070c0e",
+          "#19262b",
+          "#2e444b",
+          "#44636e",
+          "#658692",
+          "#90a9b2",
+          "#bdced4",
+          "#e8f0f3"
+        ]
+      },
+      "series-current": {
+        "role": "secondary",
+        "displayName": "Readiness, current terms",
+        "canonical": "oklch(69.3% 0.043 220)",
+        "tonalRamp": [
+          "#070c0e",
+          "#19262b",
+          "#2e444b",
+          "#44636e",
+          "#658692",
+          "#90a9b2",
+          "#bdced4",
+          "#e8f0f3"
+        ]
+      },
+      "series-2027": {
+        "role": "secondary",
+        "displayName": "Readiness, 2027 terms",
+        "canonical": "oklch(40.7% 0.062 222)",
+        "tonalRamp": [
+          "#060c0f",
+          "#15272d",
+          "#27454f",
+          "#396574",
+          "#5a8899",
+          "#89abb7",
+          "#b9cfd7",
+          "#e6f1f5"
+        ]
+      },
+      "dark-ground": {
+        "role": "neutral",
+        "displayName": "Dark Ground",
+        "canonical": "oklch(35.8% 0.024 232)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1f2528",
+          "#384146",
+          "#526067",
+          "#74838b",
+          "#9ba7ad",
+          "#c4ccd0",
+          "#ebeff1"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark Surface",
+        "canonical": "oklch(22.9% 0.029 219)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Dark Ink",
+        "canonical": "oklch(94.1% 0.007 248)",
+        "tonalRamp": [
+          "#090c0d",
+          "#1e2628",
+          "#354246",
+          "#4e6167",
+          "#6f848b",
+          "#98a8ad",
+          "#c2cdd0",
+          "#eaeff1"
+        ]
+      },
+      "dark-lava": {
+        "role": "primary",
+        "displayName": "Dark Lava",
+        "canonical": "#bd2b26",
+        "tonalRamp": [
+          "#180504",
+          "#42110d",
+          "#711e19",
+          "#a42c26",
+          "#d05045",
+          "#e6867a",
+          "#f9b8af",
+          "#ffe6e1"
+        ]
+      },
+      "dark-ok": {
+        "role": "tertiary",
+        "displayName": "Dark Signal OK",
+        "canonical": "#00a972",
+        "tonalRamp": [
+          "#030e08",
+          "#062b1c",
+          "#074c33",
+          "#046f4b",
+          "#35946c",
+          "#76b596",
+          "#aed5c1",
+          "#e1f4ea"
+        ]
+      },
+      "dark-danger": {
+        "role": "tertiary",
+        "displayName": "Dark Signal Danger",
+        "canonical": "#ff6b5e",
+        "tonalRamp": [
+          "#180504",
+          "#42110d",
+          "#711e19",
+          "#a42c26",
+          "#d05045",
+          "#e6867a",
+          "#f9b8af",
+          "#ffe6e1"
+        ]
+      },
+      "dark-warn-ink": {
+        "role": "tertiary",
+        "displayName": "Dark Warn Ink",
+        "canonical": "#ffc94d",
+        "tonalRamp": [
+          "#140800",
+          "#381d00",
+          "#613300",
+          "#8d4c00",
+          "#b56e00",
+          "#cf994e",
+          "#e7c497",
+          "#fdecd6"
+        ]
+      },
+      "dark-series-current": {
+        "role": "secondary",
+        "displayName": "Dark readiness, current terms",
+        "canonical": "oklch(55.9% 0.054 220)",
+        "tonalRamp": [
+          "#070c0e",
+          "#19262b",
+          "#2e444b",
+          "#44636e",
+          "#658692",
+          "#90a9b2",
+          "#bdced4",
+          "#e8f0f3"
+        ]
+      },
+      "dark-series-2027": {
+        "role": "secondary",
+        "displayName": "Dark readiness, 2027 terms",
+        "canonical": "oklch(82.1% 0.039 219)",
+        "tonalRamp": [
+          "#070c0e",
+          "#19262b",
+          "#2e444b",
+          "#44636e",
+          "#658692",
+          "#90a9b2",
+          "#bdced4",
+          "#e8f0f3"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page H1 greeting; 1.75rem below 820px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Review workspace H1 (supplier name)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel headings (H2)."
+      },
+      "subtitle": {
+        "displayName": "Subtitle",
+        "purpose": "H3, stage names; verdict titles at 1.125rem."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text; intros capped at 68ch."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Panel copy, crumb, buttons (600), filters, check labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata, field names, tile footers, sidebar foot."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Summary tile values, tabular mono."
+      },
+      "data-mono": {
+        "displayName": "Data Mono",
+        "purpose": "Confidence, field scores, money, ids, days left."
+      },
+      "column-head": {
+        "displayName": "Column Head",
+        "purpose": "Uppercase table and queue column heads, nav group labels, list group labels. Never above a heading."
+      }
+    },
+    "shadows": [
+      {
+        "name": "elev-raised",
+        "value": "0 2px 8px color-mix(in oklab, var(--fg), transparent 92%)",
+        "purpose": "Every card and panel at rest; the rendered page in the viewer."
+      },
+      {
+        "name": "elev-overlay",
+        "value": "0 16px 48px color-mix(in oklab, var(--fg), transparent 78%)",
+        "purpose": "Only elements floating above scrolling content: the sticky decision dock, dialog, toast."
+      }
+    ],
+    "motion": [
+      {
+        "name": "motion-fast",
+        "value": "150ms",
+        "purpose": "Hover, nav, filter, row and disclosure state changes."
+      },
+      {
+        "name": "motion-base",
+        "value": "200ms",
+        "purpose": "Evidence box draw-in, dialog and toast entrance."
+      },
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Default easing for state transitions."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrances: evidence box, dialog, toast."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "All animation and transition durations under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "1180px"
+      },
+      {
+        "name": "narrow",
+        "value": "820px"
+      },
+      {
+        "name": "compact",
+        "value": "520px"
+      }
+    ],
+    "focus": {
+      "outline": "2px solid var(--lava)",
+      "offset": "3px",
+      "field": "border var(--lava-strong) with a 2px lava halo at 45%"
+    },
+    "layout": {
+      "sidebarWidth": "248px",
+      "topbarHeight": "72px",
+      "contentMax": "1500px",
+      "minTarget": "44px",
+      "topbarBlur": "12px"
+    },
+    "darkTheme": {
+      "selector": ":root[data-theme='dark']",
+      "bg": "#303f47",
+      "surface": "#0b2026",
+      "fg": "#e8ecf0",
+      "lava": "#bd2b26",
+      "lavaStrong": "#bd2b26",
+      "lavaOn": "#e8ecf0",
+      "ok": "#00a972",
+      "danger": "#ff6b5e",
+      "warnInk": "#ffc94d",
+      "hover": "color-mix(in oklab, var(--surface), var(--fg) 8%)",
+      "seriesCurrent": "#4f7c8a",
+      "series2027": "#a9cbd6"
+    },
+    "dataviz": {
+      "readinessPair": {
+        "type": "ordinal, one hue",
+        "light": [
+          "#7fa3af",
+          "#1b5162"
+        ],
+        "dark": [
+          "#4f7c8a",
+          "#a9cbd6"
+        ],
+        "order": "current terms, then the stricter 1 January 2027 terms on the stronger step",
+        "validation": "dataviz validate_palette.js --ordinal on both surfaces"
+      }
+    },
+    "appkitShadcnMap": {
+      "--background": "var(--bg)",
+      "--foreground": "var(--fg)",
+      "--card": "var(--surface)",
+      "--card-foreground": "var(--fg)",
+      "--popover": "var(--surface)",
+      "--popover-foreground": "var(--fg)",
+      "--primary": "var(--fg)",
+      "--primary-foreground": "var(--surface)",
+      "--secondary": "var(--line-soft)",
+      "--secondary-foreground": "var(--fg)",
+      "--muted": "color-mix(in oklab, var(--bg), var(--surface) 40%)",
+      "--muted-foreground": "var(--fg-muted)",
+      "--accent": "var(--line-soft)",
+      "--accent-foreground": "var(--fg)",
+      "--border": "var(--line-soft)",
+      "--input": "var(--line)",
+      "--ring": "var(--lava)",
+      "--destructive": "var(--danger)",
+      "scope": ":root, :root.dark, .dark"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default outlined action on warm white.",
+      "html": "<button class=\"ds-btn\">Decision log</button>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-btn{font-family:var(--font-body);min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font-weight:600;font-size:14px;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 150ms var(--ease),background 150ms var(--ease);}.ds-btn svg{width:16px;height:16px;}.ds-btn:hover:not(:disabled){border-color:var(--fg);}.ds-btn:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-btn:disabled{opacity:0.55;cursor:not-allowed;}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per view, deep lava under text.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><path d=\"M14 2v6h6\"/><path d=\"M2 15h10\"/><path d=\"m9 18 3-3-3-3\"/></svg>Ingest documents</button>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-btn{font-family:var(--font-body);min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font-weight:600;font-size:14px;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 150ms var(--ease),background 150ms var(--ease);}.ds-btn svg{width:16px;height:16px;}.ds-btn:hover:not(:disabled){border-color:var(--fg);}.ds-btn:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-btn:disabled{opacity:0.55;cursor:not-allowed;}.ds-btn-primary{background:var(--lava-strong);border-color:var(--lava-strong);color:var(--lava-on);}.ds-btn-primary:hover:not(:disabled){background:var(--lava-hover);border-color:var(--lava-hover);}.ds-btn-primary:active:not(:disabled){background:var(--lava-active);}"
+    },
+    {
+      "name": "Filter Pills",
+      "kind": "chip",
+      "refersTo": "filter-pill",
+      "description": "Queue filters with mono counts; pressed inverts to navy.",
+      "html": "<div class=\"ds-filters\"><button class=\"ds-filter\" aria-pressed=\"true\">All <span class=\"ds-num\">118</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Needs review <span class=\"ds-num\">42</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Due soon <span class=\"ds-num\">9</span></button></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-filters{display:flex;gap:8px;font-family:var(--font-body);}.ds-filter{min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:9999px;background:transparent;color:var(--fg-muted);font:inherit;font-size:14px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;}.ds-filter:hover{color:var(--fg);border-color:var(--fg);}.ds-filter[aria-pressed='true']{background:var(--fg);border-color:var(--fg);color:var(--surface);}.ds-filter:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12px;}"
+    },
+    {
+      "name": "Sidebar Nav",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Grouped sidebar nav; current page is a navy pill.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-label\">Workspace</div><button class=\"ds-nav-item\">Overview</button><button class=\"ds-nav-item\" aria-current=\"page\">Review queue<span class=\"ds-count\">118</span></button><button class=\"ds-nav-item\">Intake<span class=\"ds-count\">55</span></button></nav>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-nav{display:grid;gap:4px;width:216px;padding:16px;background:var(--surface);font-family:var(--font-body);}.ds-nav-label{padding:0 12px;margin:8px 0;font:600 12px/1 var(--font-mono);letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-muted);}.ds-nav-item{min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--fg-muted);font:520 16px var(--font-body);text-align:left;display:flex;align-items:center;cursor:pointer;transition:background 150ms var(--ease),color 150ms var(--ease);}.ds-nav-item:hover{background:var(--line-soft);color:var(--fg);}.ds-nav-item[aria-current='page']{background:var(--fg);color:var(--surface);}.ds-nav-item:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-count{margin-left:auto;font:500 12px/1 var(--font-mono);font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Oat field on a warm-white panel; lava focus.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input placeholder=\"Supplier, invoice or document id\"></label>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-search{position:relative;display:block;width:280px;color:var(--fg-muted);}.ds-search svg{position:absolute;left:12px;top:50%;translate:0 -50%;width:15px;height:15px;}.ds-search input{width:100%;box-sizing:border-box;min-height:40px;padding:0 12px 0 34px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);font:14px var(--font-body);caret-color:var(--lava-strong);}.ds-search input::placeholder{color:var(--fg-muted);}.ds-search input:focus{outline:2px solid color-mix(in oklab,var(--lava),transparent 55%);border-color:var(--lava-strong);}"
+    },
+    {
+      "name": "Summary Tile",
+      "kind": "card",
+      "refersTo": "summary-tile",
+      "description": "Clickable count tile that opens the filtered queue.",
+      "html": "<button class=\"ds-tile\"><span class=\"ds-tile-label\">Past the pay-by date</span><span class=\"ds-tile-value ds-alert\">3</span><span class=\"ds-tile-foot\">Open the filtered queue<svg class=\"ds-go\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></span></button>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-tile{width:240px;min-height:136px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;text-align:left;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:16px;box-shadow:var(--elev-raised);font-family:var(--font-body);cursor:pointer;transition:border-color 150ms var(--ease),transform 150ms var(--ease);}.ds-tile:hover{border-color:var(--fg);background:var(--hover);}.ds-tile:active{transform:translateY(1px);}.ds-tile:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-tile-label{color:var(--fg-muted);font-size:14px;}.ds-tile-value{font:600 28px/1 var(--font-mono);letter-spacing:-0.03em;font-variant-numeric:tabular-nums;}.ds-alert{color:var(--danger);}.ds-tile-foot{color:var(--fg-muted);font-size:12px;display:flex;justify-content:space-between;align-items:center;}.ds-go{width:16px;height:16px;transition:transform 150ms var(--ease),color 150ms var(--ease);}.ds-tile:hover .ds-go{color:var(--fg);transform:translateX(3px);}"
+    },
+    {
+      "name": "Review Tags",
+      "kind": "chip",
+      "refersTo": "tag-held",
+      "description": "Field state tags: held, confirmed, corrected, failed check, neutral.",
+      "html": "<div class=\"ds-tags\"><span class=\"ds-tag ds-held\">Held</span><span class=\"ds-tag ds-confirmed\">Confirmed</span><span class=\"ds-tag ds-corrected\">Corrected</span><span class=\"ds-tag ds-fail\">failed check</span><span class=\"ds-tag ds-neutral\">Tax invoice schema</span></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-tags{display:flex;gap:8px;flex-wrap:wrap;}.ds-tag{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:9999px;font:600 11px/1.5 var(--font-body);letter-spacing:0.02em;white-space:nowrap;}.ds-held{background:var(--warn-tint);color:var(--warn-ink);}.ds-confirmed{background:var(--ok-tint);color:var(--ok);}.ds-corrected{background:color-mix(in oklab,var(--viz-8),transparent 86%);color:var(--viz-8);}.ds-fail{background:var(--danger-tint);color:var(--danger);}.ds-neutral{border:1px solid var(--line);color:var(--fg-muted);}"
+    },
+    {
+      "name": "Evidence Field Row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signature: an extracted field with score and reason; held rows tint amber and show what is printed on the page.",
+      "html": "<div class=\"ds-fields\"><button class=\"ds-field\"><span><span class=\"ds-fname\">Supplier</span><span class=\"ds-fvalue\">Wombat Bay Communications &amp; Co</span></span><span class=\"ds-score\">100%<small>confident</small></span></button><button class=\"ds-field ds-sel\"><span><span class=\"ds-fname\">Supplier ABN <span class=\"ds-tag-held\">Held</span></span><span class=\"ds-fvalue\">84726723406225</span></span><span class=\"ds-score ds-low\">40%<small>low</small></span><span class=\"ds-printed\"><span class=\"ds-plabel\">Printed on the page</span><span class=\"ds-mono\">ABN 84 726 723 406 225 Mitchell Street</span></span></button></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-fields{width:520px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;font-family:var(--font-body);color:var(--fg);}.ds-field{width:100%;padding:12px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;border:0;border-bottom:1px solid var(--line-soft);background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:background 150ms var(--ease);}.ds-field:hover{background:var(--hover);}.ds-field:focus-visible{outline:2px solid var(--lava);outline-offset:-2px;}.ds-sel,.ds-sel:hover{background:var(--warn-tint);}.ds-fname{display:flex;gap:8px;align-items:center;color:var(--fg-muted);font-size:12px;}.ds-fvalue{display:block;margin-top:2px;font-weight:600;}.ds-score{font:600 14px/1.2 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;align-self:center;}.ds-score small{display:block;font:400 12px/1.3 var(--font-body);color:var(--fg-muted);}.ds-low{color:var(--danger);}.ds-tag-held{padding:1px 7px;border-radius:9999px;background:var(--warn-tint);color:var(--warn-ink);font:600 11px/1.5 var(--font-body);}.ds-printed{grid-column:1/-1;display:grid;gap:2px;margin-top:4px;padding:8px 12px;border-radius:8px;border:1px dashed color-mix(in oklab,var(--warn),var(--fg) 25%);background:var(--surface);font-size:12px;}.ds-plabel{color:var(--fg-muted);}.ds-mono{font:14px var(--font-mono);}"
+    },
+    {
+      "name": "Decision Dock",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "Sticky decision card with the overlay shadow; Accept locked until held fields are cleared.",
+      "html": "<div class=\"ds-dock\"><div class=\"ds-hint\">Confirm or correct the held field before accepting.</div><button class=\"ds-btn\">Return to supplier</button><button class=\"ds-btn ds-btn-primary\" disabled>Accept as correctly rendered</button></div>",
+      "css": ":host{--bg:#eeede9;--surface:#f9f7f4;--fg:#0b2026;--fg-muted:color-mix(in oklab,var(--fg),transparent 34%);--line:color-mix(in oklab,var(--fg),transparent 76%);--line-soft:color-mix(in oklab,var(--fg),transparent 88%);--hover:color-mix(in oklab,var(--surface),var(--fg) 5%);--lava:#ff3621;--lava-strong:#c42a18;--lava-on:#f9f7f4;--lava-hover:color-mix(in oklab,var(--lava-strong),black 10%);--lava-active:color-mix(in oklab,var(--lava-strong),black 18%);--ok:#00875c;--warn:#ffab00;--danger:#bd2b26;--warn-ink:color-mix(in oklab,var(--warn),var(--fg) 52%);--ok-tint:color-mix(in oklab,var(--ok),transparent 88%);--warn-tint:color-mix(in oklab,var(--warn),transparent 84%);--danger-tint:color-mix(in oklab,var(--danger),transparent 89%);--viz-8:#1b5162;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--elev-raised:0 2px 8px color-mix(in oklab,var(--fg),transparent 92%);--elev-overlay:0 16px 48px color-mix(in oklab,var(--fg),transparent 78%);--ease:cubic-bezier(0.2,0,0,1);}.ds-btn{font-family:var(--font-body);min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font-weight:600;font-size:14px;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 150ms var(--ease),background 150ms var(--ease);}.ds-btn svg{width:16px;height:16px;}.ds-btn:hover:not(:disabled){border-color:var(--fg);}.ds-btn:focus-visible{outline:2px solid var(--lava);outline-offset:3px;}.ds-btn:disabled{opacity:0.55;cursor:not-allowed;}.ds-dock{width:520px;padding:16px 20px;display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--elev-overlay);font-family:var(--font-body);}.ds-hint{flex:1 0 100%;color:var(--fg-muted);font-size:14px;}.ds-btn-primary{background:var(--lava-strong);border-color:var(--lava-strong);color:var(--lava-on);}.ds-btn-primary:hover:not(:disabled){background:var(--lava-hover);border-color:var(--lava-hover);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Evidence Desk",
+    "overview": "A calm, warm operational workbench for officers who decide one invoice at a time. Oat ground, warm-white panels and navy ink carry nearly everything; colour is spent on meaning. Lava belongs to the primary action and to focus; warn amber is the colour of evidence, outlining the cited region on the rendered page and tinting the field row it belongs to.\n\nThe world is pinned by the Genie Design export and carried into an AppKit React app: a 248px sidebar and 72px blurred top bar, panels on hairline borders with one soft raised shadow, DM Sans throughout and the system mono for every figure compared down a column. Motion is state only, 150-200ms on one standard ease.",
+    "keyCharacteristics": [
+      "Oat ground, warm-white panels, navy ink; active nav and filter invert to navy.",
+      "Lava (#C42A18 under text) only for the primary action, checked decision controls, caret and focus.",
+      "Warn amber is the evidence colour: page highlight, held tint, held tag.",
+      "Mono with tabular figures for money, ids, confidence, days left and summary values.",
+      "12px controls, 16px panels, pills for filters, tags and the OFFICIAL classification.",
+      "One raised shadow at rest; overlay only for things floating above scrolling content."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Lava marks the action that moves the decision forward and the element that has focus. A second lava element on a screen is a defect unless it is a checked control inside that same decision.",
+        "section": "colors"
+      },
+      {
+        "name": "The Amber Is Evidence Rule",
+        "body": "Warn amber means \"look here on the page\": the cited region, the held field, the held tag. It is not a generic warning colour and never carries text at full strength; use warn ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Deepened Lava Rule",
+        "body": "Text never sits on #FF3621. Where lava is a fill under text, use #C42A18.",
+        "section": "colors"
+      },
+      {
+        "name": "The Figures In Mono Rule",
+        "body": "Money, document ids, confidence and day counts are always set in the mono with tabular numerals. Prose numbers stay in DM Sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Is Not A Kicker Rule",
+        "body": "Uppercase mono is reserved for column heads and group labels inside a list or the nav. It never sits above a page or panel heading; context above an H1 belongs in the crumb.",
+        "section": "typography"
+      },
+      {
+        "name": "The Float Earns Overlay Rule",
+        "body": "The overlay shadow is for elements that sit above content scrolling beneath them. Anything in the flow of the page uses raised or nothing.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep lava to the primary action, the checked control in the decision form, and focus; use #C42A18 wherever text sits on it.",
+      "Do use warn amber for evidence: the page highlight, the held tint, the held tag; use warn ink when it must be read as text.",
+      "Do set money, ids, confidence and days left in the mono with tabular figures.",
+      "Do give every score its reason, and show confidence beside the clock rather than in place of it; queues order by days left.",
+      "Do use raised for cards at rest and overlay only for the floating dock, dialog and toast.",
+      "Do use one drawn icon system (lucide) at one stroke weight, sized 12 to 22px per context.",
+      "Do keep motion to state changes at 150ms or 200ms and honour reduced motion."
+    ],
+    "donts": [
+      "Don't put an uppercase label above a page or panel heading; the crumb carries context.",
+      "Don't set text on #FF3621.",
+      "Don't use warn amber at full strength as a text colour, or as a general-purpose warning fill.",
+      "Don't add a second accent or a bulk-approve action; acceptance is per invoice and locked behind held fields.",
+      "Don't let AppKit components fall back to their shadcn defaults or the OS colour scheme; map them to the palette.",
+      "Don't use Unicode glyphs as icons."
+    ]
+  }
+}

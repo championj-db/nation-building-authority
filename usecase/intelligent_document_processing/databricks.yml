@@ -2,8 +2,12 @@
 # Modelled on Databricks document intelligence (ai_parse_document):
 # https://www.databricks.com/blog/pdfs-production-announcing-state-art-document-intelligence-databricks
 #
-# STUB: no resources defined yet. When adding the first resource, create a resources/ directory
-# and uncomment the include block below.
+# Accounts payable invoice assurance against RMG 417 (Supplier Pay On-Time or Pay Interest Policy).
+# Contracts come from public AusTender data, pseudonymised at fetch time; every document is synthetic.
+#
+# Pipeline in src/ and src/pipeline/, jobs and the Lakeflow pipeline in resources/, the review
+# workbench's Lakebase project in resources/workbench_lakebase.yml. The React app in app/ is its own
+# bundle and is not part of this bundle's sync.
 #
 # No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
 
@@ -22,33 +26,94 @@ variables:
     default: intelligent_document_processing
 
   volume:
-    description: Unity Catalog volume the source documents land in.
+    description: Unity Catalog volume the supplier documents land in (inbox/) and page images are written to (pages/).
     default: documents
 
   warehouse_id:
-    description: SQL warehouse backing dashboards and SQL tasks.
+    description: SQL warehouse backing the Genie space and the workbench's reads.
     default: ""
 
   notifications_email:
     description: Address notified when a job run fails.
     default: ${workspace.current_user.userName}
 
+  seed:
+    description: Seed for the synthetic corpus. The same seed and as_of reproduce the same suppliers, orders and documents.
+    default: "42"
+
+  as_of:
+    description: >-
+      Date the corpus is anchored on (YYYY-MM-DD). Empty means the day the corpus is first built,
+      in Canberra time. Six weeks of mail arrive up to this date.
+    default: ""
+
+  corpus_size:
+    description: Number of documents in the seeded inbox.
+    default: "600"
+
+  gic_rate:
+    description: >-
+      ATO general interest charge annual rate used to estimate late-payment interest. Default is
+      the October-December 2026 quarter (11.51%). Update it each quarter from
+      https://www.ato.gov.au/tax-rates-and-codes/general-interest-charge-rates
+    default: "0.1151"
+
+  genie_space_title:
+    description: Title of the Genie space created over the gold tables.
+    default: Accounts Payable Genie - Document Assurance
+
+  lakebase_project_id:
+    description: >-
+      Lakebase (Autoscaling Postgres) project ID backing the review workbench's decisions.
+      Namespaced per developer in the dev target.
+    default: nba-document-workbench
+
+  lakebase_pg_version:
+    description: Postgres major version for the Lakebase project.
+    default: 17
+
+  lakebase_min_cu:
+    description: Minimum compute units on the Lakebase primary endpoint.
+    default: 0.5
+
+  lakebase_max_cu:
+    description: Maximum compute units on the Lakebase primary endpoint.
+    default: 2.0
+
+  lakebase_suspend_timeout:
+    description: Idle time before the Lakebase endpoint scales to zero.
+    default: 300s
+
   environment:
     description: Logical environment label, applied as a tag to every resource.
     default: dev
 
-# include:
-#   - resources/*.yml
+include:
+  - resources/*.yml
+
+sync:
+  exclude:
+    - app/**
+    - tests/**
+    - design/**
+    - docs/**
 
 targets:
   dev:
     mode: development
     default: true
+    # Upload sources into the bundle root (instead of linking to the Git folder) so src/*.py files
+    # with a "# Databricks notebook source" header are deployed as notebooks.
+    presets:
+      source_linked_deployment: false
     variables:
       environment: dev
       schema: intelligent_document_processing_${workspace.current_user.short_name}
+      lakebase_project_id: nba-document-workbench-${workspace.current_user.domain_friendly_name}
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       environment: prod

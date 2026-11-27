@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design/document-assurance-workbench.html"
+        ],
+        "createdAt": "2026-11-26T23:34:56.572Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "kicker-above-heading",
+        "value": "*",
+        "files": [
+          "design/document-assurance-workbench.html"
+        ],
+        "createdAt": "2026-11-26T23:34:56.572Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          "design/document-assurance-workbench.html"
+        ],
+        "createdAt": "2026-11-26T23:34:56.572Z",
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "roboto",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-27T00:00:00.000Z",
+        "reason": "Claude: reladraw-generated diagram viewer page using its own bundled font stack; documentation tooling, not part of the app's design system"
+      }
+    ]
+  }
+}
