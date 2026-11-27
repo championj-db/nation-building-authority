@@ -22,7 +22,7 @@ import {
   useSessionInfo,
   type Session,
 } from './lib/data';
-import { openItems } from './lib/queue';
+import { MODE_LABELS, openItems, rowsForMode } from './lib/queue';
 import type { IntakeRow, PipelineStatus, QueueRow, RegisterRow } from './lib/types';
 
 const VIEWS: View[] = ['overview', 'queue', 'review', 'intake', 'ask', 'register', 'performance', 'log'];
@@ -126,6 +126,17 @@ function Screens({ dark, onTheme }: { dark: boolean; onTheme: () => void }) {
     () => (queue.data ? openItems(queue.data, decisions.byDoc) : null),
     [queue.data, decisions.byDoc]
   );
+  // Next/previous in the review follows the queue filter the officer came from. The open document
+  // stays in the list after it is decided so its neighbours do not jump.
+  const reviewNav = useMemo(() => {
+    if (route.view !== 'review' || !route.doc || !queue.data) return undefined;
+    const rows = queue.data.filter((r) => !decisions.byDoc.has(r.doc_id) || r.doc_id === route.doc);
+    const ids = rowsForMode(rows, route.mode).map((r) => r.doc_id);
+    const index = ids.indexOf(route.doc);
+    if (index < 0) return undefined;
+    return { index, total: ids.length, label: MODE_LABELS[route.mode], prev: ids[index - 1], next: ids[index + 1] };
+  }, [route.view, route.doc, route.mode, queue.data, decisions.byDoc]);
+
   const intakeOpen = useMemo(
     () => (intake.data ? intake.data.filter((r) => r.in_live_window && !decisions.byDoc.has(r.doc_id)).length : null),
     [intake.data, decisions.byDoc]
@@ -262,6 +273,7 @@ function Screens({ dark, onTheme }: { dark: boolean; onTheme: () => void }) {
             onBack={() => (window.history.length > 1 ? window.history.back() : go({ view: 'queue' }))}
             onOpen={openDoc}
             onDecided={setToast}
+            nav={reviewNav}
           />
         )}
         {v === 'intake' && (

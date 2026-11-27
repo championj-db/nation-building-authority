@@ -6,6 +6,7 @@ import {
   CircleCheck,
   CircleDashed,
   CircleHelp,
+  ChevronLeft,
   ChevronRight,
   CircleX,
   Clock3,
@@ -15,6 +16,8 @@ import {
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CHECK_LABELS,
+  FIELD_NAMES,
+  unresolvedBehind,
   decisionProblem,
   DOC_TYPES,
   OVERRIDE_NOTE_MIN,
@@ -38,7 +41,7 @@ import {
 import { day, money, pct, received, weekday } from '../lib/format';
 import { clockText } from '../lib/queue';
 import type { CheckRow, DocumentRow, FieldRow, InvoiceRow, Region } from '../lib/types';
-import { recheck } from '../../../shared/recheck';
+import { abnValid, recheck } from '../../../shared/recheck';
 import { DocumentViewer } from './DocumentViewer';
 import { ErrorNotice, PanelHead, Skeleton, SkeletonRows, StatusText } from './primitives';
 
@@ -58,9 +61,20 @@ function display(f: FieldRow, value: string | null): string | null {
   if (value == null || value === '') return null;
   if (f.field_type === 'number') return money(value);
   if (f.field === 'invoice_date') return day(value, true);
-  if (f.field.endsWith('_abn') && value.length === 11)
-    return `${value.slice(0, 2)} ${value.slice(2, 5)} ${value.slice(5, 8)} ${value.slice(8)}`;
+  if (f.field.endsWith('_abn') && /^\d{9,}$/.test(value))
+    return [value.slice(0, 2), ...(value.slice(2).match(/\d{1,3}/g) ?? [])].join(' ');
   return value;
+}
+
+/** An ABN-shaped value printed on the page that passes the check digits: the likely intended value. */
+function printedCandidate(f: FieldRow): string | null {
+  if (!f.field.endsWith('_abn') || !f.cited_text) return null;
+  const text = f.cited_text.replace(/<[^>]+>/g, ' ');
+  for (const m of text.matchAll(/\b(\d{2})\s?(\d{3})\s?(\d{3})\s?(\d{3})\b/g)) {
+    const digits = m.slice(1).join('');
+    if (abnValid(digits) && digits !== f.value) return digits;
+  }
+  return null;
 }
 
 export function Review({
@@ -68,11 +82,13 @@ export function Review({
   onBack,
   onOpen,
   onDecided,
+  nav,
 }: {
   docId: string;
   onBack: () => void;
   onOpen: (id: string) => void;
   onDecided: (message: string) => void;
+  nav?: { index: number; total: number; label: string; prev?: string; next?: string };
 }) {
   const base = useBaseParams();
   const session = useSessionInfo();
@@ -104,6 +120,19 @@ export function Review({
     null
   );
   const opened = useRef(Date.now());
+
+  // J / K step through the queue filter, unless the officer is typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.closest('input, textarea, select, [contenteditable="true"]') || t.isContentEditable)) return;
+      if (e.key === 'j' && nav?.next) onOpen(nav.next);
+      if (e.key === 'k' && nav?.prev) onOpen(nav.prev);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [nav, onOpen]);
   const panelRef = useRef<HTMLElement>(null);
   const { bump: retry } = useContext(DataVersionContext);
 
@@ -145,10 +174,15 @@ export function Review({
   );
   const failed = shownChecks.filter((c) => c.result === 'fail');
   const supplierFails = failed.filter((c) => c.supplier_fault);
+  const heldNames = held.map((f) => f.field);
+  const invalidNames = fields.filter((f) => f.value != null && !f.type_valid).map((f) => f.field);
+  const behind = (code: string) =>
+    unresolvedBehind(code, heldNames, [...confirmed], Object.keys(corrections), invalidNames);
+  const returnable = supplierFails.filter((c) => !behind(c.check_code).length);
   const unknownChecks = shownChecks.filter((c) => c.result === 'unknown' && c.supplier_fault);
   // Pre-select the failed criteria when the officer opens the return form.
   useEffect(() => {
-    if (mode === 'return' && !reasons.length) setReasons(supplierFails.map((c) => c.check_code));
+    if (mode === 'return' && !reasons.length) setReasons(returnable.map((c) => c.check_code));
     // An open form leaves the sticky bar and is brought into view where it sits.
     if (mode !== 'idle')
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
@@ -272,7 +306,9 @@ export function Review({
         ? `${heldN} ${heldN === 1 ? 'field' : 'fields'} held for review`
         : `${unknownChecks.map((c) => c.label).join(', ') || 'A check'} could not be checked`,
       text: heldN
-        ? 'If the invoice is correctly rendered, its clock has been running since it arrived.'
+        ? invoice.trigger_date
+          ? `If it is correctly rendered, its payment clock has been running since the day after ${weekday(invoice.trigger_date)}: both the invoice and the delivery receipt were in hand by then.`
+          : 'Its payment clock has not started: no delivery receipt has been matched to it yet.'
         : `${unknownChecks.map((c) => c.detail).join(' ')} Check it yourself before you accept or return the invoice.`,
     };
   })();
@@ -307,6 +343,36 @@ export function Review({
             )}
           </div>
         </div>
+        {nav && nav.total > 1 && (
+          <nav className="doc-nav" aria-label="Step through the queue">
+            <span className="doc-nav-pos">
+              <span className="mono">
+                {nav.index + 1} of {nav.total}
+              </span>{' '}
+              in {nav.label}
+            </span>
+            <button
+              className="button small icon-button"
+              onClick={() => nav.prev && onOpen(nav.prev)}
+              disabled={!nav.prev}
+              aria-label="Previous document"
+              aria-keyshortcuts="k"
+              title="Previous (K)"
+            >
+              <ChevronLeft aria-hidden="true" />
+            </button>
+            <button
+              className="button small icon-button"
+              onClick={() => nav.next && onOpen(nav.next)}
+              disabled={!nav.next}
+              aria-label="Next document"
+              aria-keyshortcuts="j"
+              title="Next (J)"
+            >
+              <ChevronRight aria-hidden="true" />
+            </button>
+          </nav>
+        )}
       </div>
 
       {error && <ErrorNotice message="Part of this document could not be loaded." onRetry={retry} />}
@@ -460,7 +526,7 @@ export function Review({
                               onClick={() => {
                                 setSelected(f.field);
                                 setEditing(f.field);
-                                setDraft(corrected ?? f.value ?? '');
+                                setDraft(corrected ?? printedCandidate(f) ?? f.value ?? '');
                               }}
                             >
                               <Pencil aria-hidden="true" /> {corrected != null ? 'Edit correction' : 'Correct'}
@@ -482,6 +548,11 @@ export function Review({
                               setEditing(null);
                             }}
                           >
+                            {printedCandidate(f) && draft === printedCandidate(f) && corrections[f.field] == null && (
+                              <span className="check-detail field-reason">
+                                Pre-filled with the valid ABN printed on the page. Check it before saving.
+                              </span>
+                            )}
                             <label className="sr-only" htmlFor={`fix-${f.field}`}>
                               Corrected {f.label}
                             </label>
@@ -522,7 +593,7 @@ export function Review({
                   {shownChecks
                     .filter((c) => c.result !== 'pass')
                     .map((c) => (
-                      <CheckLine key={c.check_code} c={c} />
+                      <CheckLine key={c.check_code} c={c} dependsOn={c.result === 'fail' ? behind(c.check_code) : []} />
                     ))}
                   <details className="passed-checks">
                     <summary>
@@ -622,7 +693,7 @@ export function Review({
                     <small>
                       10 business days
                       {invoice.business_days_left_2027 != null && invoice.queue_state === 'open'
-                        ? `, ${invoice.business_days_left_2027} left`
+                        ? `, ${invoice.business_days_left_2027} business days left`
                         : ''}
                     </small>
                   </dd>
@@ -685,6 +756,16 @@ export function Review({
                       : ''}
                   </p>
                   {decided.note && <p>&ldquo;{decided.note}&rdquo;</p>}
+                  {nav?.next && (
+                    <button
+                      className="button primary"
+                      style={{ marginTop: 'var(--space-4)' }}
+                      onClick={() => onOpen(nav.next!)}
+                    >
+                      Next in {nav.label}
+                      <ChevronRight aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : historical ? (
@@ -714,20 +795,28 @@ export function Review({
                         {SUPPLIER_FAULT_CHECKS.map((code) => {
                           const failedHere = supplierFails.some((c) => c.check_code === code);
                           if (!failedHere && !reasons.includes(code) && supplierFails.length) return null;
+                          const waiting = failedHere ? behind(code) : [];
                           return (
-                            <label key={code} className="reason">
+                            <label key={code} className={`reason${waiting.length ? ' waiting' : ''}`}>
                               <input
                                 type="checkbox"
-                                checked={reasons.includes(code)}
+                                disabled={waiting.length > 0}
+                                checked={reasons.includes(code) && !waiting.length}
                                 onChange={(e) =>
                                   setReasons((r) => (e.target.checked ? [...r, code] : r.filter((x) => x !== code)))
                                 }
                               />
                               <span>
                                 {CHECK_LABELS[code]}
-                                {failedHere && (
+                                {failedHere && !waiting.length && (
                                   <span className="tag fail" style={{ marginLeft: 8 }}>
                                     failed check
+                                  </span>
+                                )}
+                                {waiting.length > 0 && (
+                                  <span className="check-detail" style={{ display: 'block' }}>
+                                    Confirm or correct {waiting.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before
+                                    returning on this.
                                   </span>
                                 )}
                               </span>
@@ -889,7 +978,7 @@ export function Review({
   );
 }
 
-function CheckLine({ c }: { c: CheckRow }) {
+function CheckLine({ c, dependsOn = [] }: { c: CheckRow; dependsOn?: string[] }) {
   const icon =
     c.result === 'pass' ? (
       <CircleCheck aria-hidden="true" />
@@ -907,7 +996,18 @@ function CheckLine({ c }: { c: CheckRow }) {
             {c.result === 'pass' ? 'Passed: ' : c.result === 'fail' ? 'Failed: ' : 'Could not check: '}
           </span>
           {c.label}
+          {dependsOn.length > 0 && (
+            <span className="tag held" style={{ marginLeft: 8 }}>
+              Depends on {dependsOn.map((f) => FIELD_NAMES[f] ?? f).join(' and ')}
+            </span>
+          )}
         </div>
+        {dependsOn.length > 0 && (
+          <div className="check-detail">
+            Read from a field held for review. Confirm or correct it first: this check may only be failing because it
+            was misread.
+          </div>
+        )}
         <div className="check-detail">
           {c.detail}
           {c.source_url ? (

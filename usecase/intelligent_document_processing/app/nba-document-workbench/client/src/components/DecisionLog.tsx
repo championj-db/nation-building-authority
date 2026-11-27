@@ -36,7 +36,7 @@ export function DecisionLog({ onOpen }: { onOpen: (id: string) => void }) {
           <Empty title="No decisions yet">Open an invoice from the review queue to record the first one.</Empty>
         ) : (
           <div className="table-wrap">
-            <table className="data">
+            <table className="data numeric">
               <thead>
                 <tr>
                   <th scope="col">When</th>
@@ -81,7 +81,7 @@ export function DecisionLog({ onOpen }: { onOpen: (id: string) => void }) {
                     <td className="num mono">
                       {r.handling_seconds < 60 ? `${r.handling_seconds}s` : `${Math.round(r.handling_seconds / 60)}m`}
                     </td>
-                    <td>{r.decided_by}</td>
+                    <td title={r.decided_by}>{r.decided_by.split('@')[0]}</td>
                   </tr>
                 ))}
               </tbody>

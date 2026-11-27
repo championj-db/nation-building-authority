@@ -195,7 +195,9 @@ def build_suppliers(contracts: list[dict], attrs: list[dict], rng: random.Random
         for attempt in range(20):
             w1 = a["word_a"] if attempt == 0 else rng.choice(NAME_WORDS)
             w2 = a["word_b"] if attempt == 0 else rng.choice(LANDFORMS)
-            candidate = f"{w1} {w2} {words[(i + attempt) % len(words)]} {a['form']}"
+            word = words[(i + attempt) % len(words)]
+            form = a["form"] if a["form"].split()[0] != word.split()[-1] else "Pty Ltd"  # no "Partners Partners"
+            candidate = f"{w1} {w2} {word} {form}"
             if candidate not in used_names:
                 name = candidate
                 break

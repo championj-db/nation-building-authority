@@ -66,6 +66,18 @@ describe('returning', () => {
     expect(decisionProblem(input({ decision: 'returned', reasonCodes: ['gst_calculated'] }), s)).toBeNull();
     expect(decisionProblem(input({ decision: 'returned', reasonCodes: ['other'] }), s)).toMatch(/Explain/);
   });
+  it('will not return on a criterion that rests on a held, unresolved field', () => {
+    const s = snap({ status: 'needs_review', heldFields: ['supplier_abn'], invalidFields: ['supplier_abn'], failedChecks: ['supplier_abn_valid', 'supplier_abn_matches_vendor'] });
+    expect(decisionProblem(input({ decision: 'returned', reasonCodes: ['supplier_abn_valid'] }), s)).toMatch(/Confirm or correct Supplier ABN/);
+    // a malformed value "confirmed" still does not count; a correction does
+    expect(decisionProblem(input({ decision: 'returned', reasonCodes: ['supplier_abn_valid'], confirmedFields: ['supplier_abn'] }), s)).toMatch(/Confirm or correct/);
+    const corrected = input({ decision: 'returned', reasonCodes: ['supplier_abn_valid'], corrections: [{ field: 'supplier_abn', extracted: '84726723406225', corrected: '84726723407' }] });
+    expect(decisionProblem(corrected, { ...s, failedChecks: ['supplier_abn_valid'] })).toBeNull();
+  });
+  it('asks for a reason when returning on a criterion that passed', () => {
+    const s = snap({ status: 'exception', failedChecks: ['gst_calculated'] });
+    expect(decisionProblem(input({ decision: 'returned', reasonCodes: ['po_quoted'] }), s)).toMatch(/passed its check/);
+  });
   it('writes a notice naming each failed criterion', () => {
     const text = returnNotice('Kestrel Ridge Consulting Pty Ltd', 'KRC-1', ['po_quoted', 'gst_calculated'], '');
     expect(text).toContain('invoice KRC-1');

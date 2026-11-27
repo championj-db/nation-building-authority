@@ -76,3 +76,16 @@ Removed because each one repeated something said elsewhere or decorated rather t
 | Idle caption under the page, and the cited-text excerpt in the caption | Repeated the fields panel's instruction, and later the "Printed on the page" excerpt in the field row | Fields panel copy; the excerpt inside the selected row |
 | Separate "All eleven criteria passed" row above the passed-checks disclosure | Same fact twice | The disclosure summary reads "All 11 criteria passed" |
 | Repeated "check each held field..." in the verdict | Said in the verdict, the fields panel and the dock | Dock hint and field rows; the verdict keeps only the clock consequence |
+
+## Changes from the first critique (26/40)
+
+| Finding | Change |
+| --- | --- |
+| P0: Return was allowed on criteria that failed only because a held field was misread, and drafted a false notice | A failed check that reads a held, unresolved field is tagged "Depends on <field>" and explained. On the return form it is disabled and never pre-ticked. `decisionProblem` refuses such a return on the server too, and asks for a note when returning on a criterion that passed. |
+| Correct opened with the misread value | For ABN fields, Correct is pre-filled with the check-digit-valid ABN found in the printed text, with a note to check it before saving. ABNs of any length are grouped 2-3-3-3 so a merged value reads like the page. |
+| P1: the cited region was about 6px tall on the desktop page | Selecting a field opens a magnifying lens of the actual page pixels around the cited region, at least print size, scrolling sideways when the region is wide; a toggle hides it. The page highlight stroke is heavier. |
+| P1: the Ask input kept AppKit's dark fill | The Genie input is held to the oat fill, navy text and muted placeholder; the Ask page aligns left like every other screen. |
+| No next or previous invoice in review | The review header shows "N of M in <filter>" with previous and next buttons (K and J), following the queue filter the officer came from; after a decision, "Next in <filter>" is offered. |
+| Register and Decision log columns clipped at 1440 | Both use the measure-table layout (wrapping headers, tighter padding); the log shows the decider's name with the full address on hover. |
+| Detector: long lines and single-word last lines | Intro and panel copy are capped at 60ch and 58ch, paragraphs use `text-wrap: pretty`, and the long Performance description is shorter. |
+| "Partners Partners" supplier names | The generator no longer repeats the business word as the entity form. Existing seeded names are left as printed on their documents. |

@@ -103,7 +103,7 @@ export function Register({
           <Empty title="No documents match">Clear the search or choose another type.</Empty>
         ) : (
           <div className="table-wrap">
-            <table className="data">
+            <table className="data numeric">
               <thead>
                 <tr>
                   <th scope="col">Document</th>
