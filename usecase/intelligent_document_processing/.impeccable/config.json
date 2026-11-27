@@ -10,7 +10,7 @@
           "design/document-assurance-workbench.html"
         ],
         "createdAt": "2026-11-26T23:34:56.572Z",
-        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app carries the fixes (design/DESIGN-HANDOFF.md)"
       },
       {
         "rule": "kicker-above-heading",
@@ -19,7 +19,7 @@
           "design/document-assurance-workbench.html"
         ],
         "createdAt": "2026-11-26T23:34:56.572Z",
-        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app carries the fixes (design/DESIGN-HANDOFF.md)"
       },
       {
         "rule": "undersized-ui-text",
@@ -28,7 +28,7 @@
           "design/document-assurance-workbench.html"
         ],
         "createdAt": "2026-11-26T23:34:56.572Z",
-        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app at app/nba-document-workbench carries the fixes (see design/DESIGN-HANDOFF.md)"
+        "reason": "Claude: design/ holds the unmodified Genie Design export as the source reference, not shipped UI; the app carries the fixes (design/DESIGN-HANDOFF.md)"
       },
       {
         "rule": "design-system-font",
@@ -37,7 +37,52 @@
           "docs/architecture.html"
         ],
         "createdAt": "2026-11-27T00:00:00.000Z",
-        "reason": "Claude: reladraw-generated diagram viewer page using its own bundled font stack; documentation tooling, not part of the app's design system"
+        "reason": "Claude: reladraw-generated diagram viewer with its own bundled font stack; documentation tooling, not app UI"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "design/document-assurance-workbench.html"
+        ],
+        "createdAt": "2026-11-27T00:34:41.786Z",
+        "reason": "Claude: unmodified Genie Design export kept as the source reference, not shipped UI"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-27T00:34:41.816Z",
+        "reason": "Claude: reladraw-generated diagram viewer with its own styling; documentation tooling, not app UI"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-27T00:34:41.846Z",
+        "reason": "Claude: reladraw-generated diagram viewer with its own styling; documentation tooling, not app UI"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-27T00:34:41.877Z",
+        "reason": "Claude: reladraw-generated diagram viewer with its own styling; documentation tooling, not app UI"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/architecture.html"
+        ],
+        "createdAt": "2026-11-27T00:34:41.909Z",
+        "reason": "Claude: reladraw-generated diagram viewer with its own styling; documentation tooling, not app UI"
       }
     ]
   }
