@@ -168,7 +168,10 @@ export function decisionProblem(input: DecisionInput, snap: GovernedSnapshot): s
         return `Confirm or correct ${behind.map((f) => FIELD_NAMES[f] ?? f).join(' and ')} before returning the invoice for "${CHECK_LABELS[code]}".`;
       }
     }
-    if (input.reasonCodes.some((c) => c !== 'other' && !snap.failedChecks.includes(c)) && input.note.length < OVERRIDE_NOTE_MIN) {
+    if (
+      input.reasonCodes.some((c) => c !== 'other' && !snap.failedChecks.includes(c)) &&
+      input.note.length < OVERRIDE_NOTE_MIN
+    ) {
       return 'One of those criteria passed its check. Explain in the note why the invoice does not meet it.';
     }
     return null;
@@ -220,6 +223,7 @@ export function returnNotice(
 ): string {
   const lines = codes.filter((c) => c !== 'other' && RETURN_REASONS[c]).map((c) => `- ${RETURN_REASONS[c]}`);
   if (note.trim()) lines.push(`- ${note.trim()}`);
+  if (!lines.length) lines.push('- [No reason yet: choose a criterion or write one in the note]');
   return [
     `Dear ${supplier ?? 'supplier'},`,
     '',

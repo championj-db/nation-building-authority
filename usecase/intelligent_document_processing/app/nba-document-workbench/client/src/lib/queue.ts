@@ -107,7 +107,10 @@ export function dueText(r: Pick<QueueRow, 'clock_state' | 'pay_by_date'>): strin
 }
 
 export function clockText(
-  r: Pick<QueueRow, 'clock_state' | 'business_days_left' | 'calendar_days_left' | 'status'> & { doc_type?: string }
+  r: Pick<QueueRow, 'clock_state' | 'business_days_left' | 'calendar_days_left' | 'status'> & {
+    doc_type?: string;
+    pay_by_date?: string | null;
+  }
 ): { short: string; long: string } {
   if (r.doc_type === 'adjustment_note')
     return { short: 'No payment', long: 'A credit: it reduces what is owed, so no payment clock applies' };
@@ -125,7 +128,19 @@ export function clockText(
     };
   }
   const b = r.business_days_left ?? 0;
-  if (b <= 0) return { short: 'Pay today', long: 'The last business day before the pay-by date is today' };
+  if (b <= 0) {
+    const due = r.pay_by_date
+      ? new Date(`${r.pay_by_date}T00:00:00`).toLocaleDateString('en-AU', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'short',
+        })
+      : null;
+    const today = new Date().toISOString().slice(0, 10);
+    return due && r.pay_by_date !== today
+      ? { short: 'Pay today', long: `Pay today: it is due ${due}, and today is the last business day before then` }
+      : { short: 'Pay today', long: 'Pay today: the pay-by date is today' };
+  }
   return {
     short: `${b} business ${b === 1 ? 'day' : 'days'} left`,
     long: `${b} business ${b === 1 ? 'day' : 'days'} to the pay-by date`,

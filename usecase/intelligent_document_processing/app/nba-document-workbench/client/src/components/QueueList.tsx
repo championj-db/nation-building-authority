@@ -4,6 +4,7 @@ import { list } from '../lib/data';
 import { money, received } from '../lib/format';
 import { clockText, dueText } from '../lib/queue';
 import type { QueueRow } from '../lib/types';
+import { scoreTitle } from '../lib/confidence';
 import { Empty, StatusText } from './primitives';
 
 const CHECK_SHORT: Record<string, string> = {
@@ -28,13 +29,15 @@ function lowestField(r: QueueRow) {
       value: failed[0] ?? 'failed',
       note: failed.length > 1 ? `+${failed.length - 1} more` : 'failed check',
       low: true,
+      title: 'A correctly rendered check failed',
     };
   }
   const c = r.lowest_required_confidence;
   return {
-    value: c == null ? '-' : `${Math.round(c * 100)}%`,
-    note: held ? `${held} held` : '',
+    value: held ? `${held} held` : c == null ? '-' : 'Confident',
+    note: '',
     low: held > 0,
+    title: scoreTitle(c),
   };
 }
 
@@ -59,7 +62,7 @@ export function QueueList({
         <div className="queue-head" aria-hidden="true">
           <span>Document</span>
           <span>Status</span>
-          <span title="Confidence of the weakest required field">Confidence</span>
+          <span>Fields</span>
           <span>Payment clock</span>
           <span />
         </div>
@@ -79,7 +82,7 @@ export function QueueList({
               </span>
             </span>
             <StatusText status={r.status} label={r.status_label} />
-            <span className={`confidence${lf.low ? ' low' : ''}`}>
+            <span className={`confidence${lf.low ? ' low' : ''}`} title={lf.title}>
               {lf.value}
               {lf.note && <small>{lf.note}</small>}
             </span>

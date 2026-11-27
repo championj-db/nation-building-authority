@@ -89,3 +89,18 @@ Removed because each one repeated something said elsewhere or decorated rather t
 | Register and Decision log columns clipped at 1440 | Both use the measure-table layout (wrapping headers, tighter padding); the log shows the decider's name with the full address on hover. |
 | Detector: long lines and single-word last lines | Intro and panel copy are capped at 60ch and 58ch, paragraphs use `text-wrap: pretty`, and the long Performance description is shorter. |
 | "Partners Partners" supplier names | The generator no longer repeats the business word as the entity form. Existing seeded names are left as printed on their documents. |
+
+## Changes from the second critique (29/40)
+
+| Finding | Change |
+| --- | --- |
+| P1: confidence shown as a percentage, against "never a probability" | Fields show a band: a quiet check for Confident, and the words Low, Not on page or Missing in a danger tint. The queue column is "Fields" (Confident, or "N held"). The Decision log says whether a field was held. The routing score appears only in a tooltip that calls it a routing control. |
+| P1: clock copy ambiguous | The header names the governing term ("today's terms: 20 calendar days"). The 2027 line reads "If the 1 January 2027 terms applied … for comparison only". "Pay today" before a weekend pay-by says when it is actually due. |
+| P1: review work lost on J/K, Back or refresh | Confirmations and corrections are kept per document for the browser session and restored on return, with a note in the dock; they are cleared when a decision is recorded. |
+| P2: return form listed ten criteria when none failed | Only failed criteria are offered; with none failed, "Another reason" is pre-selected with its note. A criterion blocked by a held field links to that field. |
+| P2: stale verdict and thin recorded state | The verdict is hidden once a decision exists; the recorded card says what happens next for accept, return and reclassify. |
+| Third review (27/40): return on a passing invoice pre-selected "Another reason" and produced a notice with no reason | Nothing is pre-selected when no check failed; the notice never ends on an empty list ("[No reason yet ...]") and recording stays blocked until a reason is given. |
+| Third review: mobile review overflowed (498px at 390) | Header children may shrink, the clock line wraps, previous/next spans the width. |
+| Third review: Ingest in lava on every screen | Ingest is an outlined button; lava stays on the decision and focus (The One Accent Rule). |
+| Third review: "Delivery not acknowledged ... reached ready 15" read as a contradiction | The cell says "receipted later": those invoices became ready when their receipt arrived. |
+| Third review: band contrast 4.49:1; Decision log intro line length | Band text deepened toward ink; intros capped at 56ch. Correct pre-fill is grouped 2-3-3-3 like the page. |
