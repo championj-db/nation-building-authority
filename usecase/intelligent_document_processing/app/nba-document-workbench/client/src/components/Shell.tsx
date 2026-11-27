@@ -101,14 +101,12 @@ export function Topbar({
   crumb,
   dark,
   onTheme,
-  onLog,
   onIngest,
   ingest,
 }: {
   crumb: string;
   dark: boolean;
   onTheme: () => void;
-  onLog: () => void;
   onIngest: () => void;
   ingest: { enabled: boolean; running: boolean; label: string | null };
 }) {
@@ -130,9 +128,6 @@ export function Topbar({
           aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
         >
           {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-        </button>
-        <button className="button hide-narrow" onClick={onLog}>
-          Decision log
         </button>
         <button
           className="button primary"

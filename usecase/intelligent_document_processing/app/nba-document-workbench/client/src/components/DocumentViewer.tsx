@@ -12,7 +12,6 @@ export function DocumentViewer({
   pageCount,
   enabled,
   selected,
-  others,
   caption,
 }: {
   docId: string;
@@ -21,11 +20,9 @@ export function DocumentViewer({
   selected: {
     label: string;
     regions: Region[];
-    citedText: string | null;
     value: string | null;
     elsewhere?: boolean;
   } | null;
-  others: Region[];
   caption?: string;
 }) {
   const [page, setPage] = useState(0);
@@ -128,16 +125,6 @@ export function DocumentViewer({
             )}
             {size && state === 'ready' && (
               <svg viewBox={`0 0 ${size.w} ${size.h}`} preserveAspectRatio="none" aria-hidden="true">
-                {others.filter(onPage).map((r) => (
-                  <rect
-                    key={`o-${r.x0}-${r.y0}-${r.x1}-${r.y1}`}
-                    className="evidence-box faint"
-                    x={r.x0}
-                    y={r.y0}
-                    width={r.x1 - r.x0}
-                    height={r.y1 - r.y0}
-                  />
-                ))}
                 {(selected?.regions ?? []).filter(onPage).map((r) => (
                   <rect
                     key={`s-${r.x0}-${r.y0}-${r.x1}-${r.y1}`}
@@ -153,41 +140,24 @@ export function DocumentViewer({
           </div>
         )}
       </div>
-      <div className="viewer-caption" aria-live="polite">
-        {selected ? (
-          selected.regions.length ? (
+      {(selected || caption) && (
+        <div className="viewer-caption" aria-live="polite">
+          {selected ? (
             <>
               <strong>{selected.label}</strong>
-              {selected.elsewhere
-                ? ' was found elsewhere on the document, not in the region the model cited. Check the page for it before you confirm.'
-                : ' is cited from the highlighted region'}
-              {selected.elsewhere ? null : selected.citedText ? (
-                <>
-                  :
-                  <div className="mono" style={{ marginTop: 6 }}>
-                    {selected.citedText
-                      .replace(/<[^>]+>/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim()
-                      .slice(0, 260)}
-                  </div>
-                </>
-              ) : (
-                '.'
-              )}
+              {!selected.regions.length
+                ? selected.value
+                  ? ': no location was cited. Find it on the page before you confirm it.'
+                  : ': not found on the document.'
+                : selected.elsewhere
+                  ? ' was found elsewhere on the document, not where the model cited. Find it before you confirm.'
+                  : ' is highlighted on the page.'}
             </>
           ) : (
-            <>
-              <strong>{selected.label}</strong>:{' '}
-              {selected.value
-                ? 'no location was cited for this value. Find it on the page before you confirm it.'
-                : 'nothing was found on the document.'}
-            </>
-          )
-        ) : (
-          (caption ?? 'Select a field to see where it sits on the page. Dashed outlines mark the other cited fields.')
-        )}
-      </div>
+            caption
+          )}
+        </div>
+      )}
     </section>
   );
 }

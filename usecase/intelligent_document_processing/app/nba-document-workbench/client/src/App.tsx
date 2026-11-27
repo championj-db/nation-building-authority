@@ -229,7 +229,6 @@ function Screens({ dark, onTheme }: { dark: boolean; onTheme: () => void }) {
           crumb={CRUMBS[v]}
           dark={dark}
           onTheme={onTheme}
-          onLog={() => go({ view: 'log' })}
           onIngest={() => dialog.current?.showModal()}
           ingest={{ enabled: session.ingestEnabled, running: ingest.running, label: ingest.label }}
         />

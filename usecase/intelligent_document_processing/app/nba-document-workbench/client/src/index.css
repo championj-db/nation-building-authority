@@ -621,11 +621,6 @@ button.summary-card:active {
   justify-content: space-between;
   gap: var(--space-2);
 }
-.summary-label svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.7;
-}
 .summary-value {
   font: 600 var(--text-2xl) / 1 var(--font-mono);
   letter-spacing: -0.03em;
@@ -923,12 +918,6 @@ button.summary-card:hover {
   rx: 4;
   transition: opacity var(--motion-base) var(--ease-standard);
 }
-.evidence-box.faint {
-  fill: transparent;
-  stroke: color-mix(in oklab, var(--viz-10), transparent 55%);
-  stroke-width: 2;
-  stroke-dasharray: 6 5;
-}
 .evidence-box.selected {
   animation: evidence-in var(--motion-base) var(--ease-out);
 }
@@ -945,11 +934,6 @@ button.summary-card:hover {
   background: var(--warn-tint);
   font-size: var(--text-sm);
   line-height: var(--leading-body);
-}
-.viewer-caption .mono {
-  font-size: var(--text-xs);
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 .viewer-empty {
   padding: var(--space-12) var(--space-6);
@@ -1881,9 +1865,6 @@ dialog.dialog[open] {
     min-height: 0;
     padding: var(--space-3) var(--space-4);
     gap: var(--space-1);
-  }
-  .summary-label svg {
-    display: none;
   }
   .queue-row .received {
     display: none;

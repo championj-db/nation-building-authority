@@ -7,12 +7,6 @@ export function money(v: unknown, whole = false): string {
   return (whole ? AUD0 : AUD).format(n);
 }
 
-export function compactMoney(v: number): string {
-  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}m`;
-  if (Math.abs(v) >= 10_000) return `$${Math.round(v / 1000)}k`;
-  return AUD0.format(v);
-}
-
 export function toDate(v: unknown): Date | null {
   if (!v) return null;
   const s = typeof v === 'string' ? v : v instanceof Date ? v.toISOString() : String(v as number);
