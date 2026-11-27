@@ -104,3 +104,9 @@ Removed because each one repeated something said elsewhere or decorated rather t
 | Third review: Ingest in lava on every screen | Ingest is an outlined button; lava stays on the decision and focus (The One Accent Rule). |
 | Third review: "Delivery not acknowledged ... reached ready 15" read as a contradiction | The cell says "receipted later": those invoices became ready when their receipt arrived. |
 | Third review: band contrast 4.49:1; Decision log intro line length | Band text deepened toward ink; intros capped at 56ch. Correct pre-fill is grouped 2-3-3-3 like the page. |
+
+## Fourth critique (27/40): return wording
+
+| Finding | Change |
+| --- | --- |
+| P1: the return form listed criteria as passes ("Supplier ABN is valid") under "Criteria the invoice does not meet"; the log recorded "Returned: Within remaining order value" | Each check has a failure phrase (`CHECK_FAILURES` in `shared/contracts.ts`). The checks panel keeps the criterion as met, with pass or fail beside it; the return form, the recorded card, the Decision log and the server's refusal messages say what is wrong ("Supplier ABN missing or invalid", "Exceeds the value left on the order"). The form asks "What is wrong with this invoice?", and the note label says it is required when "Another reason" is ticked. |

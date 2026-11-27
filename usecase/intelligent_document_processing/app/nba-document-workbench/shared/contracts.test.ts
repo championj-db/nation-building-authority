@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { decisionProblem, decisionSchema, returnNotice, type GovernedSnapshot } from './contracts';
+import {
+  CHECK_FAILURES,
+  CHECK_LABELS,
+  decisionProblem,
+  decisionSchema,
+  returnNotice,
+  SUPPLIER_FAULT_CHECKS,
+  type GovernedSnapshot,
+} from './contracts';
 
 const snap = (over: Partial<GovernedSnapshot> = {}): GovernedSnapshot => ({
   docId: 'DOC-000001',
@@ -89,6 +97,12 @@ describe('returning', () => {
       corrections: [{ field: 'supplier_abn', extracted: '84726723406225', corrected: '84726723407' }],
     });
     expect(decisionProblem(corrected, { ...s, failedChecks: ['supplier_abn_valid'] })).toBeNull();
+  });
+  it('names every check by its failure where the officer says what is wrong', () => {
+    for (const code of SUPPLIER_FAULT_CHECKS) {
+      expect(CHECK_FAILURES[code], code).toBeTruthy();
+      expect(CHECK_FAILURES[code]).not.toEqual(CHECK_LABELS[code]);
+    }
   });
   it('asks for a reason when returning on a criterion that passed', () => {
     const s = snap({ status: 'exception', failedChecks: ['gst_calculated'] });
