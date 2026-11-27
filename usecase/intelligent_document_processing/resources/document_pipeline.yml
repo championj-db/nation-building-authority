@@ -1,0 +1,24 @@
+# Lakeflow Spark Declarative Pipeline: parse, classify and extract (src/pipeline/document_processing.py).
+# Streaming tables over the inbox volume, so every update only processes new arrivals.
+# Every environment-specific value is a ${var.*} reference. See ../../CONTRIBUTING.md.
+
+resources:
+  pipelines:
+    document_processing:
+      name: nba-idp-document-processing-${var.environment}
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      libraries:
+        - file:
+            path: ../src/pipeline/document_processing.py
+      configuration:
+        idp.landing_path: /Volumes/${var.catalog}/${var.schema}/${var.volume}/inbox
+        idp.image_path: /Volumes/${var.catalog}/${var.schema}/${var.volume}/pages
+        idp.src_dir: ${workspace.file_path}/src
+      tags:
+        usecase: intelligent_document_processing
+        environment: ${var.environment}

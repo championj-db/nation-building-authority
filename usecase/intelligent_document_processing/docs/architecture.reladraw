@@ -1,0 +1,57 @@
+// Databricks-style palette for reladraw (validated on reladraw 0.22.1).
+// Paste this block at the top of a new diagram, then set the title.
+// Navy #1B3139 text/lines, Lava #FF3621 accent, Oat #F9F7F4 page.
+diagram  title: "Intelligent document processing: AP invoice assurance"  theme: light  background: #F9F7F4
+
+default node  border: #1B3139  text: (color: #1B3139)
+default leaf  fill: #FFFFFF
+default container  fill: #EEEDE9  border: #90A5B1
+default edge  line: #5A6F77  text: (color: #1B3139, size: small)
+
+style  dim     text: (size: small, color: #5A6F77)                                           // secondary line: "Name / [dim]detail[/dim]"
+style  ondark  text: (size: small, color: #C9D3D8)
+style  ext     fill: #DCE0E2                        border: #618794                          // users, sources, customer/3rd-party systems
+style  store   fill: #FFF1EF                        border: #FF3621  badge: database         // governed data: tables, volumes, indexes
+style  accent  fill: #FFF1EF                        border: #FF3621                          // highlight (e.g. PrivateLink endpoints)
+style  dbx     fill: #1B3139                        border: #1B3139  text: (color: #FFFFFF)  // the Databricks hero component(s)
+style  table   badge: database                                                               // plain table inside a medallion layer
+style  bronze  fill: #F6E3D3                        border: #B5651D
+style  silver  fill: #E8ECEF                        border: #8A9BA8
+style  gold    fill: #FBF1D0                        border: #C9A227
+
+// Sources: one public, the rest synthetic
+node  src            "Sources" (inside top)                                                    layout: column (gap: tight, widths: match)  style: ext
+node  src.austender  "AusTender contract notices / [dim]public OCDS API, pseudonymised[/dim]"  style: ext                                  url: "https://api.tenders.gov.au/"
+node  src.gen        "Synthetic supplier mail / [dim]dbldatagen + reportlab, seeded[/dim]"     style: ext
+node  src.master     "Vendors, POs, receipts / [dim]synthetic AP master data[/dim]"            style: ext
+
+node  inbox  "Inbox volume / [dim]PDFs and scans, UC volume[/dim]"  style: store  right of src (gap: 14)
+
+// Lakeflow Spark Declarative Pipeline: streaming, only new arrivals are processed
+node  pipe           "Lakeflow pipeline (streaming)" (inside top)                                       layout: column (gap: tight, widths: match)  right of inbox (gap: 14)
+node  pipe.bronze    "bronze_parsed_documents / [dim]ai_parse_document: text, bbox, page images[/dim]"  style: bronze
+node  pipe.classify  "silver_classified_documents / [dim]ai_classify into five types[/dim]"             style: silver
+node  pipe.extract   "silver_*_extraction / [dim]ai_extract v2.1: confidence + citations[/dim]"         style: silver
+
+node  assess  "Assess job / [ondark]three-way match, correctly rendered / checks, RMG 417 clock[/ondark]"  style: dbx  below pipe (gap: 10)
+
+node  gold           "Gold" (inside top)                                                  layout: column (gap: tight, widths: match)  style: gold  right of pipe (gap: 14)
+node  gold.queue     "gold_open_queue / [dim]days left, computed when read[/dim]"         style: table
+node  gold.fields    "gold_extracted_fields / [dim]value, confidence, page region[/dim]"  style: table
+node  gold.checks    "gold_invoice_checks / [dim]eleven criteria per invoice[/dim]"       style: table
+node  gold.measures  "readiness, accuracy, detection"                                     style: table
+
+node  app       "Document Assurance Workbench / [dim]Databricks App, on behalf of the officer[/dim]"  style: accent       right of gold (gap: 14)
+node  genie     "Genie space / [dim]Ask the AP data[/dim]"                                            above app (gap: 6)
+node  lakebase  "Lakebase Postgres / [dim]decisions, field corrections[/dim]"                         style: store        below app (gap: 6)
+
+edge  src.austender -> inbox  from: right     to: left      line: (pattern: dashed)
+edge  src.gen -> inbox        from: right     to: left
+edge  inbox -> pipe.bronze    "Auto Loader"   from: right   to: left
+edge  pipe -> assess          from: bottom    to: top
+edge  src.master -> assess    from: bottom    to: left      line: (path: square)
+edge  assess -> gold          from: right     to: bottom    line: (path: square)
+edge  gold -> app             "OBO SQL"       from: right   to: left
+edge  genie -> gold           from: left      to: top       line: (path: square)
+edge  app -> lakebase         from: bottom    to: top
+edge  lakebase -> assess      "feedback job"  from: bottom  to: bottom               line: (path: square, pattern: dashed)

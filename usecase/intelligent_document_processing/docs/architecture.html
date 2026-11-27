@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="generator" content="reladraw">
+<title>Intelligent document processing: AP invoice assurance</title>
+<style>
+  :root { --page: #F9F7F4; --ink: #1f2328; --muted: #6e7781; --rule: #8a90a8; --accent: #3a7d44; --on-accent: #ffffff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+    background: var(--page); color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--rule) 45%, transparent);
+  }
+  h1 { flex: 1 1 16rem; margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .tools .gap { width: 8px; }
+  button {
+    font: inherit; font-size: 13px; color: var(--ink); background: transparent;
+    border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent); border-radius: 6px;
+    padding: 4px 10px; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+  button:disabled { opacity: 0.45; cursor: default; background: transparent; }
+  button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 25%, transparent); border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .menu { position: relative; }
+  .menu-list {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 5;
+    flex-direction: column; gap: 4px; padding: 6px;
+    background: var(--page); border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent); border-radius: 6px;
+  }
+  .menu-list:not([hidden]) { display: flex; }
+  #scale .fitted { color: var(--accent); }
+  #scale { min-width: 6em; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  main { position: relative; flex: 1; display: flex; min-height: 0; }
+  #view { position: relative; flex: 1; overflow: hidden; touch-action: none; cursor: grab; }
+  #view.dragging { cursor: grabbing; }
+  #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #stage svg { display: block; }
+  #view g[data-name].hover { filter: drop-shadow(0 0 3px var(--accent)); }
+  #view g[data-name].lit { filter: drop-shadow(0 0 2px var(--accent)) drop-shadow(0 0 6px var(--accent)); animation: lit 0.6s ease-in-out 3 alternate; }
+  @keyframes lit { from { opacity: 1; } to { opacity: 0.45; } }
+  #tip {
+    position: absolute; pointer-events: none; display: none; z-index: 2;
+    padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap;
+    background: var(--accent); color: var(--on-accent);
+  }
+  aside {
+    width: min(26rem, 38vw); display: flex; flex-direction: column; min-height: 0;
+    border-left: 1px solid color-mix(in srgb, var(--rule) 45%, transparent);
+  }
+  aside[hidden] { display: none; }
+  aside h2 { margin: 0; padding: 10px 16px 6px; font-size: 13px; font-weight: 600; }
+  aside h2 .what { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  aside ol { list-style: none; margin: 0; padding: 0 8px 12px; overflow: auto; }
+  aside li button {
+    display: block; width: 100%; text-align: left; white-space: normal; border-color: transparent;
+    padding: 6px 8px; margin: 2px 0;
+  }
+  aside li button.chosen { border-color: var(--accent); }
+  .where { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .kind { color: var(--accent); }
+  .note { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  @media (max-width: 700px) {
+    main { flex-direction: column; }
+    aside { width: auto; max-height: 40%; border-left: 0; border-top: 1px solid color-mix(in srgb, var(--rule) 45%, transparent); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Intelligent document processing: AP invoice assurance</h1>
+  <div class="tools">
+    <button id="out" type="button" title="Zoom out (-)" aria-label="Zoom out">−</button>
+    <span id="scale" aria-live="polite">100%</span>
+    <button id="in" type="button" title="Zoom in (+)" aria-label="Zoom in">+</button>
+    <button id="fit" type="button" title="The whole diagram in view (0)">Fit</button>
+    <button id="actual" type="button" title="The drawing at its own scale (1)">100%</button>
+    <span class="gap"></span>
+    <button id="full" type="button" title="Full screen (f)">Full screen</button>
+    <span class="menu">
+      <button id="export" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="export-list">Export ▾</button>
+      <span id="export-list" class="menu-list" hidden>
+        <button id="copy-svg" type="button">Copy SVG</button>
+        <button id="save-svg" type="button" title="Save the picture as an SVG file">Save SVG</button>
+        <button id="save-png" type="button" title="Save the picture as a PNG, at twice its size">Save PNG</button>
+      </span>
+    </span>
+    <button id="toggle-findings" type="button" aria-controls="findings"></button>
+  </div>
+</header>
+<main>
+  <div id="view">
+    <div id="stage">
+<svg xmlns="http://www.w3.org/2000/svg" width="2479" height="739" viewBox="0 -49 2479 739" font-family="'DejaVu Sans Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace" font-size="14px">
+  <title>Intelligent document processing: AP invoice assurance</title>
+  <defs>
+    <marker id="rcc4f21ff-arrow-5A6F77" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6F77"/>
+    </marker>
+  </defs>
+  <rect x="0" y="-49" width="2479" height="739" fill="#F9F7F4"/>
+<g data-name="src" data-line="23">
+  <path d="M48 85 H340 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H48 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="164.5" y="113.4" fill="#1B3139" text-anchor="start">Sources</text>
+</g>
+<g data-name="src.austender" data-line="24">
+  <a href="https://api.tenders.gov.au/" target="_blank" rel="noopener">
+  <path d="M62 128 H326 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="156.4" fill="#1B3139" text-anchor="middle">AusTender contract notices</text>
+  <text x="194" y="175.4" fill="#5A6F77" text-anchor="middle">public OCDS API, pseudonymised</text>
+  </a>
+</g>
+<g data-name="src.gen" data-line="25">
+  <path d="M62 218 H326 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="246.4" fill="#1B3139" text-anchor="middle">Synthetic supplier mail</text>
+  <text x="194" y="265.4" fill="#5A6F77" text-anchor="middle">dbldatagen + reportlab, seeded</text>
+</g>
+<g data-name="src.master" data-line="26">
+  <path d="M62 308 H326 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="336.4" fill="#1B3139" text-anchor="middle">Vendors, POs, receipts</text>
+  <text x="194" y="355.4" fill="#5A6F77" text-anchor="middle">synthetic AP master data</text>
+</g>
+<g data-name="inbox" data-line="28">
+  <path d="M524 203.5 H796 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H524 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="635" y="231.9" fill="#1B3139" text-anchor="middle">Inbox volume</text>
+  <text x="635" y="250.9" fill="#5A6F77" text-anchor="middle">PDFs and scans, UC volume</text>
+</g>
+<g data-name="inbox.badge" data-line="28">
+  <g transform="translate(752 217.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="pipe" data-line="31">
+  <path d="M980 85 H1373 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H980 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z" fill="#EEEDE9" stroke="#90A5B1"/>
+  <text x="1054.5" y="113.4" fill="#1B3139" text-anchor="start">Lakeflow pipeline (streaming)</text>
+</g>
+<g data-name="pipe.bronze" data-line="32">
+  <path d="M994 128 H1359 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z" fill="#F6E3D3" stroke="#B5651D"/>
+  <text x="1176.5" y="156.4" fill="#1B3139" text-anchor="middle">bronze_parsed_documents</text>
+  <text x="1176.5" y="175.4" fill="#5A6F77" text-anchor="middle">ai_parse_document: text, bbox, page images</text>
+</g>
+<g data-name="pipe.classify" data-line="33">
+  <path d="M994 218 H1359 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="1176.5" y="246.4" fill="#1B3139" text-anchor="middle">silver_classified_documents</text>
+  <text x="1176.5" y="265.4" fill="#5A6F77" text-anchor="middle">ai_classify into five types</text>
+</g>
+<g data-name="pipe.extract" data-line="34">
+  <path d="M994 308 H1359 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="1176.5" y="336.4" fill="#1B3139" text-anchor="middle">silver_*_extraction</text>
+  <text x="1176.5" y="355.4" fill="#5A6F77" text-anchor="middle">ai_extract v2.1: confidence + citations</text>
+</g>
+<g data-name="assess" data-line="36">
+  <path d="M1023.5 508 H1329.5 a8 8 0 0 1 8 8 V585 a8 8 0 0 1 -8 8 H1023.5 a8 8 0 0 1 -8 -8 V516 a8 8 0 0 1 8 -8 Z" fill="#1B3139" stroke="#1B3139"/>
+  <text x="1176.5" y="536.4" fill="#FFFFFF" text-anchor="middle">Assess job</text>
+  <text x="1176.5" y="555.4" fill="#C9D3D8" text-anchor="middle">three-way match, correctly rendered</text>
+  <text x="1176.5" y="574.4" fill="#C9D3D8" text-anchor="middle">checks, RMG 417 clock</text>
+</g>
+<g data-name="gold" data-line="38">
+  <path d="M1557 40 H1899 a8 8 0 0 1 8 8 V425 a8 8 0 0 1 -8 8 H1557 a8 8 0 0 1 -8 -8 V48 a8 8 0 0 1 8 -8 Z" fill="#FBF1D0" stroke="#C9A227"/>
+  <text x="1711" y="68.4" fill="#1B3139" text-anchor="start">Gold</text>
+</g>
+<g data-name="gold.queue" data-line="39">
+  <path d="M1571 83 H1885 a8 8 0 0 1 8 8 V141 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="111.4" fill="#1B3139" text-anchor="middle">gold_open_queue</text>
+  <text x="1703" y="130.4" fill="#5A6F77" text-anchor="middle">days left, computed when read</text>
+</g>
+<g data-name="gold.queue.badge" data-line="39">
+  <g transform="translate(1837 97) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="gold.fields" data-line="40">
+  <path d="M1571 173 H1885 a8 8 0 0 1 8 8 V231 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V181 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="201.4" fill="#1B3139" text-anchor="middle">gold_extracted_fields</text>
+  <text x="1703" y="220.4" fill="#5A6F77" text-anchor="middle">value, confidence, page region</text>
+</g>
+<g data-name="gold.fields.badge" data-line="40">
+  <g transform="translate(1841 187) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="gold.checks" data-line="41">
+  <path d="M1571 263 H1885 a8 8 0 0 1 8 8 V321 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V271 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="291.4" fill="#1B3139" text-anchor="middle">gold_invoice_checks</text>
+  <text x="1703" y="310.4" fill="#5A6F77" text-anchor="middle">eleven criteria per invoice</text>
+</g>
+<g data-name="gold.checks.badge" data-line="41">
+  <g transform="translate(1828.5 277) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="gold.measures" data-line="42">
+  <path d="M1571 353 H1885 a8 8 0 0 1 8 8 V411 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V361 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="390.9" fill="#1B3139" text-anchor="middle">readiness, accuracy, detection</text>
+</g>
+<g data-name="gold.measures.badge" data-line="42">
+  <g transform="translate(1841 367) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="app" data-line="44">
+  <path d="M2083 203.5 H2431 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H2083 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="2257" y="231.9" fill="#1B3139" text-anchor="middle">Document Assurance Workbench</text>
+  <text x="2257" y="250.9" fill="#5A6F77" text-anchor="middle">Databricks App, on behalf of the officer</text>
+</g>
+<g data-name="genie" data-line="45">
+  <path d="M2188 65.5 H2326 a8 8 0 0 1 8 8 V123.5 a8 8 0 0 1 -8 8 H2188 a8 8 0 0 1 -8 -8 V73.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="2257" y="93.9" fill="#1B3139" text-anchor="middle">Genie space</text>
+  <text x="2257" y="112.9" fill="#5A6F77" text-anchor="middle">Ask the AP data</text>
+</g>
+<g data-name="lakebase" data-line="46">
+  <path d="M2108 341.5 H2406 a8 8 0 0 1 8 8 V399.5 a8 8 0 0 1 -8 8 H2108 a8 8 0 0 1 -8 -8 V349.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="2232" y="369.9" fill="#1B3139" text-anchor="middle">Lakebase Postgres</text>
+  <text x="2232" y="388.9" fill="#5A6F77" text-anchor="middle">decisions, field corrections</text>
+</g>
+<g data-name="lakebase.badge" data-line="46">
+  <g transform="translate(2362 355.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+</g>
+<g data-name="src.austender -&gt; inbox" data-line="48">
+  <line x1="334" y1="161" x2="516" y2="225.5" stroke="#5A6F77" stroke-width="1.6" stroke-dasharray="6.4 4.8" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="src.gen -&gt; inbox" data-line="49">
+  <line x1="334" y1="251" x2="516" y2="247.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="inbox -&gt; pipe.bronze" data-line="50">
+  <line x1="804" y1="236.5" x2="986" y2="161" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+  <rect x="850" y="190.75" width="90" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="895" y="202.95" fill="#1B3139" text-anchor="middle">Auto Loader</text>
+  </g>
+</g>
+<g data-name="pipe -&gt; assess" data-line="51">
+  <line x1="1176.5" y1="388" x2="1176.5" y2="508" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="src.master -&gt; assess" data-line="52">
+  <path d="M 194 374 L 194 550.5 L 1015.5 550.5" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="assess -&gt; gold" data-line="53">
+  <path d="M 1337.5 550.5 L 1728 550.5 L 1728 433" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="gold -&gt; app" data-line="54">
+  <line x1="1907" y1="236.5" x2="2075" y2="236.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+  <rect x="1960.5" y="228.5" width="61" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1991" y="240.7" fill="#1B3139" text-anchor="middle">OBO SQL</text>
+  </g>
+</g>
+<g data-name="genie -&gt; gold" data-line="55">
+  <path d="M 2180 98.5 L 2043.5 98.5 L 2043.5 -8 L 1728 -8 L 1728 40" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="app -&gt; lakebase" data-line="56">
+  <line x1="2257" y1="269.5" x2="2257" y2="341.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+</g>
+<g data-name="lakebase -&gt; assess" data-line="57">
+  <path d="M 2257 407.5 L 2257 641 L 1176.5 641 L 1176.5 593" fill="none" stroke="#5A6F77" stroke-width="1.6" stroke-dasharray="6.4 4.8" marker-end="url(#rcc4f21ff-arrow-5A6F77)"/>
+  <rect x="1761" y="633" width="97" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1809.5" y="645.2" fill="#1B3139" text-anchor="middle">feedback job</text>
+  </g>
+</g>
+</svg>
+
+    </div>
+    <div id="tip"></div>
+  </div>
+  <aside id="findings" aria-label="Findings">
+    <h2>Findings <span class="what">where the picture, drawn as written, may not read as meant</span></h2>
+    <ol id="finding-list"></ol>
+  </aside>
+</main>
+<script>
+(function () {
+  var DATA = {"svg":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"2479\" height=\"739\" viewBox=\"0 -49 2479 739\" font-family=\"'DejaVu Sans Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace\" font-size=\"14px\">\n  \u003ctitle>Intelligent document processing: AP invoice assurance\u003c/title>\n  \u003cdefs>\n    \u003cmarker id=\"rc665f5ab-arrow-5A6F77\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\">\n      \u003cpath d=\"M 0 0 L 10 5 L 0 10 z\" fill=\"#5A6F77\"/>\n    \u003c/marker>\n  \u003c/defs>\n  \u003crect x=\"0\" y=\"-49\" width=\"2479\" height=\"739\" fill=\"#F9F7F4\"/>\n  \u003cpath d=\"M48 85 H340 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H48 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z\" fill=\"#DCE0E2\" stroke=\"#618794\"/>\n  \u003ctext x=\"164.5\" y=\"113.4\" fill=\"#1B3139\" text-anchor=\"start\">Sources\u003c/text>\n  \u003ca href=\"https://api.tenders.gov.au/\" target=\"_blank\" rel=\"noopener\">\n  \u003cpath d=\"M62 128 H326 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z\" fill=\"#DCE0E2\" stroke=\"#618794\"/>\n  \u003ctext x=\"194\" y=\"156.4\" fill=\"#1B3139\" text-anchor=\"middle\">AusTender contract notices\u003c/text>\n  \u003ctext x=\"194\" y=\"175.4\" fill=\"#5A6F77\" text-anchor=\"middle\">public OCDS API, pseudonymised\u003c/text>\n  \u003c/a>\n  \u003cpath d=\"M62 218 H326 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z\" fill=\"#DCE0E2\" stroke=\"#618794\"/>\n  \u003ctext x=\"194\" y=\"246.4\" fill=\"#1B3139\" text-anchor=\"middle\">Synthetic supplier mail\u003c/text>\n  \u003ctext x=\"194\" y=\"265.4\" fill=\"#5A6F77\" text-anchor=\"middle\">dbldatagen + reportlab, seeded\u003c/text>\n  \u003cpath d=\"M62 308 H326 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z\" fill=\"#DCE0E2\" stroke=\"#618794\"/>\n  \u003ctext x=\"194\" y=\"336.4\" fill=\"#1B3139\" text-anchor=\"middle\">Vendors, POs, receipts\u003c/text>\n  \u003ctext x=\"194\" y=\"355.4\" fill=\"#5A6F77\" text-anchor=\"middle\">synthetic AP master data\u003c/text>\n  \u003cpath d=\"M524 203.5 H796 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H524 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z\" fill=\"#FFF1EF\" stroke=\"#FF3621\"/>\n  \u003ctext x=\"635\" y=\"231.9\" fill=\"#1B3139\" text-anchor=\"middle\">Inbox volume\u003c/text>\n  \u003ctext x=\"635\" y=\"250.9\" fill=\"#5A6F77\" text-anchor=\"middle\">PDFs and scans, UC volume\u003c/text>\n  \u003cg transform=\"translate(752 217.5) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cpath d=\"M980 85 H1373 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H980 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z\" fill=\"#EEEDE9\" stroke=\"#90A5B1\"/>\n  \u003ctext x=\"1054.5\" y=\"113.4\" fill=\"#1B3139\" text-anchor=\"start\">Lakeflow pipeline (streaming)\u003c/text>\n  \u003cpath d=\"M994 128 H1359 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z\" fill=\"#F6E3D3\" stroke=\"#B5651D\"/>\n  \u003ctext x=\"1176.5\" y=\"156.4\" fill=\"#1B3139\" text-anchor=\"middle\">bronze_parsed_documents\u003c/text>\n  \u003ctext x=\"1176.5\" y=\"175.4\" fill=\"#5A6F77\" text-anchor=\"middle\">ai_parse_document: text, bbox, page images\u003c/text>\n  \u003cpath d=\"M994 218 H1359 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z\" fill=\"#E8ECEF\" stroke=\"#8A9BA8\"/>\n  \u003ctext x=\"1176.5\" y=\"246.4\" fill=\"#1B3139\" text-anchor=\"middle\">silver_classified_documents\u003c/text>\n  \u003ctext x=\"1176.5\" y=\"265.4\" fill=\"#5A6F77\" text-anchor=\"middle\">ai_classify into five types\u003c/text>\n  \u003cpath d=\"M994 308 H1359 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z\" fill=\"#E8ECEF\" stroke=\"#8A9BA8\"/>\n  \u003ctext x=\"1176.5\" y=\"336.4\" fill=\"#1B3139\" text-anchor=\"middle\">silver_*_extraction\u003c/text>\n  \u003ctext x=\"1176.5\" y=\"355.4\" fill=\"#5A6F77\" text-anchor=\"middle\">ai_extract v2.1: confidence + citations\u003c/text>\n  \u003cpath d=\"M1023.5 508 H1329.5 a8 8 0 0 1 8 8 V585 a8 8 0 0 1 -8 8 H1023.5 a8 8 0 0 1 -8 -8 V516 a8 8 0 0 1 8 -8 Z\" fill=\"#1B3139\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"1176.5\" y=\"536.4\" fill=\"#FFFFFF\" text-anchor=\"middle\">Assess job\u003c/text>\n  \u003ctext x=\"1176.5\" y=\"555.4\" fill=\"#C9D3D8\" text-anchor=\"middle\">three-way match, correctly rendered\u003c/text>\n  \u003ctext x=\"1176.5\" y=\"574.4\" fill=\"#C9D3D8\" text-anchor=\"middle\">checks, RMG 417 clock\u003c/text>\n  \u003cpath d=\"M1557 40 H1899 a8 8 0 0 1 8 8 V425 a8 8 0 0 1 -8 8 H1557 a8 8 0 0 1 -8 -8 V48 a8 8 0 0 1 8 -8 Z\" fill=\"#FBF1D0\" stroke=\"#C9A227\"/>\n  \u003ctext x=\"1711\" y=\"68.4\" fill=\"#1B3139\" text-anchor=\"start\">Gold\u003c/text>\n  \u003cpath d=\"M1571 83 H1885 a8 8 0 0 1 8 8 V141 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z\" fill=\"#FFFFFF\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"1703\" y=\"111.4\" fill=\"#1B3139\" text-anchor=\"middle\">gold_open_queue\u003c/text>\n  \u003ctext x=\"1703\" y=\"130.4\" fill=\"#5A6F77\" text-anchor=\"middle\">days left, computed when read\u003c/text>\n  \u003cg transform=\"translate(1837 97) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cpath d=\"M1571 173 H1885 a8 8 0 0 1 8 8 V231 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V181 a8 8 0 0 1 8 -8 Z\" fill=\"#FFFFFF\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"1703\" y=\"201.4\" fill=\"#1B3139\" text-anchor=\"middle\">gold_extracted_fields\u003c/text>\n  \u003ctext x=\"1703\" y=\"220.4\" fill=\"#5A6F77\" text-anchor=\"middle\">value, confidence, page region\u003c/text>\n  \u003cg transform=\"translate(1841 187) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cpath d=\"M1571 263 H1885 a8 8 0 0 1 8 8 V321 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V271 a8 8 0 0 1 8 -8 Z\" fill=\"#FFFFFF\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"1703\" y=\"291.4\" fill=\"#1B3139\" text-anchor=\"middle\">gold_invoice_checks\u003c/text>\n  \u003ctext x=\"1703\" y=\"310.4\" fill=\"#5A6F77\" text-anchor=\"middle\">eleven criteria per invoice\u003c/text>\n  \u003cg transform=\"translate(1828.5 277) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cpath d=\"M1571 353 H1885 a8 8 0 0 1 8 8 V411 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V361 a8 8 0 0 1 8 -8 Z\" fill=\"#FFFFFF\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"1703\" y=\"390.9\" fill=\"#1B3139\" text-anchor=\"middle\">readiness, accuracy, detection\u003c/text>\n  \u003cg transform=\"translate(1841 367) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cpath d=\"M2083 203.5 H2431 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H2083 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z\" fill=\"#FFF1EF\" stroke=\"#FF3621\"/>\n  \u003ctext x=\"2257\" y=\"231.9\" fill=\"#1B3139\" text-anchor=\"middle\">Document Assurance Workbench\u003c/text>\n  \u003ctext x=\"2257\" y=\"250.9\" fill=\"#5A6F77\" text-anchor=\"middle\">Databricks App, on behalf of the officer\u003c/text>\n  \u003cpath d=\"M2188 65.5 H2326 a8 8 0 0 1 8 8 V123.5 a8 8 0 0 1 -8 8 H2188 a8 8 0 0 1 -8 -8 V73.5 a8 8 0 0 1 8 -8 Z\" fill=\"#FFFFFF\" stroke=\"#1B3139\"/>\n  \u003ctext x=\"2257\" y=\"93.9\" fill=\"#1B3139\" text-anchor=\"middle\">Genie space\u003c/text>\n  \u003ctext x=\"2257\" y=\"112.9\" fill=\"#5A6F77\" text-anchor=\"middle\">Ask the AP data\u003c/text>\n  \u003cpath d=\"M2108 341.5 H2406 a8 8 0 0 1 8 8 V399.5 a8 8 0 0 1 -8 8 H2108 a8 8 0 0 1 -8 -8 V349.5 a8 8 0 0 1 8 -8 Z\" fill=\"#FFF1EF\" stroke=\"#FF3621\"/>\n  \u003ctext x=\"2232\" y=\"369.9\" fill=\"#1B3139\" text-anchor=\"middle\">Lakebase Postgres\u003c/text>\n  \u003ctext x=\"2232\" y=\"388.9\" fill=\"#5A6F77\" text-anchor=\"middle\">decisions, field corrections\u003c/text>\n  \u003cg transform=\"translate(2362 355.5) scale(1.58333)\">\n    \u003cpath d=\"M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z\" fill=\"#d6d9e6\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 11 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    \u003cpath d=\"M3 15.6 a9 3.4 0 0 0 18 0\" fill=\"none\" stroke=\"#57606a\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n  \u003c/g>\n  \u003cline x1=\"334\" y1=\"161\" x2=\"516\" y2=\"225.5\" stroke=\"#5A6F77\" stroke-width=\"1.6\" stroke-dasharray=\"6.4 4.8\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cline x1=\"334\" y1=\"251\" x2=\"516\" y2=\"247.5\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cline x1=\"804\" y1=\"236.5\" x2=\"986\" y2=\"161\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003crect x=\"850\" y=\"190.75\" width=\"90\" height=\"16\" fill=\"#F9F7F4\"/>\n  \u003cg font-size=\"12px\">\n  \u003ctext x=\"895\" y=\"202.95\" fill=\"#1B3139\" text-anchor=\"middle\">Auto Loader\u003c/text>\n  \u003c/g>\n  \u003cline x1=\"1176.5\" y1=\"388\" x2=\"1176.5\" y2=\"508\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cpath d=\"M 194 374 L 194 550.5 L 1015.5 550.5\" fill=\"none\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cpath d=\"M 1337.5 550.5 L 1728 550.5 L 1728 433\" fill=\"none\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cline x1=\"1907\" y1=\"236.5\" x2=\"2075\" y2=\"236.5\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003crect x=\"1960.5\" y=\"228.5\" width=\"61\" height=\"16\" fill=\"#F9F7F4\"/>\n  \u003cg font-size=\"12px\">\n  \u003ctext x=\"1991\" y=\"240.7\" fill=\"#1B3139\" text-anchor=\"middle\">OBO SQL\u003c/text>\n  \u003c/g>\n  \u003cpath d=\"M 2180 98.5 L 2043.5 98.5 L 2043.5 -8 L 1728 -8 L 1728 40\" fill=\"none\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cline x1=\"2257\" y1=\"269.5\" x2=\"2257\" y2=\"341.5\" stroke=\"#5A6F77\" stroke-width=\"1.6\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003cpath d=\"M 2257 407.5 L 2257 641 L 1176.5 641 L 1176.5 593\" fill=\"none\" stroke=\"#5A6F77\" stroke-width=\"1.6\" stroke-dasharray=\"6.4 4.8\" marker-end=\"url(#rc665f5ab-arrow-5A6F77)\"/>\n  \u003crect x=\"1761\" y=\"633\" width=\"97\" height=\"16\" fill=\"#F9F7F4\"/>\n  \u003cg font-size=\"12px\">\n  \u003ctext x=\"1809.5\" y=\"645.2\" fill=\"#1B3139\" text-anchor=\"middle\">feedback job\u003c/text>\n  \u003c/g>\n\u003c/svg>\n","name":"architecture","findings":[]};
+  var view = document.getElementById('view');
+  var stage = document.getElementById('stage');
+  var svg = stage.querySelector('svg');
+  var tip = document.getElementById('tip');
+  var scaleLabel = document.getElementById('scale');
+
+function panZoom(view, stage, label, buttons) {
+  var MIN = 0.05;
+  var MAX = 20;
+  var svg = null;
+  var natural = { w: 1, h: 1 };
+  // The drawing is resized rather than scaled with a transform, so the
+  // browser draws it afresh at every size and it stays sharp.
+  var at = { x: 0, y: 0, s: 1 };
+  // Until the reader pans or zooms, a change of size redraws the view the way
+  // it was asked for: as it opened, or fitted.
+  var fitted = 'open';
+
+  function apply() {
+    if (!svg) {
+      label.textContent = '';
+      return;
+    }
+    svg.setAttribute('width', natural.w * at.s);
+    svg.setAttribute('height', natural.h * at.s);
+    stage.style.transform = 'translate(' + at.x + 'px,' + at.y + 'px)';
+    // The zoom always shows. Fitted, it says so too, since 62% alone doesn't
+    // say whether that is the whole diagram or a zoom that happens to be 62%.
+    // A large diagram opens fitted; a small one opens at 100%, not fitted.
+    var isFit = fitted === 'fit' || (fitted === 'open' && at.s < 1);
+    label.innerHTML = (isFit ? '<span class="fitted">Fit</span> · ' : '') + Math.round(at.s * 100) + '%';
+  }
+
+  function size() {
+    return { w: view.clientWidth, h: view.clientHeight };
+  }
+
+  function center(s) {
+    var room = size();
+    at = { s: s, x: (room.w - natural.w * s) / 2, y: (room.h - natural.h * s) / 2 };
+    apply();
+  }
+
+  function fitScale() {
+    var room = size();
+    return Math.max(MIN, Math.min((room.w - 32) / natural.w, (room.h - 32) / natural.h));
+  }
+
+  function fit() {
+    fitted = 'fit';
+    center(fitScale());
+  }
+
+  function actual() {
+    fitted = false;
+    center(1);
+  }
+
+  // A diagram smaller than the view opens at its own size; a larger one
+  // opens fitted.
+  function open() {
+    fitted = 'open';
+    center(Math.min(1, fitScale()));
+  }
+
+  function refit() {
+    if (!svg) return;
+    if (fitted === 'fit') fit();
+    else if (fitted === 'open') open();
+    else apply();
+  }
+
+  // Zoom about a point of the view, which stays where it is on screen.
+  function zoomAt(factor, px, py) {
+    if (!svg) return;
+    var s = Math.min(MAX, Math.max(MIN, at.s * factor));
+    var k = s / at.s;
+    at = { s: s, x: px - (px - at.x) * k, y: py - (py - at.y) * k };
+    fitted = false;
+    apply();
+  }
+
+  function zoomMiddle(factor) {
+    var room = size();
+    zoomAt(factor, room.w / 2, room.h / 2);
+  }
+
+  function pan(dx, dy) {
+    at.x += dx;
+    at.y += dy;
+    fitted = false;
+    apply();
+  }
+
+  // A new drawing in the stage. The view stays as the reader left it: fitted
+  // stays fitted to the new drawing, and a zoom keeps its scale and place.
+  function show() {
+    svg = stage.querySelector('svg');
+    if (!svg) return apply();
+    var box = svg.viewBox.baseVal;
+    natural = box && box.width ? { w: box.width, h: box.height } : { w: parseFloat(svg.getAttribute('width')) || 1, h: parseFloat(svg.getAttribute('height')) || 1 };
+    refit();
+  }
+
+  if (buttons.out) buttons.out.onclick = function () { zoomMiddle(0.8); };
+  if (buttons.in) buttons.in.onclick = function () { zoomMiddle(1.25); };
+  if (buttons.fit) buttons.fit.onclick = fit;
+  if (buttons.actual) buttons.actual.onclick = actual;
+
+  view.addEventListener('wheel', function (event) {
+    event.preventDefault();
+    var rect = view.getBoundingClientRect();
+    // A pinch on a trackpad arrives as a wheel with ctrl held, in small steps.
+    var step = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+    zoomAt(Math.exp(-step * (event.ctrlKey ? 0.01 : 0.0015)), event.clientX - rect.left, event.clientY - rect.top);
+  }, { passive: false });
+
+  // Dragging pans; two fingers pinch.
+  var pointers = new Map();
+  var pinch = null;
+  view.addEventListener('pointerdown', function (event) {
+    if (event.button !== 0) return;
+    if (event.target.closest('a')) return;
+    view.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 2) {
+      var two = Array.from(pointers.values());
+      pinch = Math.hypot(two[0].x - two[1].x, two[0].y - two[1].y);
+    }
+    view.classList.add('dragging');
+  });
+  view.addEventListener('pointermove', function (event) {
+    var last = pointers.get(event.pointerId);
+    if (!last) return;
+    var now = { x: event.clientX, y: event.clientY };
+    pointers.set(event.pointerId, now);
+    if (pointers.size === 2 && pinch) {
+      var two = Array.from(pointers.values());
+      var apart = Math.hypot(two[0].x - two[1].x, two[0].y - two[1].y);
+      var rect = view.getBoundingClientRect();
+      zoomAt(apart / pinch, (two[0].x + two[1].x) / 2 - rect.left, (two[0].y + two[1].y) / 2 - rect.top);
+      pinch = apart;
+      return;
+    }
+    pan(now.x - last.x, now.y - last.y);
+  });
+  function release(event) {
+    pointers.delete(event.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 0) view.classList.remove('dragging');
+  }
+  view.addEventListener('pointerup', release);
+  view.addEventListener('pointercancel', release);
+  view.addEventListener('dblclick', function (event) {
+    var rect = view.getBoundingClientRect();
+    zoomAt(event.shiftKey ? 0.5 : 2, event.clientX - rect.left, event.clientY - rect.top);
+  });
+
+  // The view's own size, not the window's: a dragged divider changes it too.
+  new ResizeObserver(refit).observe(view);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.target.closest && event.target.closest('input, textarea, select, [contenteditable]')) return;
+    if (event.key === '+' || event.key === '=') zoomMiddle(1.25);
+    else if (event.key === '-' || event.key === '_') zoomMiddle(0.8);
+    else if (event.key === '0') fit();
+    else if (event.key === '1') actual();
+    else return;
+    event.preventDefault();
+  });
+
+  return { show: show, open: open, fit: fit, pan: pan };
+}
+
+  var zoom = panZoom(view, stage, scaleLabel, {
+    out: document.getElementById('out'),
+    in: document.getElementById('in'),
+    fit: document.getElementById('fit'),
+    actual: document.getElementById('actual'),
+  });
+
+  /* ---- full screen ---- */
+
+  var full = document.getElementById('full');
+  if (!document.fullscreenEnabled) full.hidden = true;
+  function toggleFull() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+  full.onclick = toggleFull;
+  document.addEventListener('fullscreenchange', function () {
+    full.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+  });
+
+  /* ---- saving ---- */
+
+  function saveBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // A tick, so the navigation has the URL before it is taken back.
+    setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  }
+
+  function flash(button, text) {
+    var was = button.textContent;
+    button.textContent = text;
+    setTimeout(function () { button.textContent = was; }, 1200);
+  }
+
+  // Copy SVG, Save SVG and Save PNG are under one Export button, as in the
+  // playground. The list stays open after a choice, so "Copied" can be read,
+  // and closes on a click elsewhere or Escape.
+  var exportButton = document.getElementById('export');
+  var exportList = document.getElementById('export-list');
+  function showExport(open) {
+    exportList.hidden = !open;
+    exportButton.setAttribute('aria-expanded', String(open));
+  }
+  exportButton.onclick = function () { showExport(exportList.hidden); };
+  document.addEventListener('click', function (event) {
+    if (!exportList.hidden && !event.target.closest('.menu')) showExport(false);
+  });
+
+  // The clipboard API needs a secure context; a page opened from disk may
+  // not count as one, so the old selection route is the fallback.
+  var copySvg = document.getElementById('copy-svg');
+  copySvg.onclick = function () {
+    function fallback() {
+      var area = document.createElement('textarea');
+      area.value = DATA.svg;
+      document.body.appendChild(area);
+      area.select();
+      var done = false;
+      try { done = document.execCommand('copy'); } catch (e) {}
+      area.remove();
+      flash(copySvg, done ? 'Copied' : 'Blocked');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(DATA.svg).then(function () { flash(copySvg, 'Copied'); }, fallback);
+    } else fallback();
+  };
+
+  document.getElementById('save-svg').onclick = function () {
+    saveBlob(new Blob([DATA.svg], { type: 'image/svg+xml' }), DATA.name + '.svg');
+  };
+
+  // The browser draws the SVG onto a canvas with the fonts the page shows it
+  // in, twice the size so it stays sharp on a high-density screen. A data URL
+  // rather than a blob one, which some browsers count as foreign and refuse
+  // to let the canvas be read back.
+  var savePng = document.getElementById('save-png');
+  savePng.onclick = function () {
+    var image = new Image();
+    image.onload = function () {
+      var box = svg.viewBox.baseVal;
+      var canvas = document.createElement('canvas');
+      canvas.width = box.width * 2;
+      canvas.height = box.height * 2;
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function (blob) {
+        blob ? saveBlob(blob, DATA.name + '.png') : flash(savePng, 'Failed');
+      }, 'image/png');
+    };
+    image.onerror = function () { flash(savePng, 'Failed'); };
+    image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(DATA.svg);
+  };
+
+  /* ---- a thing's name under the pointer ---- */
+
+  var hovered = null;
+  view.addEventListener('pointerover', function (event) {
+    var group = event.target.closest && event.target.closest('g[data-name]');
+    if (group === hovered) return;
+    if (hovered) hovered.classList.remove('hover');
+    hovered = group;
+    if (!group) {
+      tip.style.display = 'none';
+      return;
+    }
+    group.classList.add('hover');
+    tip.textContent = group.getAttribute('data-name');
+    tip.style.display = 'block';
+  });
+  view.addEventListener('pointermove', function (event) {
+    if (!hovered) return;
+    var rect = view.getBoundingClientRect();
+    var x = event.clientX - rect.left + 14;
+    var y = event.clientY - rect.top + 16;
+    // Kept inside the view, so a name near the right edge isn't cut off.
+    x = Math.min(x, rect.width - tip.offsetWidth - 4);
+    y = Math.min(y, rect.height - tip.offsetHeight - 4);
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  });
+  view.addEventListener('pointerleave', function () {
+    if (hovered) hovered.classList.remove('hover');
+    hovered = null;
+    tip.style.display = 'none';
+  });
+
+  /* ---- findings ---- */
+
+  var panel = document.getElementById('findings');
+  var list = document.getElementById('finding-list');
+  var toggle = document.getElementById('toggle-findings');
+  var count = DATA.findings.length;
+
+  function showPanel(open) {
+    panel.hidden = !open;
+    toggle.setAttribute('aria-pressed', String(open));
+  }
+  if (count === 0) {
+    toggle.textContent = 'No findings';
+    toggle.disabled = true;
+    panel.hidden = true;
+  } else {
+    toggle.textContent = count === 1 ? '1 finding' : count + ' findings';
+    toggle.onclick = function () { showPanel(panel.hidden); };
+    showPanel(true);
+  }
+
+  var lit = [];
+  var chosen = null;
+  function unlight() {
+    lit.forEach(function (group) { group.classList.remove('lit'); });
+    lit = [];
+    if (chosen) chosen.classList.remove('chosen');
+    chosen = null;
+  }
+
+  // A finding names the line of the statement at fault; what that statement
+  // drew lights up, and the view moves to it if it is out of sight.
+  function light(finding, button) {
+    unlight();
+    chosen = button;
+    button.classList.add('chosen');
+    lit = Array.from(svg.querySelectorAll('g[data-line="' + finding.line + '"]'));
+    lit.forEach(function (group) {
+      group.classList.remove('lit');
+      void group.getBoundingClientRect();
+      group.classList.add('lit');
+    });
+    if (lit.length === 0) return;
+    var room = view.getBoundingClientRect();
+    var r = null;
+    lit.forEach(function (group) {
+      var b = group.getBoundingClientRect();
+      r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) }
+            : { l: b.left, t: b.top, r: b.right, b: b.bottom };
+    });
+    var inside = r.l >= room.left && r.r <= room.right && r.t >= room.top && r.b <= room.bottom;
+    if (inside) return;
+    zoom.pan((room.left + room.width / 2) - (r.l + r.r) / 2, (room.top + room.height / 2) - (r.t + r.b) / 2);
+  }
+
+  DATA.findings.forEach(function (finding) {
+    var item = document.createElement('li');
+    var button = document.createElement('button');
+    button.type = 'button';
+    var where = document.createElement('span');
+    where.className = 'where';
+    where.textContent = 'line ' + finding.line + ' ';
+    var kind = document.createElement('span');
+    kind.className = 'kind';
+    kind.textContent = finding.kind;
+    button.append(where, kind, document.createElement('br'), document.createTextNode(finding.message));
+    if (!svg.querySelector('g[data-line="' + finding.line + '"]')) {
+      var note = document.createElement('span');
+      note.className = 'note';
+      note.textContent = 'Nothing drawn comes from that line.';
+      button.append(note);
+    }
+    button.onclick = function () { light(finding, button); };
+    item.append(button);
+    list.append(item);
+  });
+
+  /* ---- keys, beyond the zoom's own ---- */
+
+  document.addEventListener('keydown', function (event) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.target.closest && event.target.closest('input, textarea')) return;
+    if (event.key === 'f' && !full.hidden) toggleFull();
+    else if (event.key === 'Escape') { showExport(false); unlight(); }
+    else return;
+    event.preventDefault();
+  });
+
+  zoom.show();
+})();
+</script>
+</body>
+</html>

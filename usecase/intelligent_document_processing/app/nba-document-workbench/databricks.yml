@@ -1,0 +1,99 @@
+# Document Assurance Workbench - Databricks App for the intelligent document processing use case.
+#
+# Reads the governed gold layer written by ../../resources/idp_jobs.yml on behalf of the signed-in
+# officer (user_api_scopes: sql, files, genie), so Unity Catalog grants decide what each person
+# sees, including the page images in the document volume. Decisions and field corrections are
+# app-owned records in Lakebase Postgres (schema `daw`, created by the app's service principal on
+# first start); the feedback job reads them back into Unity Catalog. "Ingest documents" runs the
+# arrivals job as the app's service principal.
+#
+# No environment-specific value is committed here (see ../../../../CONTRIBUTING.md). Supply the
+# variables with --var, or in the git-ignored .databricks/bundle/<target>/variable-overrides.json,
+# and select the workspace with --profile.
+
+bundle:
+  name: nba-document-workbench-app
+
+variables:
+  app_name:
+    description: Databricks App resource name (26 characters max, lowercase and hyphens).
+    default: nba-document-workbench
+  catalog:
+    description: Unity Catalog catalog holding the use case's gold layer.
+  schema:
+    description: Schema written by the document pipeline.
+  volume:
+    description: Volume holding the inbox documents and rendered page images.
+    default: documents
+  sql_warehouse_id:
+    description: SQL warehouse used for on-behalf-of-user reads and the Genie space.
+  genie_space_id:
+    description: Genie space created by the pipeline's genie_space task (stored in corpus_control).
+  arrivals_job_id:
+    description: Numeric ID of the nba-idp-arrivals job (databricks jobs list).
+  postgres_branch:
+    description: >-
+      Lakebase branch resource name, e.g. projects/<project-id>/branches/production. List with
+      `databricks postgres list-branches projects/<project-id>`.
+  postgres_database:
+    description: >-
+      Lakebase database resource name on that branch. List with
+      `databricks postgres list-databases <branch-name>` and use the item's .name.
+
+resources:
+  apps:
+    app:
+      name: ${var.app_name}
+      description: Document Assurance Workbench - AP invoice assurance with evidence-linked extraction (synthetic data)
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - files.files
+        - dashboards.genie
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+        - name: documents-volume
+          uc_securable:
+            securable_full_name: ${var.catalog}.${var.schema}.${var.volume}
+            securable_type: VOLUME
+            permission: READ_VOLUME
+        - name: genie-space
+          genie_space:
+            name: Accounts Payable Genie
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+        - name: arrivals-job
+          job:
+            id: ${var.arrivals_job_id}
+            permission: CAN_MANAGE_RUN
+        - name: postgres
+          postgres:
+            branch: ${var.postgres_branch}
+            database: ${var.postgres_database}
+            permission: CAN_CONNECT_AND_CREATE
+      config:
+        command: ['npm', 'run', 'start']
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: DATABRICKS_GENIE_SPACE_ID
+            value_from: genie-space
+          - name: DATABRICKS_JOB_ID
+            value_from: arrivals-job
+          - name: LAKEBASE_ENDPOINT
+            value_from: postgres
+          - name: DATABRICKS_VOLUME_FILES
+            value: /Volumes/${var.catalog}/${var.schema}/${var.volume}
+          - name: DATABRICKS_CATALOG
+            value: ${var.catalog}
+          - name: DATABRICKS_SCHEMA
+            value: ${var.schema}
+
+targets:
+  default:
+    default: true

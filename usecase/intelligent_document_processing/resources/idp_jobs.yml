@@ -1,0 +1,187 @@
+# Intelligent document processing - jobs.
+#
+# Pipeline (first build, serverless, chained):
+#   00 setup -> 01 contracts (AusTender) and calendar -> 02 corpus (seed) -> Lakeflow processing
+#   -> 05 sync workbench decisions -> 03 assess (checks, clock, gold) -> 04 Genie space
+#
+# Arrivals: 02 corpus (arrivals) -> Lakeflow processing -> 05 sync -> 03 assess. Run by the
+# workbench's "Ingest documents" action, or on the (paused) weekday schedule to keep the queue fresh.
+#
+# Feedback: 05 sync -> 03 assess. Reads reviewer decisions back from Lakebase and rebuilds the
+# accuracy and readiness measures without parsing anything.
+#
+# The Lakebase branch and endpoint names are the project defaults (production, primary) and are
+# structural identifiers that travel with the code. Every environment-specific value is a ${var.*}
+# reference. See ../../CONTRIBUTING.md.
+
+resources:
+  jobs:
+    idp_pipeline:
+      name: nba-idp-pipeline-${var.environment}
+      description: >-
+        Builds the synthetic AP inbox on public AusTender contracts, parses, classifies and extracts
+        every document with ai_parse_document / ai_classify / ai_extract, runs the correctly
+        rendered checks and the RMG 417 payment clock, and publishes the gold layer and Genie space.
+      tags:
+        usecase: intelligent_document_processing
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      max_concurrent_runs: 1
+      timeout_seconds: 10800
+      parameters:
+        - name: reset
+          default: "false"
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              reset: "{{job.parameters.reset}}"
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: contracts
+          depends_on: [{ task_key: setup }]
+          notebook_task:
+            notebook_path: ../src/01_fetch_contracts.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              seed: ${var.seed}
+              as_of: ${var.as_of}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: corpus
+          depends_on: [{ task_key: contracts }]
+          notebook_task:
+            notebook_path: ../src/02_generate_corpus.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              seed: ${var.seed}
+              as_of: ${var.as_of}
+              mode: seed
+              corpus_size: ${var.corpus_size}
+              gic_rate: ${var.gic_rate}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: process_documents
+          depends_on: [{ task_key: corpus }]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.document_processing.id}
+            full_refresh: false
+
+        - task_key: sync_decisions
+          depends_on: [{ task_key: process_documents }]
+          notebook_task:
+            notebook_path: ../src/05_sync_decisions.py
+            base_parameters: &sync_params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              src_dir: ${workspace.file_path}/src
+              lakebase_project_id: ${var.lakebase_project_id}
+              lakebase_branch_id: production
+              lakebase_endpoint_id: primary
+
+        - task_key: assess
+          depends_on: [{ task_key: sync_decisions }]
+          notebook_task:
+            notebook_path: ../src/03_assess.py
+            base_parameters: &assess_params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              gic_rate: ${var.gic_rate}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: genie_space
+          depends_on: [{ task_key: assess }]
+          notebook_task:
+            notebook_path: ../src/04_genie_space.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              warehouse_id: ${var.warehouse_id}
+              space_title: ${var.genie_space_title}
+              src_dir: ${workspace.file_path}/src
+
+    idp_arrivals:
+      name: nba-idp-arrivals-${var.environment}
+      description: >-
+        Lands a small batch of new synthetic supplier mail in the inbox volume and processes it
+        incrementally: only the new documents are parsed, classified and extracted.
+      tags:
+        usecase: intelligent_document_processing
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+      schedule:
+        quartz_cron_expression: "0 30 8 ? * MON-FRI"
+        timezone_id: Australia/Sydney
+        pause_status: PAUSED
+      parameters:
+        - name: arrivals_batch
+          default: "12"
+      tasks:
+        - task_key: arrivals
+          notebook_task:
+            notebook_path: ../src/02_generate_corpus.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              volume: ${var.volume}
+              seed: ${var.seed}
+              mode: arrivals
+              arrivals_batch: "{{job.parameters.arrivals_batch}}"
+              gic_rate: ${var.gic_rate}
+              src_dir: ${workspace.file_path}/src
+
+        - task_key: process_documents
+          depends_on: [{ task_key: arrivals }]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.document_processing.id}
+            full_refresh: false
+
+        - task_key: sync_decisions
+          depends_on: [{ task_key: process_documents }]
+          notebook_task:
+            notebook_path: ../src/05_sync_decisions.py
+            base_parameters: *sync_params
+
+        - task_key: assess
+          depends_on: [{ task_key: sync_decisions }]
+          notebook_task:
+            notebook_path: ../src/03_assess.py
+            base_parameters: *assess_params
+
+    idp_feedback:
+      name: nba-idp-feedback-${var.environment}
+      description: >-
+        Reads reviewer decisions and field corrections from the workbench's Lakebase store into
+        Unity Catalog and rebuilds the extraction-accuracy, straight-through and readiness measures.
+      tags:
+        usecase: intelligent_document_processing
+        environment: ${var.environment}
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      max_concurrent_runs: 1
+      timeout_seconds: 1800
+      tasks:
+        - task_key: sync_decisions
+          notebook_task:
+            notebook_path: ../src/05_sync_decisions.py
+            base_parameters: *sync_params
+        - task_key: assess
+          depends_on: [{ task_key: sync_decisions }]
+          notebook_task:
+            notebook_path: ../src/03_assess.py
+            base_parameters: *assess_params

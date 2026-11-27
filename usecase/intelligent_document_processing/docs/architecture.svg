@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2479" height="739" viewBox="0 -49 2479 739" font-family="'DejaVu Sans Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace" font-size="14px">
+  <title>Intelligent document processing: AP invoice assurance</title>
+  <defs>
+    <marker id="rc665f5ab-arrow-5A6F77" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6F77"/>
+    </marker>
+  </defs>
+  <rect x="0" y="-49" width="2479" height="739" fill="#F9F7F4"/>
+  <path d="M48 85 H340 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H48 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="164.5" y="113.4" fill="#1B3139" text-anchor="start">Sources</text>
+  <a href="https://api.tenders.gov.au/" target="_blank" rel="noopener">
+  <path d="M62 128 H326 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="156.4" fill="#1B3139" text-anchor="middle">AusTender contract notices</text>
+  <text x="194" y="175.4" fill="#5A6F77" text-anchor="middle">public OCDS API, pseudonymised</text>
+  </a>
+  <path d="M62 218 H326 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="246.4" fill="#1B3139" text-anchor="middle">Synthetic supplier mail</text>
+  <text x="194" y="265.4" fill="#5A6F77" text-anchor="middle">dbldatagen + reportlab, seeded</text>
+  <path d="M62 308 H326 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H62 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z" fill="#DCE0E2" stroke="#618794"/>
+  <text x="194" y="336.4" fill="#1B3139" text-anchor="middle">Vendors, POs, receipts</text>
+  <text x="194" y="355.4" fill="#5A6F77" text-anchor="middle">synthetic AP master data</text>
+  <path d="M524 203.5 H796 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H524 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="635" y="231.9" fill="#1B3139" text-anchor="middle">Inbox volume</text>
+  <text x="635" y="250.9" fill="#5A6F77" text-anchor="middle">PDFs and scans, UC volume</text>
+  <g transform="translate(752 217.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M980 85 H1373 a8 8 0 0 1 8 8 V380 a8 8 0 0 1 -8 8 H980 a8 8 0 0 1 -8 -8 V93 a8 8 0 0 1 8 -8 Z" fill="#EEEDE9" stroke="#90A5B1"/>
+  <text x="1054.5" y="113.4" fill="#1B3139" text-anchor="start">Lakeflow pipeline (streaming)</text>
+  <path d="M994 128 H1359 a8 8 0 0 1 8 8 V186 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V136 a8 8 0 0 1 8 -8 Z" fill="#F6E3D3" stroke="#B5651D"/>
+  <text x="1176.5" y="156.4" fill="#1B3139" text-anchor="middle">bronze_parsed_documents</text>
+  <text x="1176.5" y="175.4" fill="#5A6F77" text-anchor="middle">ai_parse_document: text, bbox, page images</text>
+  <path d="M994 218 H1359 a8 8 0 0 1 8 8 V276 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V226 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="1176.5" y="246.4" fill="#1B3139" text-anchor="middle">silver_classified_documents</text>
+  <text x="1176.5" y="265.4" fill="#5A6F77" text-anchor="middle">ai_classify into five types</text>
+  <path d="M994 308 H1359 a8 8 0 0 1 8 8 V366 a8 8 0 0 1 -8 8 H994 a8 8 0 0 1 -8 -8 V316 a8 8 0 0 1 8 -8 Z" fill="#E8ECEF" stroke="#8A9BA8"/>
+  <text x="1176.5" y="336.4" fill="#1B3139" text-anchor="middle">silver_*_extraction</text>
+  <text x="1176.5" y="355.4" fill="#5A6F77" text-anchor="middle">ai_extract v2.1: confidence + citations</text>
+  <path d="M1023.5 508 H1329.5 a8 8 0 0 1 8 8 V585 a8 8 0 0 1 -8 8 H1023.5 a8 8 0 0 1 -8 -8 V516 a8 8 0 0 1 8 -8 Z" fill="#1B3139" stroke="#1B3139"/>
+  <text x="1176.5" y="536.4" fill="#FFFFFF" text-anchor="middle">Assess job</text>
+  <text x="1176.5" y="555.4" fill="#C9D3D8" text-anchor="middle">three-way match, correctly rendered</text>
+  <text x="1176.5" y="574.4" fill="#C9D3D8" text-anchor="middle">checks, RMG 417 clock</text>
+  <path d="M1557 40 H1899 a8 8 0 0 1 8 8 V425 a8 8 0 0 1 -8 8 H1557 a8 8 0 0 1 -8 -8 V48 a8 8 0 0 1 8 -8 Z" fill="#FBF1D0" stroke="#C9A227"/>
+  <text x="1711" y="68.4" fill="#1B3139" text-anchor="start">Gold</text>
+  <path d="M1571 83 H1885 a8 8 0 0 1 8 8 V141 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V91 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="111.4" fill="#1B3139" text-anchor="middle">gold_open_queue</text>
+  <text x="1703" y="130.4" fill="#5A6F77" text-anchor="middle">days left, computed when read</text>
+  <g transform="translate(1837 97) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1571 173 H1885 a8 8 0 0 1 8 8 V231 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V181 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="201.4" fill="#1B3139" text-anchor="middle">gold_extracted_fields</text>
+  <text x="1703" y="220.4" fill="#5A6F77" text-anchor="middle">value, confidence, page region</text>
+  <g transform="translate(1841 187) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1571 263 H1885 a8 8 0 0 1 8 8 V321 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V271 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="291.4" fill="#1B3139" text-anchor="middle">gold_invoice_checks</text>
+  <text x="1703" y="310.4" fill="#5A6F77" text-anchor="middle">eleven criteria per invoice</text>
+  <g transform="translate(1828.5 277) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M1571 353 H1885 a8 8 0 0 1 8 8 V411 a8 8 0 0 1 -8 8 H1571 a8 8 0 0 1 -8 -8 V361 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="1703" y="390.9" fill="#1B3139" text-anchor="middle">readiness, accuracy, detection</text>
+  <g transform="translate(1841 367) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <path d="M2083 203.5 H2431 a8 8 0 0 1 8 8 V261.5 a8 8 0 0 1 -8 8 H2083 a8 8 0 0 1 -8 -8 V211.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="2257" y="231.9" fill="#1B3139" text-anchor="middle">Document Assurance Workbench</text>
+  <text x="2257" y="250.9" fill="#5A6F77" text-anchor="middle">Databricks App, on behalf of the officer</text>
+  <path d="M2188 65.5 H2326 a8 8 0 0 1 8 8 V123.5 a8 8 0 0 1 -8 8 H2188 a8 8 0 0 1 -8 -8 V73.5 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF" stroke="#1B3139"/>
+  <text x="2257" y="93.9" fill="#1B3139" text-anchor="middle">Genie space</text>
+  <text x="2257" y="112.9" fill="#5A6F77" text-anchor="middle">Ask the AP data</text>
+  <path d="M2108 341.5 H2406 a8 8 0 0 1 8 8 V399.5 a8 8 0 0 1 -8 8 H2108 a8 8 0 0 1 -8 -8 V349.5 a8 8 0 0 1 8 -8 Z" fill="#FFF1EF" stroke="#FF3621"/>
+  <text x="2232" y="369.9" fill="#1B3139" text-anchor="middle">Lakebase Postgres</text>
+  <text x="2232" y="388.9" fill="#5A6F77" text-anchor="middle">decisions, field corrections</text>
+  <g transform="translate(2362 355.5) scale(1.58333)">
+    <path d="M3 6.4 v11.2 a9 3.4 0 0 0 18 0 v-11.2 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 6.4 a9 3.4 0 0 1 18 0 a9 3.4 0 0 1 -18 0 Z" fill="#d6d9e6" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 11 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M3 15.6 a9 3.4 0 0 0 18 0" fill="none" stroke="#57606a" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+  <line x1="334" y1="161" x2="516" y2="225.5" stroke="#5A6F77" stroke-width="1.6" stroke-dasharray="6.4 4.8" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <line x1="334" y1="251" x2="516" y2="247.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <line x1="804" y1="236.5" x2="986" y2="161" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <rect x="850" y="190.75" width="90" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="895" y="202.95" fill="#1B3139" text-anchor="middle">Auto Loader</text>
+  </g>
+  <line x1="1176.5" y1="388" x2="1176.5" y2="508" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <path d="M 194 374 L 194 550.5 L 1015.5 550.5" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <path d="M 1337.5 550.5 L 1728 550.5 L 1728 433" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <line x1="1907" y1="236.5" x2="2075" y2="236.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <rect x="1960.5" y="228.5" width="61" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1991" y="240.7" fill="#1B3139" text-anchor="middle">OBO SQL</text>
+  </g>
+  <path d="M 2180 98.5 L 2043.5 98.5 L 2043.5 -8 L 1728 -8 L 1728 40" fill="none" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <line x1="2257" y1="269.5" x2="2257" y2="341.5" stroke="#5A6F77" stroke-width="1.6" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <path d="M 2257 407.5 L 2257 641 L 1176.5 641 L 1176.5 593" fill="none" stroke="#5A6F77" stroke-width="1.6" stroke-dasharray="6.4 4.8" marker-end="url(#rc665f5ab-arrow-5A6F77)"/>
+  <rect x="1761" y="633" width="97" height="16" fill="#F9F7F4"/>
+  <g font-size="12px">
+  <text x="1809.5" y="645.2" fill="#1B3139" text-anchor="middle">feedback job</text>
+  </g>
+</svg>

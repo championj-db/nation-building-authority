@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Assurance Workbench</title>
+  <style>
+    @font-face {
+      font-family: "DM Sans";
+      src: url("./fonts/dmsans-variable.woff2") format("woff2");
+      font-weight: 100 1000;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #EEEDE9;
+      --surface: #F9F7F4;
+      --surface-warm: color-mix(in oklab, var(--accent), transparent 92%);
+      --fg: #0B2026;
+      --fg-2: var(--fg);
+      --muted: color-mix(in oklab, var(--fg), transparent 38%);
+      --meta: var(--muted);
+      --border: color-mix(in oklab, var(--fg), transparent 76%);
+      --border-soft: color-mix(in oklab, var(--fg), transparent 88%);
+      --accent: #FF3621;
+      --accent-on: #F9F7F4;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #00875C;
+      --warn: #FFAB00;
+      --danger: #BD2B26;
+      --viz-1: #FF3621;
+      --viz-2: #143D4A;
+      --viz-3: #0B2026;
+      --viz-4: #FFAB00;
+      --viz-5: #00875C;
+      --viz-6: #00A972;
+      --viz-7: #BD2B26;
+      --viz-8: #1B5162;
+      --viz-9: #AB4057;
+      --viz-10: #618794;
+      --font-display: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.375rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.25rem;
+      --text-4xl: 3rem;
+      --leading-body: 1.55;
+      --leading-tight: 1.15;
+      --tracking-display: -0.02em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 2px;
+      --elev-raised: 0 2px 8px color-mix(in oklab, var(--fg), transparent 92%);
+      --focus-ring: 2px;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1120px;
+      --container-gutter-desktop: 32px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #303F47;
+      --surface: #0B2026;
+      --fg: #E8ECF0;
+      --accent: #BD2B26;
+      --accent-on: #E8ECF0;
+      --success: #00A972;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body { margin: 0; min-width: 320px; background: var(--bg); color: var(--fg); font: 400 var(--text-base)/var(--leading-body) var(--font-body); }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button, select { min-height: 44px; }
+    button { cursor: pointer; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); }
+    h1 { font-size: clamp(2rem, 3.2vw, var(--text-4xl)); font-weight: 600; }
+    h2 { font-size: var(--text-xl); font-weight: 600; }
+    h3 { font-size: var(--text-base); font-weight: 600; }
+    a { color: inherit; }
+    :focus-visible { outline: var(--focus-ring) solid var(--accent); outline-offset: 3px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { position: sticky; top: 0; height: 100vh; padding: var(--space-6) var(--space-4); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2) var(--space-8); }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; background: var(--fg); color: var(--surface); border-radius: var(--radius-sm); font-weight: 650; }
+    .brand-name { font-weight: 620; line-height: 1.1; }
+    .brand-sub { color: var(--muted); font-size: var(--text-xs); margin-top: 3px; }
+    .nav-label { padding: 0 var(--space-3); margin: var(--space-2) 0; font: 600 var(--text-xs)/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .nav { display: grid; gap: var(--space-1); }
+    .nav button { width: 100%; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-md); background: transparent; text-align: left; color: var(--muted); font-weight: 520; display: flex; align-items: center; justify-content: space-between; }
+    .nav button:hover { background: var(--border-soft); color: var(--fg); }
+    .nav button[aria-current="page"] { background: var(--fg); color: var(--surface); }
+    .nav-count { font: 500 var(--text-xs)/1 var(--font-mono); }
+    .sidebar-foot { margin-top: auto; padding: var(--space-4) var(--space-3) 0; border-top: 1px solid var(--border-soft); color: var(--muted); font-size: var(--text-xs); }
+    .classification { display: inline-flex; margin-bottom: var(--space-2); padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--fg); font-weight: 600; letter-spacing: .04em; }
+
+    .main { min-width: 0; }
+    .topbar { height: 72px; padding: 0 var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); background: color-mix(in oklab, var(--bg), transparent 8%); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px); }
+    .crumb { color: var(--muted); font-size: var(--text-sm); }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); }
+    .button { min-height: 44px; padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-weight: 600; letter-spacing: .02em; }
+    .button:hover { border-color: var(--fg); }
+    .button.primary { border-color: var(--accent); background: var(--accent); color: var(--accent-on); }
+    .button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .button.primary:active { background: var(--accent-active); }
+    .icon-button { width: 44px; padding: 0; display: grid; place-items: center; }
+
+    .content { width: min(100%, 1500px); margin: 0 auto; padding: var(--space-8); }
+    .page-head { display: flex; justify-content: space-between; align-items: end; gap: var(--space-8); margin-bottom: var(--space-8); }
+    .eyebrow { margin-bottom: var(--space-2); color: var(--accent); font: 600 var(--text-xs)/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+    .page-intro { max-width: 64ch; margin-top: var(--space-3); color: var(--muted); }
+    .date-note { white-space: nowrap; color: var(--muted); font-size: var(--text-sm); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elev-raised); }
+    .summary-card { padding: var(--space-5); min-height: 136px; display: flex; flex-direction: column; justify-content: space-between; }
+    .summary-label { color: var(--muted); font-size: var(--text-sm); }
+    .summary-value { font: 600 var(--text-2xl)/1 var(--font-mono); letter-spacing: -.03em; }
+    .summary-value.text { font-family: var(--font-display); font-size: var(--text-lg); letter-spacing: -.01em; }
+    .summary-foot { color: var(--muted); font-size: var(--text-xs); }
+
+    .work-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr); gap: var(--space-6); align-items: start; }
+    .panel-head { padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .panel-copy { margin-top: var(--space-1); color: var(--muted); font-size: var(--text-sm); }
+    .filter-row { padding: var(--space-3) var(--space-5); display: flex; gap: var(--space-2); border-bottom: 1px solid var(--border-soft); overflow-x: auto; }
+    .filter { min-height: 36px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-pill); background: transparent; color: var(--muted); font-size: var(--text-sm); white-space: nowrap; }
+    .filter:hover { color: var(--fg); border-color: var(--fg); }
+    .filter.active { background: var(--fg); border-color: var(--fg); color: var(--surface); }
+
+    .queue-row { width: 100%; padding: var(--space-4) var(--space-5); display: grid; grid-template-columns: minmax(0, 1fr) 120px 112px 24px; gap: var(--space-4); align-items: center; border: 0; border-bottom: 1px solid var(--border-soft); background: transparent; text-align: left; }
+    .queue-row:hover { background: var(--border-soft); }
+    .queue-row:last-child { border-bottom: 0; }
+    .doc-title { display: block; font-weight: 610; }
+    .doc-meta { display: block; color: var(--muted); font-size: var(--text-xs); margin-top: 3px; }
+    .status { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: var(--text-xs); }
+    .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+    .status.ready::before { background: var(--success); }
+    .confidence { font: 600 var(--text-sm)/1 var(--font-mono); }
+    .confidence small { display: block; margin-top: 6px; color: var(--muted); font: 400 var(--text-xs)/1 var(--font-body); }
+    .arrow { color: var(--muted); font-size: var(--text-lg); }
+
+    .activity { padding-bottom: var(--space-2); }
+    .stage { padding: var(--space-4) var(--space-5); display: grid; grid-template-columns: 34px 1fr; gap: var(--space-3); }
+    .stage + .stage { border-top: 1px solid var(--border-soft); }
+    .stage-num { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; font: 600 var(--text-xs)/1 var(--font-mono); }
+    .stage.complete .stage-num { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+    .stage p { margin-top: 3px; color: var(--muted); font-size: var(--text-xs); }
+    .assurance { margin-top: var(--space-6); padding: var(--space-5); }
+    .assurance p { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-sm); }
+    .assurance a { display: inline-block; margin-top: var(--space-3); font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .workspace { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: var(--space-6); }
+    .document-view { min-height: 650px; padding: var(--space-6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .paper { max-width: 620px; min-height: 560px; margin: auto; padding: var(--space-8); background: var(--bg); border: 1px solid var(--border); box-shadow: var(--elev-raised); }
+    .paper-kicker { font: 600 var(--text-xs)/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .paper h2 { margin: var(--space-6) 0 var(--space-4); font-size: var(--text-2xl); }
+    .paper p { margin-top: var(--space-4); color: var(--muted); }
+    .evidence { padding: 1px 3px; border-bottom: 2px solid var(--warn); background: color-mix(in oklab, var(--warn), transparent 86%); color: var(--fg); }
+    .field-list { overflow: hidden; }
+    .field-row { padding: var(--space-4) var(--space-5); display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); border-bottom: 1px solid var(--border-soft); }
+    .field-row:last-child { border-bottom: 0; }
+    .field-name { color: var(--muted); font-size: var(--text-xs); }
+    .field-value { margin-top: 3px; font-weight: 600; }
+    .field-score { font: 600 var(--text-sm)/1 var(--font-mono); }
+    .field-score.low { color: var(--danger); }
+    .review-actions { padding: var(--space-5); display: flex; justify-content: flex-end; gap: var(--space-2); border-top: 1px solid var(--border); }
+
+    .qa-shell { max-width: 900px; }
+    .qa-box { padding: var(--space-6); }
+    .qa-input { width: 100%; min-height: 120px; padding: var(--space-4); resize: vertical; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+    .qa-input:focus { border-color: var(--accent); outline: var(--focus-ring) solid color-mix(in oklab, var(--accent), transparent 65%); }
+    .qa-examples { margin-top: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .answer { display: none; margin-top: var(--space-6); padding: var(--space-6); }
+    .answer.visible { display: block; }
+    .answer p { margin-top: var(--space-3); color: var(--muted); }
+    .source-row { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-soft); font-size: var(--text-sm); }
+
+    .dialog-backdrop { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; padding: var(--space-4); background: color-mix(in oklab, var(--fg), transparent 62%); }
+    .dialog-backdrop.open { display: grid; }
+    .dialog { width: min(100%, 520px); padding: var(--space-6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elev-raised); }
+    .dialog p { margin: var(--space-3) 0 var(--space-6); color: var(--muted); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+    .toast { position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 30; display: none; padding: var(--space-4) var(--space-5); background: var(--fg); color: var(--surface); border-radius: var(--radius-md); box-shadow: var(--elev-raised); }
+    .toast.show { display: block; }
+
+    @media (max-width: 1100px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .work-grid, .workspace { grid-template-columns: 1fr; }
+      .activity { display: grid; grid-template-columns: repeat(2, 1fr); }
+      .panel-head { grid-column: 1 / -1; }
+    }
+    @media (max-width: 760px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; width: 100%; height: auto; padding: var(--space-3) var(--space-4); border-right: 0; border-bottom: 1px solid var(--border); }
+      .brand { padding: 0 0 var(--space-3); }
+      .nav-label, .sidebar-foot { display: none; }
+      .nav { display: flex; overflow-x: auto; }
+      .nav button { width: auto; white-space: nowrap; padding: 0 var(--space-4); }
+      .topbar { height: auto; min-height: 64px; padding: var(--space-3) var(--space-4); }
+      .crumb, .top-actions .button:not(.primary) { display: none; }
+      .content { padding: var(--space-5) var(--space-4) var(--space-8); }
+      .page-head { align-items: start; flex-direction: column; gap: var(--space-3); }
+      .summary-grid { grid-template-columns: 1fr; }
+      .queue-row { grid-template-columns: minmax(0, 1fr) 84px 20px; }
+      .queue-row .status { display: none; }
+      .activity { grid-template-columns: 1fr; }
+      .workspace { gap: var(--space-4); }
+      .document-view { min-height: 0; padding: var(--space-3); }
+      .paper { min-height: 0; padding: var(--space-5); }
+      .review-actions { flex-direction: column-reverse; }
+      .review-actions .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" data-od-id="primary-navigation">
+      <div class="brand" data-od-id="product-brand">
+        <div class="brand-mark" aria-hidden="true">DA</div>
+        <div><div class="brand-name">Document Assurance</div><div class="brand-sub">Operations workbench</div></div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" aria-label="Primary">
+        <button data-screen="overview" aria-current="page" data-od-id="nav-overview">Overview</button>
+        <button data-screen="review" data-od-id="nav-review">Review queue <span class="nav-count">3</span></button>
+        <button data-screen="corpus" data-od-id="nav-corpus">Corpus Q&amp;A</button>
+      </nav>
+      <div class="nav-label" style="margin-top: var(--space-6);">Governance</div>
+      <nav class="nav" aria-label="Governance">
+        <button data-screen="overview" data-od-id="nav-register">Document register</button>
+        <button data-screen="overview" data-od-id="nav-publications">Publications</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="classification">OFFICIAL</span>
+        <div>Synthetic demonstration corpus<br>No source-system write-back</div>
+      </div>
+    </aside>
+
+    <main class="main" data-od-id="main-workspace">
+      <header class="topbar" data-od-id="workspace-header">
+        <div class="crumb">Nation Building Authority / Document operations</div>
+        <div class="top-actions">
+          <button class="button icon-button" id="themeToggle" aria-label="Switch colour theme" data-od-id="theme-toggle">◐</button>
+          <button class="button" data-od-id="audit-log-button">Audit log</button>
+          <button class="button primary" id="ingestButton" data-od-id="ingest-documents-button">Ingest documents</button>
+        </div>
+      </header>
+
+      <section class="screen active" id="overview" data-od-id="overview-screen">
+        <div class="content">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Operations snapshot</p>
+              <h1 data-od-id="overview-title">Good morning, Alex.</h1>
+              <p class="page-intro">Review uncertain extractions before they become governed records. All content shown is synthetic demonstration data.</p>
+            </div>
+            <div class="date-note">Friday, 27 November 2026</div>
+          </div>
+
+          <div class="summary-grid" data-od-id="summary-cards">
+            <article class="card summary-card" data-od-id="summary-awaiting-review"><span class="summary-label">Awaiting review</span><strong class="summary-value">3</strong><span class="summary-foot">Human decision required</span></article>
+            <article class="card summary-card" data-od-id="summary-ready-publish"><span class="summary-label">Ready to publish</span><strong class="summary-value">2</strong><span class="summary-foot">Validated records</span></article>
+            <article class="card summary-card" data-od-id="summary-processing"><span class="summary-label">Processing</span><strong class="summary-value">1</strong><span class="summary-foot">Parsing and classification</span></article>
+            <article class="card summary-card" data-od-id="summary-control"><span class="summary-label">Active control</span><strong class="summary-value text">Human review</strong><span class="summary-foot">Low-confidence fields held</span></article>
+          </div>
+
+          <div class="work-grid">
+            <section class="card" data-od-id="review-queue-panel">
+              <div class="panel-head"><div><h2>Review queue</h2><p class="panel-copy">Prioritised by confidence and age.</p></div><button class="button" data-screen-link="review">Open queue</button></div>
+              <div class="filter-row" role="group" aria-label="Filter review queue">
+                <button class="filter active" data-filter="all">All items</button><button class="filter" data-filter="needs">Needs review</button><button class="filter" data-filter="ready">Ready</button>
+              </div>
+              <div id="queueList">
+                <button class="queue-row" data-status="needs" data-open-review data-od-id="queue-item-business-case">
+                  <span><span class="doc-title">Regional Housing Business Case</span><span class="doc-meta">Business case · received today</span></span>
+                  <span class="status">Needs review</span><span class="confidence">62%<small>lowest field</small></span><span class="arrow">›</span>
+                </button>
+                <button class="queue-row" data-status="needs" data-open-review data-od-id="queue-item-invoice">
+                  <span><span class="doc-title">Supplier Invoice — Works Package</span><span class="doc-meta">Invoice · received today</span></span>
+                  <span class="status">Needs review</span><span class="confidence">71%<small>lowest field</small></span><span class="arrow">›</span>
+                </button>
+                <button class="queue-row" data-status="needs" data-open-review data-od-id="queue-item-assurance">
+                  <span><span class="doc-title">Program Assurance Report</span><span class="doc-meta">Assurance report · received yesterday</span></span>
+                  <span class="status">Needs review</span><span class="confidence">78%<small>lowest field</small></span><span class="arrow">›</span>
+                </button>
+                <button class="queue-row" data-status="ready" data-od-id="queue-item-correspondence">
+                  <span><span class="doc-title">Ministerial Correspondence Brief</span><span class="doc-meta">Correspondence · validated</span></span>
+                  <span class="status ready">Ready</span><span class="confidence">—<small>validated</small></span><span class="arrow">›</span>
+                </button>
+              </div>
+            </section>
+
+            <div>
+              <section class="card activity" data-od-id="pipeline-status-panel">
+                <div class="panel-head"><div><h2>Document pipeline</h2><p class="panel-copy">Reusable governed processing path.</p></div></div>
+                <div class="stage complete"><span class="stage-num">1</span><div><h3>Land</h3><p>Change detection in UC volume</p></div></div>
+                <div class="stage complete"><span class="stage-num">2</span><div><h3>Parse</h3><p>Text, tables, layout and figures</p></div></div>
+                <div class="stage complete"><span class="stage-num">3</span><div><h3>Classify &amp; extract</h3><p>Typed fields against schema</p></div></div>
+                <div class="stage"><span class="stage-num">4</span><div><h3>Review &amp; publish</h3><p>Human control before governed output</p></div></div>
+              </section>
+              <aside class="card assurance" data-od-id="assurance-note">
+                <h3>Assurance note</h3>
+                <p>Parsed content is treated at the highest classification found in the corpus. Confidence is a routing control, not a quality claim.</p>
+                <a href="#" data-od-id="view-control-guidance">View control guidance</a>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="review" data-od-id="review-screen">
+        <div class="content">
+          <div class="page-head"><div><p class="eyebrow">Human review control</p><h1 data-od-id="review-title">Confirm the evidence, not just the value.</h1><p class="page-intro">Compare extracted fields with their source passage. Low-confidence values remain unpublished until a reviewer decides.</p></div><button class="button" data-screen-link="overview">Back to overview</button></div>
+          <div class="workspace">
+            <section class="document-view" data-od-id="source-document-viewer">
+              <div class="paper">
+                <div class="paper-kicker">Synthetic business case · page 4 of 18</div>
+                <h2>Regional Housing Enablement Program</h2>
+                <p>The program proposes enabling works across three regional precincts. Delivery is expected to commence following approval and procurement.</p>
+                <p>The estimated total investment is <span class="evidence">$24.8 million over four years</span>, subject to final design and market testing.</p>
+                <p>The accountable business area is Infrastructure Delivery, with quarterly assurance reporting to the Program Board.</p>
+              </div>
+            </section>
+            <section class="card" data-od-id="extracted-fields-panel">
+              <div class="panel-head"><div><h2>Extracted fields</h2><p class="panel-copy">Business case schema · version 1.0</p></div><span class="classification">REVIEW</span></div>
+              <div class="field-list">
+                <div class="field-row"><div><div class="field-name">Program name</div><div class="field-value">Regional Housing Enablement Program</div></div><span class="field-score">98%</span></div>
+                <div class="field-row"><div><div class="field-name">Investment amount</div><div class="field-value">$24.8 million</div></div><span class="field-score low">62%</span></div>
+                <div class="field-row"><div><div class="field-name">Delivery period</div><div class="field-value">Four years</div></div><span class="field-score">91%</span></div>
+                <div class="field-row"><div><div class="field-name">Accountable area</div><div class="field-value">Infrastructure Delivery</div></div><span class="field-score">95%</span></div>
+              </div>
+              <div class="review-actions"><button class="button" id="returnButton">Return for correction</button><button class="button primary" id="validateButton" data-od-id="validate-record-button">Validate record</button></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="corpus" data-od-id="corpus-screen">
+        <div class="content qa-shell">
+          <div class="page-head"><div><p class="eyebrow">Governed corpus Q&amp;A</p><h1 data-od-id="corpus-title">Ask across validated documents.</h1><p class="page-intro">Answers cite the synthetic source corpus. Unvalidated extractions are excluded from results.</p></div></div>
+          <section class="card qa-box" data-od-id="corpus-question-panel">
+            <label for="question"><h2>What do you need to know?</h2></label>
+            <textarea class="qa-input" id="question" placeholder="Ask a question about the validated corpus…"></textarea>
+            <div class="qa-examples">
+              <button class="filter prompt-chip">Which programs mention regional housing?</button>
+              <button class="filter prompt-chip">Show accountable areas in business cases</button>
+            </div>
+            <div style="margin-top: var(--space-5);"><button class="button primary" id="askButton" data-od-id="ask-corpus-button">Ask governed corpus</button></div>
+          </section>
+          <section class="card answer" id="answer" aria-live="polite" data-od-id="corpus-answer">
+            <h2>Answer</h2>
+            <p>The validated synthetic corpus identifies the Regional Housing Enablement Program as a program relating to regional housing. Its accountable business area is Infrastructure Delivery.</p>
+            <div class="source-row"><strong>Source:</strong> Regional Housing Business Case · validated structured record</div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="dialog-backdrop" id="ingestDialog" role="presentation">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" data-od-id="ingest-dialog">
+      <h2 id="dialogTitle">Ingest documents</h2>
+      <p>This demonstration would register files in a governed Unity Catalog volume and detect new arrivals incrementally. No real documents are accepted in this prototype.</p>
+      <div class="dialog-actions"><button class="button" id="closeDialog">Cancel</button><button class="button primary" id="confirmIngest">Simulate ingestion</button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status">Record validated and ready to publish.</div>
+
+  <script>
+    const screens = [...document.querySelectorAll('.screen')];
+    const navButtons = [...document.querySelectorAll('[data-screen]')];
+    const showScreen = (id) => {
+      screens.forEach(screen => screen.classList.toggle('active', screen.id === id));
+      navButtons.forEach(button => button.toggleAttribute('aria-current', button.dataset.screen === id));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    navButtons.forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screen)));
+    document.querySelectorAll('[data-screen-link]').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screenLink)));
+    document.querySelectorAll('[data-open-review]').forEach(button => button.addEventListener('click', () => showScreen('review')));
+
+    document.querySelectorAll('.filter[data-filter]').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('.filter[data-filter]').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+      document.querySelectorAll('.queue-row').forEach(row => row.hidden = button.dataset.filter !== 'all' && row.dataset.status !== button.dataset.filter);
+    }));
+
+    const root = document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const dark = root.dataset.theme === 'dark';
+      if (dark) delete root.dataset.theme; else root.dataset.theme = 'dark';
+    });
+
+    const dialog = document.getElementById('ingestDialog');
+    document.getElementById('ingestButton').addEventListener('click', () => dialog.classList.add('open'));
+    document.getElementById('closeDialog').addEventListener('click', () => dialog.classList.remove('open'));
+    document.getElementById('confirmIngest').addEventListener('click', () => { dialog.classList.remove('open'); showToast('Synthetic ingestion started.'); });
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.classList.remove('open'); });
+
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    const showToast = (message) => {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    };
+    document.getElementById('validateButton').addEventListener('click', () => showToast('Record validated and ready to publish.'));
+    document.getElementById('returnButton').addEventListener('click', () => showToast('Record returned with a review note.'));
+
+    const question = document.getElementById('question');
+    document.querySelectorAll('.prompt-chip').forEach(button => button.addEventListener('click', () => { question.value = button.textContent; question.focus(); }));
+    document.getElementById('askButton').addEventListener('click', () => {
+      if (!question.value.trim()) { question.focus(); showToast('Enter a question first.'); return; }
+      document.getElementById('answer').classList.add('visible');
+    });
+  </script>
+</body>
+</html>

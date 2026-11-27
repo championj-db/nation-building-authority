@@ -1,0 +1,29 @@
+# Review workbench - Lakebase (Autoscaling Postgres) resources
+#
+# Lakebase holds the human side of review: field corrections and decisions recorded in the
+# workbench (schema daw). src/05_sync_decisions.py reads them back into Unity Catalog to measure
+# extraction accuracy and straight-through rate. Documents, fields and checks stay in Unity Catalog.
+#
+# The project's implicit `production` branch, `primary` endpoint and `databricks_postgres` database
+# are used. The workbench app's service principal is granted CAN_CONNECT_AND_CREATE through its app
+# resource binding and creates its own schema on first start.
+#
+# No environment-specific value is written as a literal here. See ../../CONTRIBUTING.md.
+
+resources:
+  postgres_projects:
+    document_workbench_db:
+      project_id: ${var.lakebase_project_id}
+      display_name: NBA Document Workbench (${var.environment})
+      pg_version: ${var.lakebase_pg_version}
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: ${var.lakebase_min_cu}
+        autoscaling_limit_max_cu: ${var.lakebase_max_cu}
+        suspend_timeout_duration: ${var.lakebase_suspend_timeout}
+
+  postgres_branches:
+    document_workbench_production:
+      branch_id: production
+      parent: ${resources.postgres_projects.document_workbench_db.name}
+      no_expiry: true
+      replace_existing: true
