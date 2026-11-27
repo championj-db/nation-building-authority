@@ -221,7 +221,6 @@ export function Review({
   }
 
   const selectedField = fields.find((f) => f.field === selected);
-  const others = useMemo(() => fields.filter((f) => f.field !== selected).flatMap(regionsOf), [fields, selected]);
   const loading = doc.loading || (isInvoice && (fieldsQ.loading || inv.loading));
   const error = doc.error || inv.error || fieldsQ.error || checksQ.error;
 
@@ -273,7 +272,7 @@ export function Review({
         ? `${heldN} ${heldN === 1 ? 'field' : 'fields'} held for review`
         : `${unknownChecks.map((c) => c.label).join(', ') || 'A check'} could not be checked`,
       text: heldN
-        ? 'Check each held field against the page, then confirm or correct it. If the invoice is correctly rendered, its clock has already been running since it arrived.'
+        ? 'If the invoice is correctly rendered, its clock has been running since it arrived.'
         : `${unknownChecks.map((c) => c.detail).join(' ')} Check it yourself before you accept or return the invoice.`,
     };
   })();
@@ -323,13 +322,11 @@ export function Review({
                 ? {
                     label: selectedField.label,
                     regions: regionsOf(selectedField),
-                    citedText: selectedField.cited_text,
                     value: selectedField.value,
                     elsewhere: selectedField.grounded && !selectedField.in_cited_region,
                   }
                 : null
             }
-            others={others}
             caption={isInvoice ? undefined : 'This document is not an invoice, so no invoice fields were extracted.'}
           />
         ) : (
@@ -354,12 +351,8 @@ export function Review({
               <PanelHead
                 id="fields-title"
                 title="Extracted fields"
-                copy="Confirm the evidence, not just the value. Select a field to see where it sits on the page."
-              >
-                <span className="tag neutral">
-                  {d?.doc_type === 'adjustment_note' ? 'Adjustment note' : 'Tax invoice'} schema
-                </span>
-              </PanelHead>
+                copy="Confirm the evidence, not just the value. Select a field to see it on the page."
+              />
               {fieldsQ.loading ? (
                 <SkeletonRows rows={8} height={30} />
               ) : (
@@ -417,15 +410,9 @@ export function Review({
                         </button>
                         <span className={`field-score${f.routing_confidence < 0.85 ? ' low' : ''}`}>
                           {pct(f.routing_confidence)}
-                          <small>
-                            {f.value == null
-                              ? 'missing'
-                              : !f.grounded
-                                ? 'not on page'
-                                : f.routing_confidence < 0.85
-                                  ? 'low'
-                                  : 'confident'}
-                          </small>
+                          {(f.value == null || !f.grounded || f.routing_confidence < 0.85) && (
+                            <small>{f.value == null ? 'missing' : !f.grounded ? 'not on page' : 'low'}</small>
+                          )}
                         </span>
                         {selected === f.field && f.cited_text && f.grounded && f.in_cited_region !== false && (
                           <div className="printed">
@@ -537,23 +524,12 @@ export function Review({
                     .map((c) => (
                       <CheckLine key={c.check_code} c={c} />
                     ))}
-                  {shownChecks.length > 0 && shownChecks.every((c) => c.result === 'pass') && (
-                    <CheckLine
-                      c={
-                        {
-                          ...shownChecks[0],
-                          result: 'pass',
-                          label: 'All eleven criteria passed',
-                          detail: 'Expand the list to see each one.',
-                          source_url: null,
-                        } as CheckRow
-                      }
-                    />
-                  )}
                   <details className="passed-checks">
                     <summary>
                       <ChevronRight aria-hidden="true" className="disclosure" />
-                      {shownChecks.filter((c) => c.result === 'pass').length} passed
+                      {shownChecks.every((c) => c.result === 'pass')
+                        ? `All ${shownChecks.length} criteria passed`
+                        : `${shownChecks.filter((c) => c.result === 'pass').length} passed`}
                     </summary>
                     {shownChecks
                       .filter((c) => c.result === 'pass')

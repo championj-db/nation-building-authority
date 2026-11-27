@@ -236,7 +236,6 @@ export function Intake({
                 pageCount={d.page_count ?? 1}
                 enabled={session.pagesEnabled}
                 selected={null}
-                others={[]}
                 caption="As received."
               />
             )}

@@ -59,19 +59,6 @@ export function useBaseParams() {
   return useMemo(() => ({ catalog: sql.string(catalog), schema: sql.string(schema) }), [catalog, schema]);
 }
 
-/** Keep the previous result on screen while new parameters load. */
-export function useSticky<T>(result: { data: T | null; loading: boolean; error: string | null }) {
-  const [last, setLast] = useState<T | null>(null);
-  if (result.data != null && result.data !== last) setLast(result.data);
-  const data = result.data ?? last;
-  return {
-    data,
-    loading: result.loading && data == null,
-    refreshing: result.loading && data != null,
-    error: result.error,
-  };
-}
-
 export async function postJson<T>(url: string, body?: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',
@@ -151,4 +138,4 @@ export async function fetchDocumentDecision(
   return (await r.json()) as { decision: DecisionRecord | null; corrections: CorrectionRecord[] };
 }
 
-export { list, normalizeRow, sql, useAnalyticsQuery };
+export { list, normalizeRow, sql };

@@ -59,3 +59,20 @@ is a correctly rendered invoice under RMG 417, before the payment clock runs out
 - Loading skeletons, error notices with retry, empty states, read-only mode without Lakebase,
   deep links (`?doc=DOC-000123`, `?view=queue&filter=needs_review`), focus moved to main on
   navigation, a skip link, and reduced motion.
+
+## Removed in the distill pass
+
+Removed because each one repeated something said elsewhere or decorated rather than informed. No function was lost.
+
+| Removed | Why | Where the information still is |
+| --- | --- | --- |
+| Top-bar "Decision log" button | Duplicated the Governance nav entry, and was hidden on phones anyway | Sidebar, Governance, Decision log |
+| Icons in the summary tile labels | Decoration beside a label that already names the tile; the chevron is the affordance | Tile label and chevron |
+| "See all N" link under the overview queue | Second route to the same place as "Open queue" | "Open queue" button; the footer still says how many are shown |
+| Second assurance-note paragraph (the clock rule) | Restated the page intro and the review screen's clock panel | Overview intro; Order, delivery and clock panel; RMG 417 link |
+| "Tax invoice schema" tag on the fields panel | System detail an officer does not act on | Document type in the review header |
+| "confident" under every confident score; "lowest field" under every queue percentage | Said on every row what a column head can say once | Column head "Confidence"; reasons (low, missing, not on page, N held) still shown where they apply |
+| Dashed outlines of every other cited field on the page | Visual noise competing with the one region that matters | The selected field's amber highlight |
+| Idle caption under the page, and the cited-text excerpt in the caption | Repeated the fields panel's instruction, and later the "Printed on the page" excerpt in the field row | Fields panel copy; the excerpt inside the selected row |
+| Separate "All eleven criteria passed" row above the passed-checks disclosure | Same fact twice | The disclosure summary reads "All 11 criteria passed" |
+| Repeated "check each held field..." in the verdict | Said in the verdict, the fields panel and the dock | Dock hint and field rows; the verdict keeps only the clock consequence |

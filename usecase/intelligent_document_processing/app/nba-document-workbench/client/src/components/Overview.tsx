@@ -1,4 +1,4 @@
-import { AlarmClock, CalendarClock, ChevronRight, FileWarning, ScanSearch } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { firstName, greeting, money, plural, received } from '../lib/format';
 import { applyFilter, counts, FILTERS, summarise, type FilterKey } from '../lib/queue';
@@ -43,14 +43,12 @@ export function Overview({
     {
       key: 'due' as const,
       label: 'Due within 5 business days',
-      icon: <CalendarClock aria-hidden="true" />,
       value: summary.dueSoon,
       foot: summary.dueSoon ? `${money(summary.dueSoonValue, true)} to accept in time` : 'Nothing due this week',
     },
     {
       key: 'overdue' as const,
       label: 'Past the pay-by date',
-      icon: <AlarmClock aria-hidden="true" />,
       value: summary.overdue,
       alert: summary.overdue > 0,
       foot: summary.overdue ? `${money(summary.interest)} interest accrued so far` : 'No interest accruing',
@@ -58,14 +56,12 @@ export function Overview({
     {
       key: 'needs_review' as const,
       label: 'Needs review',
-      icon: <ScanSearch aria-hidden="true" />,
       value: summary.needsReview,
       foot: summary.heldFields ? `${plural(summary.heldFields, 'field')} to check on the page` : 'No fields held',
     },
     {
       key: 'exception' as const,
       label: 'To return to supplier',
-      icon: <FileWarning aria-hidden="true" />,
       value: summary.toReturn,
       foot: 'Not correctly rendered, so no clock',
     },
@@ -128,10 +124,7 @@ export function Overview({
       <div className="summary-grid">
         {tiles.map((t) => (
           <button key={t.key} className="card summary-card" onClick={() => onQueue(t.key)}>
-            <span className="summary-label">
-              {t.label}
-              {t.icon}
-            </span>
+            <span className="summary-label">{t.label}</span>
             {loading ? (
               <Skeleton width={56} height={28} />
             ) : (
@@ -163,13 +156,10 @@ export function Overview({
               </button>
             ))}
           </div>
-          {loading ? <SkeletonRows rows={6} /> : <QueueList rows={shown} onOpen={onOpen} limit={8} />}
+          {loading ? <SkeletonRows rows={6} /> : <QueueList rows={shown} onOpen={onOpen} limit={8} showHead />}
           {!loading && shown.length > 8 && (
             <div className="panel-foot">
-              <span>Showing 8 of {shown.length}</span>
-              <button className="link-button" onClick={() => onQueue(filter)}>
-                See all {shown.length}
-              </button>
+              <span>Showing the 8 most urgent of {shown.length}</span>
             </div>
           )}
         </section>
@@ -196,10 +186,6 @@ export function Overview({
             <p>
               Parsed content is treated at the highest classification found in the corpus. Confidence is a routing
               control, not a quality claim: a high score is never proof that a value is right.
-            </p>
-            <p>
-              The clock starts the day after delivery is acknowledged and a correctly rendered invoice is received. From
-              1 January 2027 the maximum term is 10 business days for every invoice.
             </p>
             <a
               href="https://www.finance.gov.au/publications/resource-management-guides/supplier-pay-time-or-pay-interest-policy-rmg-417"

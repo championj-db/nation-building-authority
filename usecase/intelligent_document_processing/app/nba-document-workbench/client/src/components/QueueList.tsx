@@ -33,7 +33,7 @@ function lowestField(r: QueueRow) {
   const c = r.lowest_required_confidence;
   return {
     value: c == null ? '-' : `${Math.round(c * 100)}%`,
-    note: held ? `${held} held` : 'lowest field',
+    note: held ? `${held} held` : '',
     low: held > 0,
   };
 }
@@ -59,7 +59,7 @@ export function QueueList({
         <div className="queue-head" aria-hidden="true">
           <span>Document</span>
           <span>Status</span>
-          <span>Evidence</span>
+          <span title="Confidence of the weakest required field">Confidence</span>
           <span>Payment clock</span>
           <span />
         </div>
@@ -81,7 +81,7 @@ export function QueueList({
             <StatusText status={r.status} label={r.status_label} />
             <span className={`confidence${lf.low ? ' low' : ''}`}>
               {lf.value}
-              <small>{lf.note}</small>
+              {lf.note && <small>{lf.note}</small>}
             </span>
             <span className={`clock ${r.clock_state}`} title={clock.long}>
               {clock.short}
